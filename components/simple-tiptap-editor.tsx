@@ -120,6 +120,7 @@ export function SimpleTiptapEditor({
             pressed={editor.isActive("bold")}
             onPressedChange={() => editor.chain().focus().toggleBold().run()}
             size="sm"
+            aria-label="Bold"
           >
             <Bold className="h-4 w-4" />
           </Toggle>
@@ -127,6 +128,7 @@ export function SimpleTiptapEditor({
             pressed={editor.isActive("italic")}
             onPressedChange={() => editor.chain().focus().toggleItalic().run()}
             size="sm"
+            aria-label="Italic"
           >
             <Italic className="h-4 w-4" />
           </Toggle>
@@ -134,6 +136,7 @@ export function SimpleTiptapEditor({
             pressed={editor.isActive("strike")}
             onPressedChange={() => editor.chain().focus().toggleStrike().run()}
             size="sm"
+            aria-label="Strikethrough"
           >
             <Strikethrough className="h-4 w-4" />
           </Toggle>
@@ -141,6 +144,7 @@ export function SimpleTiptapEditor({
             pressed={editor.isActive("code")}
             onPressedChange={() => editor.chain().focus().toggleCode().run()}
             size="sm"
+            aria-label="Code"
           >
             <Code className="h-4 w-4" />
           </Toggle>
@@ -150,21 +154,35 @@ export function SimpleTiptapEditor({
           {/* Headings */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <Button variant={editor.isActive("heading") ? "default" : "ghost"} size="sm" aria-label="Text Format">
                 <Type className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()}>Paragraph</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().setParagraph().run()}
+                className={editor.isActive("paragraph") ? "bg-accent" : ""}
+              >
+                Paragraph
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                className={editor.isActive("heading", { level: 1 }) ? "bg-accent" : ""}
+              >
                 <Heading1 className="h-4 w-4 mr-2" />
                 Heading 1
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                className={editor.isActive("heading", { level: 2 }) ? "bg-accent" : ""}
+              >
                 <Heading2 className="h-4 w-4 mr-2" />
                 Heading 2
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                className={editor.isActive("heading", { level: 3 }) ? "bg-accent" : ""}
+              >
                 <Heading3 className="h-4 w-4 mr-2" />
                 Heading 3
               </DropdownMenuItem>
@@ -178,6 +196,7 @@ export function SimpleTiptapEditor({
             pressed={editor.isActive("bulletList")}
             onPressedChange={() => editor.chain().focus().toggleBulletList().run()}
             size="sm"
+            aria-label="Bullet List"
           >
             <List className="h-4 w-4" />
           </Toggle>
@@ -185,6 +204,7 @@ export function SimpleTiptapEditor({
             pressed={editor.isActive("orderedList")}
             onPressedChange={() => editor.chain().focus().toggleOrderedList().run()}
             size="sm"
+            aria-label="Numbered List"
           >
             <ListOrdered className="h-4 w-4" />
           </Toggle>
@@ -196,6 +216,7 @@ export function SimpleTiptapEditor({
             pressed={editor.isActive("blockquote")}
             onPressedChange={() => editor.chain().focus().toggleBlockquote().run()}
             size="sm"
+            aria-label="Quote"
           >
             <Quote className="h-4 w-4" />
           </Toggle>

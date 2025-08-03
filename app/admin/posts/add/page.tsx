@@ -13,13 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { AdminLayout } from "@/components/admin-layout"
-import { SimpleTiptapEditor } from "@/components/simple-tiptap-editor"
+import { EnhancedTiptapEditor } from "@/components/enhanced-tiptap-editor"
 import { PostPreview } from "@/components/post-preview"
 
 export default function AddPostPage() {
   const [formData, setFormData] = useState({
     title: "",
-    content: "<p>Start writing your amazing post here...</p>",
+    content:
+      "<h1>Getting Started</h1><p>Start writing your amazing post here...</p><h2>Introduction</h2><p>This is where you introduce your topic.</p><h3>Key Points</h3><p>List your main points here.</p>",
     category: "",
     status: "draft",
     excerpt: "",
@@ -51,7 +52,7 @@ export default function AddPostPage() {
 
   return (
     <AdminLayout title="Create New Post">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" asChild>
             <a href="/admin/posts">
@@ -82,229 +83,202 @@ export default function AddPostPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid gap-6 lg:grid-cols-4">
-          {/* Main Content Area */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Title */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Post Title</Label>
-                  <Input
-                    id="title"
-                    placeholder="Enter an engaging title..."
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="text-lg font-medium"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+        {/* Title */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <Label htmlFor="title">Post Title</Label>
+              <Input
+                id="title"
+                placeholder="Enter an engaging title..."
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="text-lg font-medium"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Editor Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="editor" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Editor
-                </TabsTrigger>
-                <TabsTrigger value="preview" className="flex items-center gap-2">
-                  <Eye className="h-4 w-4" />
-                  Preview
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Settings
-                </TabsTrigger>
-              </TabsList>
+        {/* Editor Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="editor" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Editor
+            </TabsTrigger>
+            <TabsTrigger value="preview" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Preview
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
 
-              <TabsContent value="editor" className="mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Content Editor</CardTitle>
-                    <CardDescription>
-                      Use the rich text editor to create your content. Supports markdown, tables, images, and more.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SimpleTiptapEditor
-                      content={formData.content}
-                      onChange={(content) => setFormData({ ...formData, content })}
-                      placeholder="Start writing your amazing post..."
-                      className="min-h-[600px]"
+          <TabsContent value="editor" className="mt-4">
+            <EnhancedTiptapEditor
+              content={formData.content}
+              onChange={(content) => setFormData({ ...formData, content })}
+              placeholder="Start writing your amazing post..."
+            />
+          </TabsContent>
+
+          <TabsContent value="preview" className="mt-4">
+            <PostPreview title={formData.title} content={formData.content} excerpt={formData.excerpt} />
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-4">
+            <div className="grid gap-6 lg:grid-cols-3">
+              {/* Publishing Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Publish Settings</CardTitle>
+                  <CardDescription>Configure how and when to publish</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="tutorial">Tutorial</SelectItem>
+                        <SelectItem value="development">Development</SelectItem>
+                        <SelectItem value="database">Database</SelectItem>
+                        <SelectItem value="design">Design</SelectItem>
+                        <SelectItem value="news">News</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="publishDate">Publish Date</Label>
+                    <Input
+                      id="publishDate"
+                      type="datetime-local"
+                      value={formData.publishDate}
+                      onChange={(e) => setFormData({ ...formData, publishDate: e.target.value })}
                     />
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                  </div>
+                </CardContent>
+              </Card>
 
-              <TabsContent value="preview" className="mt-4">
-                <PostPreview title={formData.title} content={formData.content} excerpt={formData.excerpt} />
-              </TabsContent>
+              {/* SEO Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>SEO Settings</CardTitle>
+                  <CardDescription>Optimize your post for search engines</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="excerpt">Meta Description</Label>
+                    <Textarea
+                      id="excerpt"
+                      placeholder="Brief description for SEO and social sharing..."
+                      rows={3}
+                      value={formData.excerpt}
+                      onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">{formData.excerpt.length}/160 characters</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tags">Tags</Label>
+                    <Input
+                      id="tags"
+                      placeholder="tag1, tag2, tag3"
+                      value={formData.tags}
+                      onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
-              <TabsContent value="settings" className="mt-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>SEO Settings</CardTitle>
-                      <CardDescription>Optimize your post for search engines</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="excerpt">Meta Description</Label>
-                        <Textarea
-                          id="excerpt"
-                          placeholder="Brief description for SEO and social sharing..."
-                          rows={3}
-                          value={formData.excerpt}
-                          onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                        />
-                        <p className="text-xs text-muted-foreground">{formData.excerpt.length}/160 characters</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="tags">Tags</Label>
-                        <Input
-                          id="tags"
-                          placeholder="tag1, tag2, tag3"
-                          value={formData.tags}
-                          onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
+              {/* Featured Image */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Featured Image</CardTitle>
+                  <CardDescription>Add a featured image for your post</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="featuredImage">Image URL</Label>
+                    <Input
+                      id="featuredImage"
+                      placeholder="https://example.com/image.jpg"
+                      value={formData.featuredImage}
+                      onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
+                    />
+                  </div>
+                  {formData.featuredImage && (
+                    <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                      <img
+                        src={formData.featuredImage || "/placeholder.svg"}
+                        alt="Featured"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Featured Image</CardTitle>
-                      <CardDescription>Add a featured image for your post</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="featuredImage">Image URL</Label>
-                        <Input
-                          id="featuredImage"
-                          placeholder="https://example.com/image.jpg"
-                          value={formData.featuredImage}
-                          onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
-                        />
-                      </div>
-                      {formData.featuredImage && (
-                        <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                          <img
-                            src={formData.featuredImage || "/placeholder.svg"}
-                            alt="Featured"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Publish Settings</CardTitle>
-                <CardDescription>Configure how and when to publish</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) => setFormData({ ...formData, status: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="published">Published</SelectItem>
-                      <SelectItem value="archived">Archived</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(value) => setFormData({ ...formData, category: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="tutorial">Tutorial</SelectItem>
-                      <SelectItem value="development">Development</SelectItem>
-                      <SelectItem value="database">Database</SelectItem>
-                      <SelectItem value="design">Design</SelectItem>
-                      <SelectItem value="news">News</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="publishDate">Publish Date</Label>
-                  <Input
-                    id="publishDate"
-                    type="datetime-local"
-                    value={formData.publishDate}
-                    onChange={(e) => setFormData({ ...formData, publishDate: e.target.value })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button type="submit" className="w-full">
-                  <Save className="mr-2 h-4 w-4" />
-                  Save & Publish
-                </Button>
-                <Button type="button" variant="outline" className="w-full bg-transparent">
-                  Save as Draft
-                </Button>
-                <Button type="button" variant="outline" className="w-full bg-transparent">
-                  Schedule Post
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
+            {/* Post Statistics */}
+            <Card className="mt-6">
               <CardHeader>
                 <CardTitle>Post Statistics</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Words:</span>
-                  <span className="font-medium">
-                    {
-                      formData.content
-                        .replace(/<[^>]*>/g, "")
-                        .split(" ")
-                        .filter((word) => word.length > 0).length
-                    }
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Characters:</span>
-                  <span className="font-medium">{formData.content.replace(/<[^>]*>/g, "").length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Reading time:</span>
-                  <span className="font-medium">
-                    {Math.ceil(formData.content.replace(/<[^>]*>/g, "").split(" ").length / 200)} min
-                  </span>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="font-medium text-lg">
+                      {
+                        formData.content
+                          .replace(/<[^>]*>/g, "")
+                          .split(" ")
+                          .filter((word) => word.length > 0).length
+                      }
+                    </div>
+                    <div className="text-muted-foreground">Words</div>
+                  </div>
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="font-medium text-lg">{formData.content.replace(/<[^>]*>/g, "").length}</div>
+                    <div className="text-muted-foreground">Characters</div>
+                  </div>
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="font-medium text-lg">
+                      {Math.ceil(formData.content.replace(/<[^>]*>/g, "").split(" ").length / 200)}
+                    </div>
+                    <div className="text-muted-foreground">Min read</div>
+                  </div>
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="font-medium text-lg">{(formData.content.match(/<h[1-6][^>]*>/g) || []).length}</div>
+                    <div className="text-muted-foreground">Headings</div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </form>
     </AdminLayout>
   )
