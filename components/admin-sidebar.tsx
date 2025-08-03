@@ -64,8 +64,8 @@ export function AdminSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
+                    <Link href={item.url} className="group">
+                      <item.icon className="h-4 w-4 transition-all duration-300 ease-out group-hover:scale-110 group-hover:rotate-12 group-hover:text-primary" />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>

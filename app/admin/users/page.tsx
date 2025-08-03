@@ -3,8 +3,12 @@
 import { useState } from "react"
 import { AdminLayout } from "@/components/admin-layout"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   DropdownMenu,
@@ -23,353 +27,184 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { MoreHorizontal, Search, UserPlus, Shield, Edit, Trash2, Eye, Users, Crown, Key } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MoreHorizontal, Plus, Search, Users, Shield, Key, UserPlus, Edit, Trash2, Eye, Settings } from "lucide-react"
 
-// Mock data - replace with actual API calls
-const mockUsers = [
+// Mock data
+const users = [
   {
     id: 1,
     name: "John Doe",
     email: "john@example.com",
     avatar: "/placeholder-user.jpg",
-    status: "active",
-    roles: ["Admin", "Editor"],
+    roles: ["Admin"],
+    status: "Active",
     lastLogin: "2024-01-15",
-    createdAt: "2023-06-01",
+    createdAt: "2024-01-01",
   },
   {
     id: 2,
     name: "Jane Smith",
     email: "jane@example.com",
     avatar: "/placeholder-user.jpg",
-    status: "active",
     roles: ["Editor"],
+    status: "Active",
     lastLogin: "2024-01-14",
-    createdAt: "2023-07-15",
+    createdAt: "2024-01-02",
   },
   {
     id: 3,
     name: "Bob Johnson",
     email: "bob@example.com",
     avatar: "/placeholder-user.jpg",
-    status: "inactive",
     roles: ["Viewer"],
+    status: "Inactive",
     lastLogin: "2024-01-10",
-    createdAt: "2023-08-20",
+    createdAt: "2024-01-03",
   },
 ]
 
-const mockRoles = [
+const roles = [
   {
     id: 1,
     name: "Admin",
-    description: "Full system access",
+    description: "Full access to all features",
     permissions: ["create", "read", "update", "delete", "manage"],
-    userCount: 2,
-    color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    userCount: 1,
+    color: "bg-red-500",
   },
   {
     id: 2,
     name: "Editor",
-    description: "Content management access",
+    description: "Can create and edit content",
     permissions: ["create", "read", "update"],
-    userCount: 5,
-    color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    userCount: 1,
+    color: "bg-blue-500",
   },
   {
     id: 3,
     name: "Viewer",
     description: "Read-only access",
     permissions: ["read"],
-    userCount: 12,
-    color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    userCount: 1,
+    color: "bg-green-500",
   },
 ]
 
-const mockPermissions = [
+const permissions = [
   { id: 1, name: "create", description: "Create new content" },
   { id: 2, name: "read", description: "View content" },
   { id: 3, name: "update", description: "Edit existing content" },
-  { id: 4, name: "delete", description: "Remove content" },
-  { id: 5, name: "manage", description: "Full management access" },
-  { id: 6, name: "assign", description: "Assign roles and permissions" },
+  { id: 4, name: "delete", description: "Delete content" },
+  { id: 5, name: "manage", description: "Manage system settings" },
+  { id: 6, name: "assign", description: "Assign roles to users" },
 ]
 
 export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedUser, setSelectedUser] = useState<any>(null)
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false)
-  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false)
+  const [selectedRole, setSelectedRole] = useState<string>("")
   const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState("users")
-
-  // Form states
-  const [newUser, setNewUser] = useState({
-    name: "",
-    email: "",
-    password: "",
-    roles: [] as string[],
-  })
-
+  const [isAssignRoleOpen, setIsAssignRoleOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<number | null>(null)
   const [newRole, setNewRole] = useState({
     name: "",
     description: "",
     permissions: [] as string[],
   })
 
-  const filteredUsers = mockUsers.filter(
+  const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleAssignRole = (userId: number, roleId: number) => {
-    // API call: POST /permissions/users/assign-role
-    console.log("Assigning role", roleId, "to user", userId)
-  }
-
-  const handleRevokeRole = (userId: number, roleId: number) => {
-    // API call: DELETE /permissions/users/:userId/roles/:roleId
-    console.log("Revoking role", roleId, "from user", userId)
-  }
-
   const handleCreateRole = () => {
-    // API call: POST /permissions/roles
+    // API call to create role
     console.log("Creating role:", newRole)
     setIsCreateRoleOpen(false)
     setNewRole({ name: "", description: "", permissions: [] })
   }
 
-  const handleCreateUser = () => {
-    // API call to create user
-    console.log("Creating user:", newUser)
-    setIsAddUserOpen(false)
-    setNewUser({ name: "", email: "", password: "", roles: [] })
+  const handleAssignRole = () => {
+    // API call to assign role
+    console.log("Assigning role:", selectedRole, "to user:", selectedUser)
+    setIsAssignRoleOpen(false)
+    setSelectedUser(null)
+    setSelectedRole("")
   }
 
   return (
-    <AdminLayout title="Users & Permissions">
+    <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Users & Permissions</h2>
-            <p className="text-muted-foreground">Manage users, roles, and permissions for your application</p>
-          </div>
-          <div className="flex gap-2">
-            <Dialog open={isCreateRoleOpen} onOpenChange={setIsCreateRoleOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Create Role
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Role</DialogTitle>
-                  <DialogDescription>Define a new role with specific permissions</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="roleName">Role Name</Label>
-                    <Input
-                      id="roleName"
-                      value={newRole.name}
-                      onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
-                      placeholder="Enter role name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="roleDescription">Description</Label>
-                    <Textarea
-                      id="roleDescription"
-                      value={newRole.description}
-                      onChange={(e) => setNewRole({ ...newRole, description: e.target.value })}
-                      placeholder="Describe this role"
-                    />
-                  </div>
-                  <div>
-                    <Label>Permissions</Label>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      {mockPermissions.map((permission) => (
-                        <div key={permission.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`perm-${permission.id}`}
-                            checked={newRole.permissions.includes(permission.name)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setNewRole({
-                                  ...newRole,
-                                  permissions: [...newRole.permissions, permission.name],
-                                })
-                              } else {
-                                setNewRole({
-                                  ...newRole,
-                                  permissions: newRole.permissions.filter((p) => p !== permission.name),
-                                })
-                              }
-                            }}
-                          />
-                          <Label htmlFor={`perm-${permission.id}`} className="text-sm">
-                            {permission.name}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsCreateRoleOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateRole}>Create Role</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add User
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New User</DialogTitle>
-                  <DialogDescription>Create a new user account with assigned roles</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="userName">Full Name</Label>
-                    <Input
-                      id="userName"
-                      value={newUser.name}
-                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                      placeholder="Enter full name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="userEmail">Email</Label>
-                    <Input
-                      id="userEmail"
-                      type="email"
-                      value={newUser.email}
-                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                      placeholder="Enter email address"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="userPassword">Password</Label>
-                    <Input
-                      id="userPassword"
-                      type="password"
-                      value={newUser.password}
-                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                      placeholder="Enter password"
-                    />
-                  </div>
-                  <div>
-                    <Label>Assign Roles</Label>
-                    <div className="grid grid-cols-1 gap-2 mt-2">
-                      {mockRoles.map((role) => (
-                        <div key={role.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`role-${role.id}`}
-                            checked={newUser.roles.includes(role.name)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setNewUser({
-                                  ...newUser,
-                                  roles: [...newUser.roles, role.name],
-                                })
-                              } else {
-                                setNewUser({
-                                  ...newUser,
-                                  roles: newUser.roles.filter((r) => r !== role.name),
-                                })
-                              }
-                            }}
-                          />
-                          <Label htmlFor={`role-${role.id}`} className="text-sm">
-                            {role.name} - {role.description}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateUser}>Create User</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <h1 className="text-3xl font-bold tracking-tight">Users & Permissions</h1>
+            <p className="text-muted-foreground">Manage users, roles, and permissions</p>
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs defaultValue="users" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="users">
-              <Users className="h-4 w-4 mr-2" />
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="h-4 w-4" />
               Users
             </TabsTrigger>
-            <TabsTrigger value="roles">
-              <Crown className="h-4 w-4 mr-2" />
+            <TabsTrigger value="roles" className="gap-2">
+              <Shield className="h-4 w-4" />
               Roles
             </TabsTrigger>
-            <TabsTrigger value="permissions">
-              <Key className="h-4 w-4 mr-2" />
+            <TabsTrigger value="permissions" className="gap-2">
+              <Key className="h-4 w-4" />
               Permissions
             </TabsTrigger>
           </TabsList>
 
-          {/* Users Tab */}
-          <TabsContent value="users" className="space-y-4">
-            {/* Search */}
-            <div className="flex items-center space-x-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search users..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
+          <TabsContent value="users" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search users..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 w-80"
+                  />
+                </div>
               </div>
+              <Button className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                Add User
+              </Button>
             </div>
 
-            {/* Users Table */}
             <Card>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>User</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead>Roles</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Last Login</TableHead>
                     <TableHead>Created</TableHead>
-                    <TableHead className="w-[70px]">Actions</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <img
-                            src={user.avatar || "/placeholder.svg"}
-                            alt={user.name}
-                            className="h-8 w-8 rounded-full"
-                          />
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
+                            <AvatarFallback>
+                              {user.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
                           <div>
                             <div className="font-medium">{user.name}</div>
                             <div className="text-sm text-muted-foreground">{user.email}</div>
@@ -377,47 +212,49 @@ export default function UsersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.status === "active" ? "default" : "secondary"}>{user.status}</Badge>
+                        <div className="flex gap-1">
+                          {user.roles.map((role) => (
+                            <Badge key={role} variant="secondary">
+                              {role}
+                            </Badge>
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {user.roles.map((role) => {
-                            const roleData = mockRoles.find((r) => r.name === role)
-                            return (
-                              <Badge key={role} variant="outline" className={roleData?.color}>
-                                {role}
-                              </Badge>
-                            )
-                          })}
-                        </div>
+                        <Badge variant={user.status === "Active" ? "default" : "secondary"}>{user.status}</Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{user.lastLogin}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{user.createdAt}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
+                            <Button variant="ghost" size="icon">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
+                            <DropdownMenuItem className="gap-2">
+                              <Eye className="h-4 w-4" />
+                              View Profile
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
+                            <DropdownMenuItem className="gap-2">
+                              <Edit className="h-4 w-4" />
                               Edit User
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>
-                              <Shield className="mr-2 h-4 w-4" />
+                            <DropdownMenuItem
+                              className="gap-2"
+                              onClick={() => {
+                                setSelectedUser(user.id)
+                                setIsAssignRoleOpen(true)
+                              }}
+                            >
+                              <Settings className="h-4 w-4" />
                               Manage Roles
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
+                            <DropdownMenuItem className="gap-2 text-destructive">
+                              <Trash2 className="h-4 w-4" />
                               Delete User
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -430,39 +267,105 @@ export default function UsersPage() {
             </Card>
           </TabsContent>
 
-          {/* Roles Tab */}
-          <TabsContent value="roles" className="space-y-4">
+          <TabsContent value="roles" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">Roles</h2>
+                <p className="text-sm text-muted-foreground">Manage user roles and their permissions</p>
+              </div>
+              <Dialog open={isCreateRoleOpen} onOpenChange={setIsCreateRoleOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Role
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Role</DialogTitle>
+                    <DialogDescription>Create a new role and assign permissions</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="roleName">Role Name</Label>
+                      <Input
+                        id="roleName"
+                        value={newRole.name}
+                        onChange={(e) => setNewRole((prev) => ({ ...prev, name: e.target.value }))}
+                        placeholder="Enter role name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="roleDescription">Description</Label>
+                      <Input
+                        id="roleDescription"
+                        value={newRole.description}
+                        onChange={(e) => setNewRole((prev) => ({ ...prev, description: e.target.value }))}
+                        placeholder="Enter role description"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Permissions</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {permissions.map((permission) => (
+                          <div key={permission.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={permission.name}
+                              checked={newRole.permissions.includes(permission.name)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setNewRole((prev) => ({
+                                    ...prev,
+                                    permissions: [...prev.permissions, permission.name],
+                                  }))
+                                } else {
+                                  setNewRole((prev) => ({
+                                    ...prev,
+                                    permissions: prev.permissions.filter((p) => p !== permission.name),
+                                  }))
+                                }
+                              }}
+                            />
+                            <Label htmlFor={permission.name} className="text-sm">
+                              {permission.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsCreateRoleOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateRole}>Create Role</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {mockRoles.map((role) => (
+              {roles.map((role) => (
                 <Card key={role.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{role.name}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <div className={`h-3 w-3 rounded-full ${role.color}`} />
+                        <CardTitle className="text-lg">{role.name}</CardTitle>
+                      </div>
                       <Badge variant="secondary">{role.userCount} users</Badge>
                     </div>
                     <CardDescription>{role.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-sm font-medium">Permissions</Label>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {role.permissions.map((permission) => (
-                            <Badge key={permission} variant="outline" className="text-xs">
-                              {permission}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="flex-1 bg-transparent">
-                          <Edit className="h-3 w-3 mr-1" />
-                          Edit
-                        </Button>
-                        <Button variant="outline" size="sm" className="flex-1 bg-transparent">
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Delete
-                        </Button>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Permissions:</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {role.permissions.map((permission) => (
+                          <Badge key={permission} variant="outline" className="text-xs">
+                            {permission}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
                   </CardContent>
@@ -471,29 +374,79 @@ export default function UsersPage() {
             </div>
           </TabsContent>
 
-          {/* Permissions Tab */}
-          <TabsContent value="permissions" className="space-y-4">
+          <TabsContent value="permissions" className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold">System Permissions</h2>
+              <p className="text-sm text-muted-foreground">Available permissions in the system</p>
+            </div>
+
             <Card>
-              <CardHeader>
-                <CardTitle>System Permissions</CardTitle>
-                <CardDescription>Available permissions that can be assigned to roles</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {mockPermissions.map((permission) => (
-                    <div key={permission.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <div className="font-medium">{permission.name}</div>
-                        <div className="text-sm text-muted-foreground">{permission.description}</div>
-                      </div>
-                      <Badge variant="outline">System</Badge>
-                    </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Permission</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Used in Roles</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {permissions.map((permission) => (
+                    <TableRow key={permission.id}>
+                      <TableCell>
+                        <Badge variant="outline">{permission.name}</Badge>
+                      </TableCell>
+                      <TableCell>{permission.description}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {roles
+                            .filter((role) => role.permissions.includes(permission.name))
+                            .map((role) => (
+                              <Badge key={role.id} variant="secondary" className="text-xs">
+                                {role.name}
+                              </Badge>
+                            ))}
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </div>
-              </CardContent>
+                </TableBody>
+              </Table>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Assign Role Dialog */}
+        <Dialog open={isAssignRoleOpen} onOpenChange={setIsAssignRoleOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Assign Role</DialogTitle>
+              <DialogDescription>Select a role to assign to the user</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Select Role</Label>
+                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.name}>
+                        {role.name} - {role.description}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAssignRoleOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAssignRole}>Assign Role</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   )
