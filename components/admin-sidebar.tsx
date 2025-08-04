@@ -1,92 +1,92 @@
 "use client"
 
-import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { Link } from "@inertiajs/react"
+import {
+  BarChart3,
+  FileText,
+  Home,
+  MessageSquare,
+  Settings,
+  Users,
+  FolderOpen,
+  ChevronRight,
+  Plus,
+  Eye,
+} from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  LayoutDashboard,
-  FileText,
-  FolderOpen,
-  Users,
-  Settings,
-  LogOut,
-  User,
-  FormInput,
-  ChevronUp,
-  BarChart3,
-} from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
-const navigation = [
+const menuItems = [
   {
-    title: "Overview",
+    title: "Dashboard",
+    url: "/admin",
+    icon: Home,
+  },
+  {
+    title: "Posts",
+    icon: FileText,
     items: [
       {
-        title: "Dashboard",
-        href: "/admin",
-        icon: LayoutDashboard,
+        title: "All Posts",
+        url: "/admin/posts",
+        icon: Eye,
       },
       {
-        title: "Analytics",
-        href: "/admin/analytics",
-        icon: BarChart3,
+        title: "Add New",
+        url: "/admin/posts/create",
+        icon: Plus,
       },
     ],
   },
   {
-    title: "Content",
+    title: "Users",
+    url: "/admin/users",
+    icon: Users,
+  },
+  {
+    title: "Categories",
+    url: "/admin/categories",
+    icon: FolderOpen,
+  },
+  {
+    title: "Forms",
+    icon: MessageSquare,
     items: [
       {
-        title: "Posts",
-        href: "/admin/posts",
-        icon: FileText,
+        title: "All Forms",
+        url: "/admin/forms",
+        icon: Eye,
       },
       {
-        title: "Categories",
-        href: "/admin/categories",
-        icon: FolderOpen,
-      },
-      {
-        title: "Forms",
-        href: "/admin/forms",
-        icon: FormInput,
+        title: "Create Form",
+        url: "/admin/forms/create",
+        icon: Plus,
       },
     ],
   },
   {
-    title: "Management",
-    items: [
-      {
-        title: "Users",
-        href: "/admin/users",
-        icon: Users,
-      },
-      {
-        title: "Settings",
-        href: "/admin/settings",
-        icon: Settings,
-      },
-    ],
+    title: "Analytics",
+    url: "/admin/analytics",
+    icon: BarChart3,
+  },
+  {
+    title: "Settings",
+    url: "/admin/settings",
+    icon: Settings,
   },
 ]
 
@@ -94,95 +94,58 @@ export function AdminSidebar() {
   const pathname = usePathname()
 
   return (
-    <Sidebar variant="inset" className="border-r">
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-4 py-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground text-sm font-bold transition-all duration-300 hover:scale-110 hover:rotate-12">
-            A
-          </div>
-          <span className="font-semibold">Admin Panel</span>
-        </div>
-      </SidebarHeader>
-
+    <Sidebar collapsible="icon">
       <SidebarContent>
-        {navigation.map((group) => (
-          <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => (
+        <SidebarGroup>
+          <SidebarGroupLabel>Admin Panel</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.map((item) => {
+                if (item.items) {
+                  return (
+                    <Collapsible key={item.title} asChild defaultOpen={pathname?.includes(item.title.toLowerCase())}>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild tooltip={item.title}>
+                          <CollapsibleTrigger className="group/collapsible">
+                            <item.icon className="sidebar-icon" />
+                            <span>{item.title}</span>
+                            <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          </CollapsibleTrigger>
+                        </SidebarMenuButton>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {item.items.map((subItem) => (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                <SidebarMenuSubButton asChild>
+                                  <Link href={subItem.url}>
+                                    <subItem.icon className="sidebar-icon" />
+                                    <span>{subItem.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  )
+                }
+
+                return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={pathname === item.href} className="group">
-                      <Link href={item.href}>
-                        <item.icon className="h-4 w-4 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 group-hover:text-primary" />
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <Link href={item.url}>
+                        <item.icon className="sidebar-icon" />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
-
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src="/placeholder-user.jpg" alt="User" />
-                    <AvatarFallback className="rounded-lg">JD</AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">John Doe</span>
-                    <span className="truncate text-xs">john@example.com</span>
-                  </div>
-                  <ChevronUp className="ml-auto size-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-                side="bottom"
-                align="end"
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className="p-0 font-normal">
-                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src="/placeholder-user.jpg" alt="User" />
-                      <AvatarFallback className="rounded-lg">JD</AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">John Doe</span>
-                      <span className="truncate text-xs">john@example.com</span>
-                    </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="h-4 w-4 mr-2" />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
