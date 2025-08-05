@@ -12,8 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Save, Upload, Shield, Bell, Palette, Globe } from "lucide-react"
 
-export default function SettingsPage() {
-  const { userId } = auth()
+export default async function SettingsPage() {
+  const { userId } = await auth()
 
   if (!userId) {
     redirect("/sign-in")

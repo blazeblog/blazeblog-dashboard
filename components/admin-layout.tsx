@@ -18,6 +18,31 @@ interface AdminLayoutProps {
 export function AdminLayout({ children, title = "Dashboard" }: AdminLayoutProps) {
   const { user, isLoaded } = useUser()
 
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours()
+    const greetings = {
+      morning: ["Good morning", "Happy morning", "Lovely morning", "Beautiful morning"],
+      afternoon: ["Good afternoon", "Happy afternoon", "Wonderful afternoon", "Pleasant afternoon"],
+      evening: ["Good evening", "Happy evening", "Lovely evening", "Peaceful evening"],
+      night: ["Working late", "Burning the midnight oil", "Night owl mode", "Late night warrior"]
+    }
+
+    let timeOfDay: keyof typeof greetings
+    if (hour >= 5 && hour < 12) {
+      timeOfDay = "morning"
+    } else if (hour >= 12 && hour < 17) {
+      timeOfDay = "afternoon"
+    } else if (hour >= 17 && hour < 21) {
+      timeOfDay = "evening"
+    } else {
+      timeOfDay = "night"
+    }
+
+    const greetingArray = greetings[timeOfDay]
+    const randomIndex = Math.floor(Math.random() * greetingArray.length)
+    return greetingArray[randomIndex]
+  }
+
   if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -66,7 +91,7 @@ export function AdminLayout({ children, title = "Dashboard" }: AdminLayoutProps)
           {user && (
             <div className="mb-6">
               <h2 className="text-2xl font-bold tracking-tight">
-                Welcome back, {user.firstName || user.emailAddresses[0]?.emailAddress}!
+                {getTimeBasedGreeting()}, {user.firstName || user.emailAddresses[0]?.emailAddress}!
               </h2>
               <p className="text-muted-foreground">Here's what's happening with your admin panel today.</p>
             </div>

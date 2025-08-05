@@ -51,8 +51,8 @@ const mockPosts = [
   },
 ]
 
-export default function PostsPage() {
-  const { userId } = auth()
+export default async function PostsPage() {
+  const { userId } = await auth()
 
   if (!userId) {
     redirect("/sign-in")

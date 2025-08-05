@@ -86,6 +86,6 @@ export interface PageProps<T extends Record<string, unknown> = Record<string, un
   flash: {
     message?: string
     error?: string
-  }\
+  }
 }
-& T
+

@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Shield,
   ChevronRight,
+  Globe,
 } from "lucide-react"
 
 import {
@@ -62,7 +63,6 @@ const navigation = [
         submenu: [
           { title: "All Posts", url: "/admin/posts" },
           { title: "Add New", url: "/admin/posts/add" },
-          { title: "Categories", url: "/admin/categories" },
         ],
       },
       {
@@ -100,6 +100,11 @@ const navigation = [
         title: "Settings",
         url: "/admin/settings",
         icon: Settings,
+      },
+      {
+        title: "Custom Domain",
+        url: "/admin/custom-domain",
+        icon: Globe,
       },
     ],
   },
