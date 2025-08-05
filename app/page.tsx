@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, Users, BarChart3, Settings } from "lucide-react"
 
-export default function HomePage() {
-  const { userId } = auth()
+export default async function HomePage() {
+  const { userId } = await auth()
 
   // If user is signed in, redirect to admin dashboard
   if (userId) {

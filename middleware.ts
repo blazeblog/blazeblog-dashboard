@@ -1,26 +1,29 @@
-import { authMiddleware } from "@clerk/nextjs"
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
 
-export default authMiddleware({
-  // Routes that can be accessed while signed out
-  publicRoutes: ["/", "/api/webhooks/clerk"],
-  // Routes that can always be accessed, and have
-  // no authentication information
-  ignoredRoutes: ["/api/webhooks/clerk"],
-  // Protect all admin routes
-  afterAuth(auth, req, evt) {
-    // Handle users who aren't authenticated
-    if (!auth.userId && !auth.isPublicRoute) {
-      return Response.redirect(new URL("/sign-in", req.url))
-    }
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/api/webhooks/clerk'
+])
 
-    // If the user is logged in and trying to access a protected route, allow them to access route
-    if (auth.userId && !auth.isPublicRoute) {
-      return
-    }
+export default clerkMiddleware(async (auth, request) => {
+  const { userId } = await auth()
 
-    // Allow users visiting public routes to access them
-    return
-  },
+  // If user is not signed in and trying to access a protected route
+  if (!userId && !isPublicRoute(request)) {
+    const signInUrl = new URL('/sign-in', request.url)
+    return NextResponse.redirect(signInUrl)
+  }
+
+  // If user is signed in and on the home page, redirect to admin
+  if (userId && request.nextUrl.pathname === '/') {
+    const adminUrl = new URL('/admin', request.url)
+    return NextResponse.redirect(adminUrl)
+  }
+
+  return NextResponse.next()
 })
 
 export const config = {

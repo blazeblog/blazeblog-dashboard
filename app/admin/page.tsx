@@ -63,8 +63,8 @@ const mockRecentUsers = [
   },
 ]
 
-export default function AdminDashboard() {
-  const { userId } = auth()
+export default async function AdminDashboard() {
+  const { userId } = await auth()
 
   if (!userId) {
     redirect("/sign-in")
