@@ -1,153 +1,189 @@
-"use client"
-
-import { useState } from "react"
-import { Edit, Eye, MoreHorizontal, Plus, Trash2 } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import { auth } from "@clerk/nextjs/server"
+import { redirect } from "next/navigation"
 import { AdminLayout } from "@/components/admin-layout"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import Link from "next/link"
 
-// Mock data
-const posts = [
+// Mock data - replace with real data from your API
+const mockPosts = [
   {
     id: 1,
-    title: "Getting Started with NestJS",
-    content: "<p>This is a comprehensive guide to <strong>NestJS</strong> framework...</p>",
+    title: "Getting Started with Next.js 15",
     category: "Tutorial",
-    author: "John Doe",
     status: "published",
-    createdAt: "2024-01-15",
-    views: 1234,
-    excerpt: "Learn the fundamentals of NestJS framework",
+    author: "John Doe",
+    createdAt: "2024-01-15T10:00:00Z",
+    views: 1250,
   },
   {
     id: 2,
-    title: "Advanced React Patterns",
-    content: "<p>Explore advanced <em>React patterns</em> and best practices...</p>",
+    title: "Building Modern Admin Dashboards",
     category: "Development",
-    author: "Jane Smith",
     status: "draft",
-    createdAt: "2024-01-14",
-    views: 856,
-    excerpt: "Master advanced React development techniques",
+    author: "Jane Smith",
+    createdAt: "2024-01-14T15:30:00Z",
+    views: 890,
   },
   {
     id: 3,
-    title: "Database Design Best Practices",
-    content: "<p>Learn how to design <strong>scalable databases</strong>...</p>",
-    category: "Database",
-    author: "Mike Johnson",
+    title: "Authentication with Clerk",
+    category: "Security",
     status: "published",
-    createdAt: "2024-01-13",
-    views: 2341,
-    excerpt: "Essential database design principles",
+    author: "Mike Johnson",
+    createdAt: "2024-01-13T09:15:00Z",
+    views: 2100,
+  },
+  {
+    id: 4,
+    title: "Styling with Tailwind CSS",
+    category: "Design",
+    status: "archived",
+    author: "Sarah Wilson",
+    createdAt: "2024-01-12T14:20:00Z",
+    views: 1580,
   },
 ]
 
 export default function PostsPage() {
-  const [selectedPosts, setSelectedPosts] = useState<number[]>([])
+  const { userId } = auth()
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "published":
-        return <Badge variant="default">Published</Badge>
-      case "draft":
-        return <Badge variant="secondary">Draft</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
+  if (!userId) {
+    redirect("/sign-in")
   }
 
   return (
     <AdminLayout title="Posts">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Posts</h2>
-          <p className="text-muted-foreground">Manage your blog posts and articles</p>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Posts</h2>
+            <p className="text-muted-foreground">Manage your blog posts and articles</p>
+          </div>
+          <Button asChild>
+            <Link href="/admin/posts/add">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Post
+            </Link>
+          </Button>
         </div>
-        <Button asChild>
-          <a href="/admin/posts/add">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Post
-          </a>
-        </Button>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Posts ({posts.length})</CardTitle>
-          <CardDescription>A list of all your blog posts with rich content</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Author</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Views</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Preview</TableHead>
-                <TableHead className="w-[70px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {posts.map((post) => (
-                <TableRow key={post.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{post.title}</div>
-                      <div className="text-sm text-muted-foreground">{post.excerpt}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{post.category}</TableCell>
-                  <TableCell>{post.author}</TableCell>
-                  <TableCell>{getStatusBadge(post.status)}</TableCell>
-                  <TableCell>{post.views.toLocaleString()}</TableCell>
-                  <TableCell>{post.createdAt}</TableCell>
-                  <TableCell>
-                    <div
-                      className="prose prose-xs max-w-none line-clamp-2 text-muted-foreground"
-                      dangerouslySetInnerHTML={{
-                        __html: post.content.substring(0, 100) + "...",
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <a href={`/admin/posts/edit/${post.id}`}>
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Filters</CardTitle>
+            <CardDescription>Filter and search your posts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search posts..." className="pl-8" />
+              </div>
+              <Select>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="tutorial">Tutorial</SelectItem>
+                  <SelectItem value="development">Development</SelectItem>
+                  <SelectItem value="security">Security</SelectItem>
+                  <SelectItem value="design">Design</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline">
+                <Filter className="mr-2 h-4 w-4" />
+                Filter
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Posts Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>All Posts ({mockPosts.length})</CardTitle>
+            <CardDescription>A list of all your posts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Author</TableHead>
+                  <TableHead>Views</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="w-[70px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockPosts.map((post) => (
+                  <TableRow key={post.id}>
+                    <TableCell className="font-medium">{post.title}</TableCell>
+                    <TableCell>{post.category}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          post.status === "published" ? "default" : post.status === "draft" ? "secondary" : "outline"
+                        }
+                      >
+                        {post.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{post.author}</TableCell>
+                    <TableCell>{post.views.toLocaleString()}</TableCell>
+                    <TableCell>{new Date(post.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
-                          </a>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </AdminLayout>
   )
 }
