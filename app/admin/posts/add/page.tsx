@@ -89,8 +89,7 @@ export default function AddPostPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     setIsLoading(true)
     setError('')
     
@@ -201,7 +200,7 @@ export default function AddPostPage() {
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-6">
         {/* Title */}
         <Card>
           <CardContent className="pt-6">
@@ -380,7 +379,7 @@ export default function AddPostPage() {
             </Card>
           </TabsContent>
         </Tabs>
-      </form>
+      </div>
 
       <DraftRecoveryDialog
         isOpen={showDraftDialog}
