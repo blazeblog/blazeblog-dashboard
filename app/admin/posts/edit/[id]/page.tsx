@@ -2,9 +2,9 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useClientApi, type Category } from "@/lib/client-api"
-import { Save, X, FileText, Settings, Eye, ArrowLeft } from "lucide-react"
+import { useRouter, useParams } from "next/navigation"
+import { useClientApi, type Category, type Post } from "@/lib/client-api"
+import { Save, X, FileText, Settings, Eye, ArrowLeft, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,30 +17,62 @@ import { Badge } from "@/components/ui/badge"
 import { AdminLayout } from "@/components/admin-layout"
 import { EnhancedTiptapEditor } from "@/components/enhanced-tiptap-editor"
 import { PostPreview } from "@/components/post-preview"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
-export default function AddPostPage() {
+export default function EditPostPage() {
   const router = useRouter()
+  const params = useParams()
+  const postId = params.id as string
   const api = useClientApi()
+
+  const [post, setPost] = useState<Post | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     title: "",
-    content:
-      "<h1>Getting Started</h1><p>Start writing your amazing post here...</p><h2>Introduction</h2><p>This is where you introduce your topic.</p><h3>Key Points</h3><p>List your main points here.</p>",
+    content: "",
     categoryId: "",
     status: "draft" as 'draft' | 'published' | 'archived',
     excerpt: "",
-    tags: "",
     featuredImage: "",
-    publishDate: "",
   })
 
   const [activeTab, setActiveTab] = useState("editor")
 
   useEffect(() => {
-    fetchCategories()
-  }, [])
+    Promise.all([fetchPost(), fetchCategories()])
+  }, [postId])
+
+  const fetchPost = async () => {
+    try {
+      const response = await api.get<Post>(`/posts/${postId}`)
+      setPost(response)
+      setFormData({
+        title: response.title,
+        content: response.content,
+        categoryId: response.categoryId?.toString() || "",
+        status: response.status,
+        excerpt: response.excerpt || "",
+        featuredImage: response.featuredImage || "",
+      })
+    } catch (error) {
+      console.error('Error fetching post:', error)
+      setError('Failed to load post')
+    }
+  }
 
   const fetchCategories = async () => {
     try {
@@ -51,13 +83,14 @@ export default function AddPostPage() {
       setCategories(response.data)
     } catch (error) {
       console.error('Error fetching categories:', error)
-      setError('Failed to load categories')
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setIsSaving(true)
     setError('')
     
     try {
@@ -68,16 +101,28 @@ export default function AddPostPage() {
         status: formData.status,
         featuredImage: formData.featuredImage || undefined,
         categoryId: formData.categoryId ? parseInt(formData.categoryId) : undefined,
-        userId: 1, // This should come from auth context
       }
       
-      await api.post('/posts', postData)
+      await api.put(`/posts/${postId}`, postData)
       router.push('/admin/posts')
     } catch (error) {
-      console.error('Error creating post:', error)
-      setError('Failed to create post. Please try again.')
+      console.error('Error updating post:', error)
+      setError('Failed to update post. Please try again.')
     } finally {
-      setIsLoading(false)
+      setIsSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      await api.delete(`/posts/${postId}`)
+      router.push('/admin/posts')
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      setError('Failed to delete post. Please try again.')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -94,8 +139,34 @@ export default function AddPostPage() {
     }
   }
 
+  if (isLoading) {
+    return (
+      <AdminLayout title="Edit Post">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p>Loading post...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    )
+  }
+
+  if (!post) {
+    return (
+      <AdminLayout title="Edit Post">
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Post not found</p>
+          <Button asChild className="mt-4">
+            <a href="/admin/posts">Back to Posts</a>
+          </Button>
+        </div>
+      </AdminLayout>
+    )
+  }
+
   return (
-    <AdminLayout title="Create New Post">
+    <AdminLayout title="Edit Post">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" asChild>
@@ -105,23 +176,49 @@ export default function AddPostPage() {
             </a>
           </Button>
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Create New Post</h2>
-            <p className="text-muted-foreground">Write and publish your content</p>
+            <h2 className="text-2xl font-bold tracking-tight">Edit Post</h2>
+            <p className="text-muted-foreground">Update your content</p>
           </div>
           <Badge className={getStatusColor(formData.status)}>
             {formData.status.charAt(0).toUpperCase() + formData.status.slice(1)}
           </Badge>
         </div>
         <div className="flex items-center gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the post.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Post'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button variant="outline" size="sm" asChild>
             <a href="/admin/posts">
               <X className="mr-2 h-4 w-4" />
               Cancel
             </a>
           </Button>
-          <Button onClick={handleSubmit} size="sm" disabled={isLoading || !formData.title.trim()}>
+          <Button onClick={handleSubmit} size="sm" disabled={isSaving || !formData.title.trim()}>
             <Save className="mr-2 h-4 w-4" />
-            {isLoading ? 'Saving...' : 'Save Post'}
+            {isSaving ? 'Saving...' : 'Update Post'}
           </Button>
         </div>
       </div>
@@ -133,7 +230,6 @@ export default function AddPostPage() {
       )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Title */}
         <Card>
           <CardContent className="pt-6">
             <div className="space-y-2">
@@ -149,7 +245,6 @@ export default function AddPostPage() {
           </CardContent>
         </Card>
 
-        {/* Editor Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="editor" className="flex items-center gap-2">
@@ -179,8 +274,7 @@ export default function AddPostPage() {
           </TabsContent>
 
           <TabsContent value="settings" className="mt-4">
-            <div className="grid gap-6 lg:grid-cols-3">
-              {/* Publishing Settings */}
+            <div className="grid gap-6 lg:grid-cols-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Publish Settings</CardTitle>
@@ -191,7 +285,7 @@ export default function AddPostPage() {
                     <Label htmlFor="status">Status</Label>
                     <Select
                       value={formData.status}
-                      onValueChange={(value) => setFormData({ ...formData, status: value })}
+                      onValueChange={(value: 'draft' | 'published' | 'archived') => setFormData({ ...formData, status: value })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -221,19 +315,9 @@ export default function AddPostPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="publishDate">Publish Date</Label>
-                    <Input
-                      id="publishDate"
-                      type="datetime-local"
-                      value={formData.publishDate}
-                      onChange={(e) => setFormData({ ...formData, publishDate: e.target.value })}
-                    />
-                  </div>
                 </CardContent>
               </Card>
 
-              {/* SEO Settings */}
               <Card>
                 <CardHeader>
                   <CardTitle>SEO Settings</CardTitle>
@@ -252,26 +336,7 @@ export default function AddPostPage() {
                     <p className="text-xs text-muted-foreground">{formData.excerpt.length}/160 characters</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="tags">Tags</Label>
-                    <Input
-                      id="tags"
-                      placeholder="tag1, tag2, tag3"
-                      value={formData.tags}
-                      onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Featured Image */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Featured Image</CardTitle>
-                  <CardDescription>Add a featured image for your post</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="featuredImage">Image URL</Label>
+                    <Label htmlFor="featuredImage">Featured Image URL</Label>
                     <Input
                       id="featuredImage"
                       placeholder="https://example.com/image.jpg"
@@ -282,7 +347,7 @@ export default function AddPostPage() {
                   {formData.featuredImage && (
                     <div className="aspect-video rounded-lg overflow-hidden bg-muted">
                       <img
-                        src={formData.featuredImage || "/placeholder.svg"}
+                        src={formData.featuredImage}
                         alt="Featured"
                         className="w-full h-full object-cover"
                       />
@@ -292,7 +357,6 @@ export default function AddPostPage() {
               </Card>
             </div>
 
-            {/* Post Statistics */}
             <Card className="mt-6">
               <CardHeader>
                 <CardTitle>Post Statistics</CardTitle>

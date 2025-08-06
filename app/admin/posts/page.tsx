@@ -7,21 +7,12 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Plus, Search, Filter } from "lucide-react"
 import Link from "next/link"
-import { api, type PaginationParams, type PaginatedResponse } from "@/lib/api"
+import { api, type PaginationParams, type PaginatedResponse, type Post, type Category } from "@/lib/api"
 import { Pagination } from "@/components/ui/pagination"
+import { PostActions } from "@/components/post-actions"
 
-interface Post {
-  id: number
-  title: string
-  category: string
-  status: string
-  author: string
-  createdAt: string
-  views: number
-}
 
 // Function to fetch posts from API with pagination
 async function getPosts(params: PaginationParams = {}): Promise<PaginatedResponse<Post>> {
@@ -29,6 +20,8 @@ async function getPosts(params: PaginationParams = {}): Promise<PaginatedRespons
     const response = await api.getPaginated<Post>('/posts', {
       page: 1,
       limit: 10,
+      sortBy: 'createdAt',
+      sortOrder: 'DESC',
       ...params
     })
     return response
@@ -41,10 +34,23 @@ async function getPosts(params: PaginationParams = {}): Promise<PaginatedRespons
         limit: 10,
         total: 0,
         totalPages: 0,
-        hasNext: false,
-        hasPrev: false
+        hasNextPage: false,
+        hasPreviousPage: false
       }
     }
+  }
+}
+
+async function getCategories(): Promise<Category[]> {
+  try {
+    const response = await api.getPaginated<Category>('/categories', {
+      limit: 100,
+      isActive: true
+    })
+    return response.data
+  } catch (error) {
+    console.error('Error fetching categories:', error)
+    return []
   }
 }
 
@@ -59,18 +65,22 @@ export default async function PostsPage({
     redirect("/sign-in")
   }
 
-  // Parse search params (await in Next.js 15)
   const params = await searchParams
   const currentPage = parseInt(params.page || '1', 10)
   const searchQuery = params.search || ''
+  const categoryFilter = params.category || ''
+  const statusFilter = params.status || ''
 
-  // Fetch posts from API
-  const postsResponse = await getPosts({
-    page: currentPage,
-    limit: 10,
-    search: searchQuery,
-    // Add filters when backend supports them
-  })
+  const [postsResponse, categories] = await Promise.all([
+    getPosts({
+      page: currentPage,
+      limit: 10,
+      search: searchQuery,
+      ...(categoryFilter && categoryFilter !== 'all' ? { categoryId: parseInt(categoryFilter) } : {}),
+      ...(statusFilter && statusFilter !== 'all' ? { status: statusFilter as 'draft' | 'published' | 'archived' } : {}),
+    }),
+    getCategories()
+  ])
   const posts = postsResponse.data
 
   return (
@@ -97,24 +107,30 @@ export default async function PostsPage({
             <CardDescription>Filter and search your posts</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <form className="flex flex-col gap-4 md:flex-row md:items-center" method="GET">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search posts..." className="pl-8" />
+                <Input 
+                  name="search"
+                  placeholder="Search posts..." 
+                  className="pl-8" 
+                  defaultValue={searchQuery}
+                />
               </div>
-              <Select>
+              <Select name="category" defaultValue={categoryFilter || 'all'}>
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="tutorial">Tutorial</SelectItem>
-                  <SelectItem value="development">Development</SelectItem>
-                  <SelectItem value="security">Security</SelectItem>
-                  <SelectItem value="design">Design</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Select>
+              <Select name="status" defaultValue={statusFilter || 'all'}>
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -125,11 +141,11 @@ export default async function PostsPage({
                   <SelectItem value="archived">Archived</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline">
+              <Button type="submit" variant="outline">
                 <Filter className="mr-2 h-4 w-4" />
                 Filter
               </Button>
-            </div>
+            </form>
           </CardContent>
         </Card>
 
@@ -163,7 +179,7 @@ export default async function PostsPage({
                   posts.map((post) => (
                     <TableRow key={post.id}>
                       <TableCell className="font-medium">{post.title}</TableCell>
-                      <TableCell>{post.category}</TableCell>
+                      <TableCell>{post.category?.name || 'Uncategorized'}</TableCell>
                       <TableCell>
                         <Badge
                           variant={
@@ -173,31 +189,11 @@ export default async function PostsPage({
                           {post.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{post.author}</TableCell>
-                      <TableCell>{post.views?.toLocaleString() || 0}</TableCell>
+                      <TableCell>{post.user.username}</TableCell>
+                      <TableCell>-</TableCell>
                       <TableCell>{new Date(post.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <PostActions postId={post.id} />
                       </TableCell>
                     </TableRow>
                   ))
@@ -208,7 +204,11 @@ export default async function PostsPage({
             <Pagination
               pagination={postsResponse.pagination}
               baseUrl="/admin/posts"
-              searchParams={{ search: searchQuery }}
+              searchParams={{ 
+                search: searchQuery,
+                ...(categoryFilter && { category: categoryFilter }),
+                ...(statusFilter && { status: statusFilter })
+              }}
             />
           </CardContent>
         </Card>

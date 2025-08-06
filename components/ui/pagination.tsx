@@ -9,8 +9,8 @@ interface PaginationInfo {
   limit: number
   total: number
   totalPages: number
-  hasNext: boolean
-  hasPrev: boolean
+  hasNextPage: boolean
+  hasPreviousPage: boolean
 }
 
 interface PaginationProps {
@@ -61,7 +61,7 @@ export function Pagination({ pagination, baseUrl, searchParams = {} }: Paginatio
         <Button
           variant="outline"
           size="sm"
-          disabled={!pagination.hasPrev}
+          disabled={!pagination.hasPreviousPage}
           asChild
         >
           <Link href={buildUrl(pagination.page - 1)}>
@@ -90,7 +90,7 @@ export function Pagination({ pagination, baseUrl, searchParams = {} }: Paginatio
         <Button
           variant="outline"
           size="sm"
-          disabled={!pagination.hasNext}
+          disabled={!pagination.hasNextPage}
           asChild
         >
           <Link href={buildUrl(pagination.page + 1)}>

@@ -12,7 +12,24 @@ interface PaginationParams {
   limit?: number
   search?: string
   sortBy?: string
-  sortOrder?: 'asc' | 'desc'
+  sortOrder?: 'ASC' | 'DESC'
+  // Post specific filters
+  title?: string
+  content?: string
+  status?: 'draft' | 'published' | 'archived'
+  userId?: number
+  categoryId?: number
+  tagIds?: number[]
+  hasFeaturedImage?: boolean
+  createdAfter?: string
+  createdBefore?: string
+  updatedAfter?: string
+  updatedBefore?: string
+  // Category specific filters
+  name?: string
+  slug?: string
+  description?: string
+  isActive?: boolean
 }
 
 interface PaginatedResponse<T> {
@@ -22,9 +39,61 @@ interface PaginatedResponse<T> {
     limit: number
     total: number
     totalPages: number
-    hasNext: boolean
-    hasPrev: boolean
+    hasNextPage: boolean
+    hasPreviousPage: boolean
   }
+}
+
+interface Post {
+  id: number
+  title: string
+  content: string
+  excerpt?: string
+  status: 'draft' | 'published' | 'archived'
+  featuredImage?: string
+  userId: number
+  categoryId?: number
+  createdAt: string
+  updatedAt: string
+  user: {
+    id: number
+    username: string
+    email: string
+  }
+  category?: {
+    id: number
+    name: string
+    slug: string
+  }
+  tags?: {
+    id: number
+    name: string
+    slug: string
+  }[]
+}
+
+interface Category {
+  id: number
+  name: string
+  slug: string
+  description?: string
+  isActive: boolean
+  sortOrder?: number
+  createdAt: string
+  posts?: {
+    id: number
+  }[]
+}
+
+interface Tag {
+  id: number
+  name: string
+  slug: string
+  postCount?: number
+  createdAt: string
+  posts?: {
+    id: number
+  }[]
 }
 
 /**
@@ -87,11 +156,33 @@ export async function apiCall<T = any>(
 function buildQueryString(params: PaginationParams): string {
   const searchParams = new URLSearchParams()
   
+  // Basic pagination params
   if (params.page !== undefined) searchParams.set('page', params.page.toString())
   if (params.limit !== undefined) searchParams.set('limit', params.limit.toString())
   if (params.search) searchParams.set('search', params.search)
   if (params.sortBy) searchParams.set('sortBy', params.sortBy)
   if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder)
+  
+  // Post specific filters
+  if (params.title) searchParams.set('title', params.title)
+  if (params.content) searchParams.set('content', params.content)
+  if (params.status) searchParams.set('status', params.status)
+  if (params.userId !== undefined) searchParams.set('userId', params.userId.toString())
+  if (params.categoryId !== undefined) searchParams.set('categoryId', params.categoryId.toString())
+  if (params.tagIds?.length) {
+    params.tagIds.forEach(id => searchParams.append('tagIds', id.toString()))
+  }
+  if (params.hasFeaturedImage !== undefined) searchParams.set('hasFeaturedImage', params.hasFeaturedImage.toString())
+  if (params.createdAfter) searchParams.set('createdAfter', params.createdAfter)
+  if (params.createdBefore) searchParams.set('createdBefore', params.createdBefore)
+  if (params.updatedAfter) searchParams.set('updatedAfter', params.updatedAfter)
+  if (params.updatedBefore) searchParams.set('updatedBefore', params.updatedBefore)
+  
+  // Category specific filters
+  if (params.name) searchParams.set('name', params.name)
+  if (params.slug) searchParams.set('slug', params.slug)
+  if (params.description) searchParams.set('description', params.description)
+  if (params.isActive !== undefined) searchParams.set('isActive', params.isActive.toString())
   
   const queryString = searchParams.toString()
   return queryString ? `?${queryString}` : ''
@@ -121,4 +212,4 @@ export const api = {
 }
 
 // Export types for use in components
-export type { PaginationParams, PaginatedResponse }
+export type { PaginationParams, PaginatedResponse, Post, Category, Tag }
