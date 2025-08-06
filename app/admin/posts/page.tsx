@@ -12,6 +12,8 @@ import Link from "next/link"
 import { api, type PaginationParams, type PaginatedResponse, type Post, type Category } from "@/lib/api"
 import { Pagination } from "@/components/ui/pagination"
 import { PostActions } from "@/components/post-actions"
+import { ConnectivityIndicator } from "@/components/connectivity-indicator"
+import { ClientConnectivityIndicator } from "@/components/client-connectivity-indicator"
 
 
 // Function to fetch posts from API with pagination

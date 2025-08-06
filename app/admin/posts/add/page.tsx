@@ -17,6 +17,11 @@ import { Badge } from "@/components/ui/badge"
 import { AdminLayout } from "@/components/admin-layout"
 import { AdvancedTiptapEditor } from "@/components/advanced-tiptap-editor"
 import { PostPreview } from "@/components/post-preview"
+import { useAutoSave } from "@/hooks/use-auto-save"
+import { DraftRecoveryDialog } from "@/components/draft-recovery-dialog"
+import { AutoSaveIndicator } from "@/components/auto-save-indicator"
+import { ConnectivityIndicator } from "@/components/connectivity-indicator"
+import type { DraftPost } from "@/lib/indexeddb"
 
 export default function AddPostPage() {
   const router = useRouter()
@@ -24,6 +29,8 @@ export default function AddPostPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [availableDrafts, setAvailableDrafts] = useState<DraftPost[]>([])
+  const [showDraftDialog, setShowDraftDialog] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -37,9 +44,37 @@ export default function AddPostPage() {
 
   const [activeTab, setActiveTab] = useState("editor")
 
+  const {
+    lastSaved,
+    isSaving,
+    isOnline,
+    autoSaveEnabled,
+    setAutoSaveEnabled,
+    loadDraft,
+    deleteDraft,
+    getAllDrafts
+  } = useAutoSave({
+    postId: 'new',
+    title: formData.title,
+    content: formData.content,
+    heroImage: formData.featuredImage,
+    categoryId: formData.categoryId,
+    excerpt: formData.excerpt,
+    status: formData.status
+  })
+
   useEffect(() => {
     fetchCategories()
+    checkForDrafts()
   }, [])
+
+  const checkForDrafts = async () => {
+    const drafts = await getAllDrafts()
+    if (drafts.length > 0) {
+      setAvailableDrafts(drafts)
+      setShowDraftDialog(true)
+    }
+  }
 
   const fetchCategories = async () => {
     try {
@@ -80,6 +115,26 @@ export default function AddPostPage() {
     }
   }
 
+  const handleDraftRecover = (draft: DraftPost) => {
+    setFormData({
+      title: draft.title,
+      content: draft.content,
+      categoryId: draft.categoryId || '',
+      status: draft.status,
+      excerpt: draft.excerpt || '',
+      tags: '',
+      featuredImage: draft.heroImage || '',
+      publishDate: '',
+    })
+    setShowDraftDialog(false)
+  }
+
+  const handleDeleteDraft = async (draftId: string) => {
+    await deleteDraft(draftId)
+    const updatedDrafts = await getAllDrafts()
+    setAvailableDrafts(updatedDrafts)
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "published":
@@ -112,6 +167,21 @@ export default function AddPostPage() {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
+          <ConnectivityIndicator isOnline={isOnline} />
+          <AutoSaveIndicator 
+            lastSaved={lastSaved} 
+            isSaving={isSaving} 
+            autoSaveEnabled={autoSaveEnabled} 
+          />
+          {availableDrafts.length > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowDraftDialog(true)}
+            >
+              Recover Drafts ({availableDrafts.length})
+            </Button>
+          )}
           <Button variant="outline" size="sm" asChild>
             <a href="/admin/posts">
               <X className="mr-2 h-4 w-4" />
@@ -172,6 +242,13 @@ export default function AddPostPage() {
               placeholder="Start writing your amazing post..."
               heroImage={formData.featuredImage}
               onHeroImageChange={(url) => setFormData({ ...formData, featuredImage: url })}
+              postId="new"
+              title={formData.title}
+              categoryId={formData.categoryId}
+              excerpt={formData.excerpt}
+              status={formData.status}
+              enableAutoSave={autoSaveEnabled}
+              onDraftRecover={handleDraftRecover}
             />
           </TabsContent>
 
@@ -192,7 +269,7 @@ export default function AddPostPage() {
                     <Label htmlFor="status">Status</Label>
                     <Select
                       value={formData.status}
-                      onValueChange={(value) => setFormData({ ...formData, status: value })}
+                      onValueChange={(value: 'draft' | 'published' | 'archived') => setFormData({ ...formData, status: value })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -304,6 +381,14 @@ export default function AddPostPage() {
           </TabsContent>
         </Tabs>
       </form>
+
+      <DraftRecoveryDialog
+        isOpen={showDraftDialog}
+        onClose={() => setShowDraftDialog(false)}
+        drafts={availableDrafts}
+        onRecover={handleDraftRecover}
+        onDelete={handleDeleteDraft}
+      />
     </AdminLayout>
   )
 }

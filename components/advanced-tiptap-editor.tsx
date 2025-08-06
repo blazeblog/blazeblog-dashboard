@@ -14,7 +14,7 @@ import { Color } from "@tiptap/extension-color"
 import Placeholder from "@tiptap/extension-placeholder"
 
 
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -35,7 +35,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Image as ImageIcon, Link as LinkIcon, Type,
   Undo, Redo, Eye, EyeOff,
-  Upload, Trash2
+  Upload, Trash2, Wifi, Save
 } from "lucide-react"
 
 
@@ -46,6 +46,13 @@ interface AdvancedTiptapEditorProps {
   className?: string
   heroImage?: string
   onHeroImageChange?: (url: string) => void
+  postId?: string
+  title?: string
+  categoryId?: string
+  excerpt?: string
+  status?: 'draft' | 'published' | 'archived'
+  enableAutoSave?: boolean
+  onDraftRecover?: (draft: any) => void
 }
 
 export function AdvancedTiptapEditor({
@@ -55,13 +62,36 @@ export function AdvancedTiptapEditor({
   className = "",
   heroImage = "",
   onHeroImageChange,
+  postId = 'new',
+  title = '',
+  categoryId,
+  excerpt,
+  status = 'draft',
+  enableAutoSave = true,
+  onDraftRecover,
 }: AdvancedTiptapEditorProps) {
   const [isToolbarVisible, setIsToolbarVisible] = useState(true)
   const [linkUrl, setLinkUrl] = useState("")
   const [imageUrl, setImageUrl] = useState("")
   const [imageAlt, setImageAlt] = useState("")
   const [heroImageUrl, setHeroImageUrl] = useState(heroImage)
+  const [showDraftDialog, setShowDraftDialog] = useState(false)
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Connectivity detection
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   const editor = useEditor({
     immediatelyRender: false, // Fix SSR error
@@ -515,8 +545,19 @@ export function AdvancedTiptapEditor({
             <span>Link</span>
           </div>
           <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+              isOnline 
+                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
+                : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                isOnline ? 'bg-green-500' : 'bg-red-500'
+              }`} />
+              {isOnline ? 'Online' : 'Offline'}
+            </div>
             <Badge variant="outline" className="text-xs">
-              Auto-save enabled
+              <Save className="h-3 w-3 mr-1" />
+              Auto-save {enableAutoSave ? 'enabled' : 'disabled'}
             </Badge>
           </div>
         </div>
