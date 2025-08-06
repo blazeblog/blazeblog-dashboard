@@ -17,6 +17,19 @@ export function PostsTable({ posts }: PostsTableProps) {
     router.push(`/admin/posts/edit/${postId}`)
   }
 
+  const getStatusBadgeStyle = (status: string) => {
+    switch (status) {
+      case "published":
+        return "bg-green-500 text-white hover:bg-green-600"
+      case "draft":
+        return "bg-yellow-500 text-white hover:bg-yellow-600"
+      case "archived":
+        return "bg-gray-500 text-white hover:bg-gray-600"
+      default:
+        return "bg-blue-500 text-white hover:bg-blue-600"
+    }
+  }
+
   return (
     <TableBody>
       {posts.length === 0 ? (
@@ -35,12 +48,8 @@ export function PostsTable({ posts }: PostsTableProps) {
             <TableCell className="font-medium">{post.title}</TableCell>
             <TableCell>{post.category?.name || 'Uncategorized'}</TableCell>
             <TableCell>
-              <Badge
-                variant={
-                  post.status === "published" ? "default" : post.status === "draft" ? "secondary" : "outline"
-                }
-              >
-                {post.status}
+              <Badge className={getStatusBadgeStyle(post.status)}>
+                {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
               </Badge>
             </TableCell>
             <TableCell>{post.user.username}</TableCell>

@@ -162,13 +162,13 @@ export default function AddPostPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "published":
-        return "bg-green-500"
+        return "bg-green-500 text-white"
       case "draft":
-        return "bg-yellow-500"
+        return "bg-yellow-500 text-white"
       case "archived":
-        return "bg-gray-500"
+        return "bg-gray-500 text-white"
       default:
-        return "bg-blue-500"
+        return "bg-blue-500 text-white"
     }
   }
 
