@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { AdminLayout } from "@/components/admin-layout"
-import { EnhancedTiptapEditor } from "@/components/enhanced-tiptap-editor"
+import { AdvancedTiptapEditor } from "@/components/advanced-tiptap-editor"
 import { PostPreview } from "@/components/post-preview"
 
 export default function AddPostPage() {
@@ -26,8 +26,7 @@ export default function AddPostPage() {
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     title: "",
-    content:
-      "<h1>Getting Started</h1><p>Start writing your amazing post here...</p><h2>Introduction</h2><p>This is where you introduce your topic.</p><h3>Key Points</h3><p>List your main points here.</p>",
+    content: "",
     categoryId: "",
     status: "draft" as 'draft' | 'published' | 'archived',
     excerpt: "",
@@ -167,10 +166,12 @@ export default function AddPostPage() {
           </TabsList>
 
           <TabsContent value="editor" className="mt-4">
-            <EnhancedTiptapEditor
+            <AdvancedTiptapEditor
               content={formData.content}
               onChange={(content) => setFormData({ ...formData, content })}
               placeholder="Start writing your amazing post..."
+              heroImage={formData.featuredImage}
+              onHeroImageChange={(url) => setFormData({ ...formData, featuredImage: url })}
             />
           </TabsContent>
 
@@ -179,7 +180,7 @@ export default function AddPostPage() {
           </TabsContent>
 
           <TabsContent value="settings" className="mt-4">
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="grid gap-6 lg:grid-cols-2 max-w-4xl">
               {/* Publishing Settings */}
               <Card>
                 <CardHeader>
@@ -262,45 +263,18 @@ export default function AddPostPage() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Featured Image */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Featured Image</CardTitle>
-                  <CardDescription>Add a featured image for your post</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="featuredImage">Image URL</Label>
-                    <Input
-                      id="featuredImage"
-                      placeholder="https://example.com/image.jpg"
-                      value={formData.featuredImage}
-                      onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
-                    />
-                  </div>
-                  {formData.featuredImage && (
-                    <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                      <img
-                        src={formData.featuredImage || "/placeholder.svg"}
-                        alt="Featured"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
             </div>
 
             {/* Post Statistics */}
-            <Card className="mt-6">
+            <Card className="mt-6 max-w-4xl">
               <CardHeader>
                 <CardTitle>Post Statistics</CardTitle>
+                <CardDescription>Overview of your post content</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div className="text-center p-3 bg-muted/50 rounded-lg">
-                    <div className="font-medium text-lg">
+                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 rounded-lg border">
+                    <div className="font-bold text-2xl text-blue-600 dark:text-blue-400">
                       {
                         formData.content
                           .replace(/<[^>]*>/g, "")
@@ -308,21 +282,21 @@ export default function AddPostPage() {
                           .filter((word) => word.length > 0).length
                       }
                     </div>
-                    <div className="text-muted-foreground">Words</div>
+                    <div className="text-muted-foreground font-medium">Words</div>
                   </div>
-                  <div className="text-center p-3 bg-muted/50 rounded-lg">
-                    <div className="font-medium text-lg">{formData.content.replace(/<[^>]*>/g, "").length}</div>
-                    <div className="text-muted-foreground">Characters</div>
+                  <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 rounded-lg border">
+                    <div className="font-bold text-2xl text-green-600 dark:text-green-400">{formData.content.replace(/<[^>]*>/g, "").length}</div>
+                    <div className="text-muted-foreground font-medium">Characters</div>
                   </div>
-                  <div className="text-center p-3 bg-muted/50 rounded-lg">
-                    <div className="font-medium text-lg">
+                  <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20 rounded-lg border">
+                    <div className="font-bold text-2xl text-purple-600 dark:text-purple-400">
                       {Math.ceil(formData.content.replace(/<[^>]*>/g, "").split(" ").length / 200)}
                     </div>
-                    <div className="text-muted-foreground">Min read</div>
+                    <div className="text-muted-foreground font-medium">Min read</div>
                   </div>
-                  <div className="text-center p-3 bg-muted/50 rounded-lg">
-                    <div className="font-medium text-lg">{(formData.content.match(/<h[1-6][^>]*>/g) || []).length}</div>
-                    <div className="text-muted-foreground">Headings</div>
+                  <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/20 dark:to-orange-900/20 rounded-lg border">
+                    <div className="font-bold text-2xl text-orange-600 dark:text-orange-400">{(formData.content.match(/<h[1-6][^>]*>/g) || []).length}</div>
+                    <div className="text-muted-foreground font-medium">Headings</div>
                   </div>
                 </div>
               </CardContent>
