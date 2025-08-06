@@ -1,0 +1,97 @@
+/* Custom styles for react-diff-view to match our design system */
+
+.diff-viewer {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.diff-viewer .diff-gutter {
+  background: hsl(var(--muted));
+  border-right: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+  width: 60px;
+  text-align: center;
+  user-select: none;
+  padding: 0 8px;
+}
+
+.diff-viewer .diff-gutter-normal {
+  background: hsl(var(--background));
+}
+
+.diff-viewer .diff-gutter-add {
+  background: hsl(142.1 70.6% 45.3% / 0.1);
+  border-right-color: hsl(142.1 70.6% 45.3% / 0.3);
+}
+
+.diff-viewer .diff-gutter-delete {
+  background: hsl(0 84.2% 60.2% / 0.1);
+  border-right-color: hsl(0 84.2% 60.2% / 0.3);
+}
+
+.diff-viewer .diff-line {
+  padding: 2px 12px;
+  border-left: 3px solid transparent;
+}
+
+.diff-viewer .diff-line-normal {
+  background: hsl(var(--background));
+}
+
+.diff-viewer .diff-line-add {
+  background: hsl(142.1 70.6% 45.3% / 0.1);
+  border-left-color: hsl(142.1 70.6% 45.3%);
+}
+
+.diff-viewer .diff-line-delete {
+  background: hsl(0 84.2% 60.2% / 0.1);
+  border-left-color: hsl(0 84.2% 60.2%);
+}
+
+.diff-viewer .diff-code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.diff-viewer .diff-code-edit {
+  background: hsl(var(--primary) / 0.2);
+  border-radius: 3px;
+  padding: 1px 2px;
+  margin: 0 1px;
+}
+
+.diff-viewer .diff-code-edit-add {
+  background: hsl(142.1 70.6% 45.3% / 0.3);
+}
+
+.diff-viewer .diff-code-edit-delete {
+  background: hsl(0 84.2% 60.2% / 0.3);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .dark .diff-viewer .diff-gutter-add {
+    background: hsl(142.1 70.6% 45.3% / 0.2);
+  }
+  
+  .dark .diff-viewer .diff-gutter-delete {
+    background: hsl(0 84.2% 60.2% / 0.2);
+  }
+  
+  .dark .diff-viewer .diff-line-add {
+    background: hsl(142.1 70.6% 45.3% / 0.15);
+  }
+  
+  .dark .diff-viewer .diff-line-delete {
+    background: hsl(0 84.2% 60.2% / 0.15);
+  }
+  
+  .dark .diff-viewer .diff-code-edit-add {
+    background: hsl(142.1 70.6% 45.3% / 0.4);
+  }
+  
+  .dark .diff-viewer .diff-code-edit-delete {
+    background: hsl(0 84.2% 60.2% / 0.4);
+  }
+}

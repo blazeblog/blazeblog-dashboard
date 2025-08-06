@@ -96,6 +96,28 @@ interface Tag {
   }[]
 }
 
+interface PostRevision {
+  id: number
+  postId: number
+  versionNumber: number
+  title: string
+  content: string
+  excerpt?: string
+  status: 'draft' | 'published' | 'archived'
+  categoryId?: number
+  slug: string
+  metaTitle?: string
+  metaDescription?: string
+  createdBy: number
+  isPublishedVersion: boolean
+  createdAt: string
+  creator?: {
+    id: number
+    username: string
+    email: string
+  }
+}
+
 /**
  * Common API function with Clerk JWT authentication
  * @param endpoint - API endpoint (e.g., '/posts', '/users')
@@ -212,4 +234,4 @@ export const api = {
 }
 
 // Export types for use in components
-export type { PaginationParams, PaginatedResponse, Post, Category, Tag }
+export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision }

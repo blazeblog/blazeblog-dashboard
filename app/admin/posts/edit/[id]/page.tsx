@@ -3,9 +3,9 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { useClientApi, type Category, type Post } from "@/lib/client-api"
+import { useClientApi, type Category, type Post, type PostRevision } from "@/lib/client-api"
 import { useToast } from "@/hooks/use-toast"
-import { Save, X, FileText, Settings, Eye, ArrowLeft, Trash2 } from "lucide-react"
+import { Save, X, FileText, Settings, Eye, ArrowLeft, Trash2, Activity, Info } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,6 +18,14 @@ import { Badge } from "@/components/ui/badge"
 import { AdminLayout } from "@/components/admin-layout"
 import { AdvancedTiptapEditor } from "@/components/advanced-tiptap-editor"
 import { PostPreview } from "@/components/post-preview"
+import { RevisionList } from "@/components/revision-list"
+import { RevisionDiffViewer } from "@/components/revision-diff-viewer"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +61,12 @@ export default function EditPostPage() {
   })
 
   const [activeTab, setActiveTab] = useState("editor")
+  
+  // Revision state
+  const [selectedRevision, setSelectedRevision] = useState<PostRevision | null>(null)
+  const [showDiffViewer, setShowDiffViewer] = useState(false)
+  const [diffRevisions, setDiffRevisions] = useState<{rev1: PostRevision, rev2: PostRevision} | null>(null)
+  const [revisionCount, setRevisionCount] = useState<number>(0)
 
   useEffect(() => {
     Promise.all([fetchPost(), fetchCategories()])
@@ -154,6 +168,35 @@ export default function EditPostPage() {
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  // Revision handlers
+  const handleRevisionSelect = (revision: PostRevision) => {
+    setSelectedRevision(revision)
+    setShowDiffViewer(false)
+  }
+
+  const handleRevisionRestore = async (revision: PostRevision) => {
+    // Update form data with restored content
+    setFormData({
+      title: revision.title,
+      content: revision.content,
+      categoryId: revision.categoryId?.toString() || "",
+      status: revision.status,
+      excerpt: revision.excerpt || "",
+      featuredImage: "", // Reset featured image as it's not in revision
+    })
+    
+    // Switch to editor tab to show restored content
+    setActiveTab("editor")
+    
+    // Refresh the post data
+    await fetchPost()
+  }
+
+  const handleRevisionCompare = (revision1: PostRevision, revision2: PostRevision) => {
+    setDiffRevisions({ rev1: revision1, rev2: revision2 })
+    setShowDiffViewer(true)
   }
 
   const getStatusColor = (status: string) => {
@@ -276,20 +319,39 @@ export default function EditPostPage() {
         </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="editor" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Editor
-            </TabsTrigger>
-            <TabsTrigger value="preview" className="flex items-center gap-2">
-              <Eye className="h-4 w-4" />
-              Preview
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
+          <TooltipProvider>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="editor" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Editor
+              </TabsTrigger>
+              <TabsTrigger value="preview" className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                Preview
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Settings
+              </TabsTrigger>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="revisions" className="flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Revisions
+                    {revisionCount > 0 && (
+                      <Badge variant="secondary" className="text-xs h-5 min-w-[20px] px-1 ml-1">
+                        {revisionCount}
+                      </Badge>
+                    )}
+                    <Info className="h-3 w-3 ml-1 text-muted-foreground" />
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View revision history, compare versions, and restore previous versions</p>
+                </TooltipContent>
+              </Tooltip>
+            </TabsList>
+          </TooltipProvider>
 
           <TabsContent value="editor" className="mt-4">
             <AdvancedTiptapEditor
@@ -406,6 +468,91 @@ export default function EditPostPage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="revisions" className="mt-4">
+            {showDiffViewer && diffRevisions ? (
+              <RevisionDiffViewer
+                postId={postId}
+                revision1={diffRevisions.rev1}
+                revision2={diffRevisions.rev2}
+                onClose={() => {
+                  setShowDiffViewer(false)
+                  setDiffRevisions(null)
+                }}
+                onRestore={handleRevisionRestore}
+                className="h-[800px]"
+              />
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <RevisionList
+                  postId={postId}
+                  onRevisionSelect={handleRevisionSelect}
+                  onRevisionRestore={handleRevisionRestore}
+                  onRevisionCompare={handleRevisionCompare}
+                  onRevisionCountChange={setRevisionCount}
+                  className="h-[800px]"
+                />
+                
+                {selectedRevision && (
+                  <Card className="h-[800px]">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Revision v{selectedRevision.versionNumber}
+                      </CardTitle>
+                      <CardDescription>
+                        {selectedRevision.creator?.username || 'Unknown'} • {selectedRevision.createdAt}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">Title</h4>
+                        <p className="text-sm bg-muted p-3 rounded-md">{selectedRevision.title}</p>
+                      </div>
+                      
+                      {selectedRevision.excerpt && (
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">Excerpt</h4>
+                          <p className="text-sm bg-muted p-3 rounded-md">{selectedRevision.excerpt}</p>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">Content Preview</h4>
+                        <div 
+                          className="text-sm bg-muted p-3 rounded-md prose prose-sm max-w-none overflow-auto max-h-[400px]"
+                          dangerouslySetInnerHTML={{ __html: selectedRevision.content }}
+                        />
+                      </div>
+                      
+                      <div className="flex gap-2 pt-4">
+                        <Button
+                          type="button"
+                          onClick={() => handleRevisionRestore(selectedRevision)}
+                          className="flex-1"
+                        >
+                          Restore This Version
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            if (diffRevisions?.rev1.id !== selectedRevision.id) {
+                              // Find current version for comparison
+                              const currentRevision = { ...selectedRevision, versionNumber: 999 } as PostRevision // Mock current
+                              handleRevisionCompare(selectedRevision, currentRevision)
+                            }
+                          }}
+                        >
+                          Compare
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </form>

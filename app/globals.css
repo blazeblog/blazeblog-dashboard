@@ -127,3 +127,6 @@
   --sidebar-width: 12rem;
   --sidebar-width-mobile: 12rem;
 }
+
+/* Import diff viewer styles */
+@import "../styles/diff-viewer.css";

@@ -1,7 +1,7 @@
 "use client"
 
 import { useAuth } from "@clerk/nextjs"
-import type { PaginationParams, PaginatedResponse, Post, Category, Tag } from "./api"
+import type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision } from "./api"
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -121,4 +121,4 @@ export function useClientApi() {
   }
 }
 
-export type { PaginationParams, PaginatedResponse, Post, Category, Tag }
+export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision }
