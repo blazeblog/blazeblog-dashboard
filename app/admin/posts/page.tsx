@@ -10,53 +10,68 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
+import { api, type PaginationParams, type PaginatedResponse } from "@/lib/api"
+import { Pagination } from "@/components/ui/pagination"
 
-// Mock data - replace with real data from your API
-const mockPosts = [
-  {
-    id: 1,
-    title: "Getting Started with Next.js 15",
-    category: "Tutorial",
-    status: "published",
-    author: "John Doe",
-    createdAt: "2024-01-15T10:00:00Z",
-    views: 1250,
-  },
-  {
-    id: 2,
-    title: "Building Modern Admin Dashboards",
-    category: "Development",
-    status: "draft",
-    author: "Jane Smith",
-    createdAt: "2024-01-14T15:30:00Z",
-    views: 890,
-  },
-  {
-    id: 3,
-    title: "Authentication with Clerk",
-    category: "Security",
-    status: "published",
-    author: "Mike Johnson",
-    createdAt: "2024-01-13T09:15:00Z",
-    views: 2100,
-  },
-  {
-    id: 4,
-    title: "Styling with Tailwind CSS",
-    category: "Design",
-    status: "archived",
-    author: "Sarah Wilson",
-    createdAt: "2024-01-12T14:20:00Z",
-    views: 1580,
-  },
-]
+interface Post {
+  id: number
+  title: string
+  category: string
+  status: string
+  author: string
+  createdAt: string
+  views: number
+}
 
-export default async function PostsPage() {
+// Function to fetch posts from API with pagination
+async function getPosts(params: PaginationParams = {}): Promise<PaginatedResponse<Post>> {
+  try {
+    const response = await api.getPaginated<Post>('/posts', {
+      page: 1,
+      limit: 10,
+      ...params
+    })
+    return response
+  } catch (error) {
+    console.error('Error fetching posts:', error)
+    return {
+      data: [],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false
+      }
+    }
+  }
+}
+
+export default async function PostsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; search?: string; category?: string; status?: string }>
+}) {
   const { userId } = await auth()
 
   if (!userId) {
     redirect("/sign-in")
   }
+
+  // Parse search params (await in Next.js 15)
+  const params = await searchParams
+  const currentPage = parseInt(params.page || '1', 10)
+  const searchQuery = params.search || ''
+
+  // Fetch posts from API
+  const postsResponse = await getPosts({
+    page: currentPage,
+    limit: 10,
+    search: searchQuery,
+    // Add filters when backend supports them
+  })
+  const posts = postsResponse.data
 
   return (
     <AdminLayout title="Posts">
@@ -121,7 +136,7 @@ export default async function PostsPage() {
         {/* Posts Table */}
         <Card>
           <CardHeader>
-            <CardTitle>All Posts ({mockPosts.length})</CardTitle>
+            <CardTitle>All Posts ({postsResponse.pagination.total})</CardTitle>
             <CardDescription>A list of all your posts</CardDescription>
           </CardHeader>
           <CardContent>
@@ -138,49 +153,63 @@ export default async function PostsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockPosts.map((post) => (
-                  <TableRow key={post.id}>
-                    <TableCell className="font-medium">{post.title}</TableCell>
-                    <TableCell>{post.category}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          post.status === "published" ? "default" : post.status === "draft" ? "secondary" : "outline"
-                        }
-                      >
-                        {post.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{post.author}</TableCell>
-                    <TableCell>{post.views.toLocaleString()}</TableCell>
-                    <TableCell>{new Date(post.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {posts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      No posts found
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  posts.map((post) => (
+                    <TableRow key={post.id}>
+                      <TableCell className="font-medium">{post.title}</TableCell>
+                      <TableCell>{post.category}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            post.status === "published" ? "default" : post.status === "draft" ? "secondary" : "outline"
+                          }
+                        >
+                          {post.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{post.author}</TableCell>
+                      <TableCell>{post.views?.toLocaleString() || 0}</TableCell>
+                      <TableCell>{new Date(post.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
+
+            <Pagination
+              pagination={postsResponse.pagination}
+              baseUrl="/admin/posts"
+              searchParams={{ search: searchQuery }}
+            />
           </CardContent>
         </Card>
       </div>
