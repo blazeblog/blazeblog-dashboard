@@ -1,6 +1,9 @@
-import { auth } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
-import { api, type PaginationParams, type PaginatedResponse, type Category } from "@/lib/api"
+"use client"
+
+import { useState, useEffect } from "react"
+import { useAuth } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
+import { useClientApi, type PaginationParams, type PaginatedResponse, type Category } from "@/lib/client-api"
 import { AdminLayout } from "@/components/admin-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,74 +14,106 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Search, FolderOpen, Grid3X3 } from "lucide-react"
-import { Pagination } from "@/components/ui/pagination"
 import { CategoryActions } from "@/components/category-actions"
 
-async function getCategories(params: PaginationParams = {}): Promise<PaginatedResponse<Category>> {
-  try {
-    const response = await api.getPaginated<Category>('/categories', {
-      page: 1,
-      limit: 10,
-      sortBy: 'name',
-      sortOrder: 'ASC',
-      ...params
-    })
-    return response
-  } catch (error) {
-    console.error('Error fetching categories:', error)
-    return {
-      data: [],
-      pagination: {
-        page: 1,
-        limit: 10,
-        total: 0,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPreviousPage: false
-      }
-    }
-  }
-}
-
-async function getCategoriesWithCounts(): Promise<Category[]> {
-  try {
-    const response = await api.get<Category[]>('/categories/with-counts')
-    return response
-  } catch (error) {
-    console.error('Error fetching categories with counts:', error)
-    return []
-  }
-}
 
 const colors = ["#3B82F6", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#EC4899", "#6366F1", "#14B8A6"]
 
-export default async function CategoriesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ page?: string; search?: string; status?: string }>
-}) {
-  const { userId } = await auth()
+export default function CategoriesPage() {
+  const { isSignedIn, isLoaded } = useAuth()
+  const router = useRouter()
+  const api = useClientApi()
+  
+  const [categories, setCategories] = useState<Category[]>([])
+  const [categoriesWithCounts, setCategoriesWithCounts] = useState<Category[]>([])
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 12,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false
+  })
+  const [currentView, setCurrentView] = useState<'grid' | 'table'>('grid')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  if (!userId) {
-    redirect("/sign-in")
+  // Load view preference from localStorage on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedView = localStorage.getItem('categories-view') as 'grid' | 'table' | null
+      if (savedView) {
+        setCurrentView(savedView)
+      }
+    }
+  }, [])
+
+  // Save view preference to localStorage when it changes
+  const handleViewChange = (view: 'grid' | 'table') => {
+    setCurrentView(view)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('categories-view', view)
+    }
   }
 
-  const params = await searchParams
-  const currentPage = parseInt(params.page || '1', 10)
-  const searchQuery = params.search || ''
-  const statusFilter = params.status || 'all'
+  const fetchCategories = async (page = 1, search = '') => {
+    try {
+      setIsLoading(true)
+      const [categoriesResponse, countsResponse] = await Promise.all([
+        api.getPaginated<Category>('/categories', {
+          page,
+          limit: 12,
+          search,
+          sortBy: 'name',
+          sortOrder: 'ASC',
+        }),
+        api.get<Category[]>('/categories/with-counts')
+      ])
+      
+      setCategories(categoriesResponse.data)
+      setPagination(categoriesResponse.pagination)
+      setCategoriesWithCounts(countsResponse)
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+      setError('Failed to load categories')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-  const [categoriesResponse, categoriesWithCounts] = await Promise.all([
-    getCategories({
-      page: currentPage,
-      limit: 12,
-      search: searchQuery,
-      ...(statusFilter !== 'all' ? { isActive: statusFilter === 'active' } : {}),
-    }),
-    getCategoriesWithCounts()
-  ])
-  
-  const categories = categoriesResponse.data
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    fetchCategories(1, searchQuery)
+  }
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push('/sign-in')
+      return
+    }
+    
+    if (isSignedIn) {
+      fetchCategories()
+    }
+  }, [isLoaded, isSignedIn, router])
+
+  if (!isLoaded || isLoading) {
+    return (
+      <AdminLayout title="Categories">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p>Loading categories...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    )
+  }
+
+  if (!isSignedIn) {
+    return null
+  }
 
   return (
     <AdminLayout>
@@ -90,26 +125,40 @@ export default async function CategoriesPage({
           </div>
         </div>
 
-        <Tabs defaultValue="grid" className="space-y-6">
+        {error && (
+          <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-2 rounded-md">
+            {error}
+          </div>
+        )}
+
+        <Tabs value={currentView} className="space-y-6">
           <div className="flex items-center justify-between">
             <TabsList>
-              <TabsTrigger value="grid" className="gap-2">
+              <TabsTrigger 
+                value="grid" 
+                className="gap-2"
+                onClick={() => handleViewChange('grid')}
+              >
                 <Grid3X3 className="h-4 w-4" />
                 Grid View
               </TabsTrigger>
-              <TabsTrigger value="table" className="gap-2">
+              <TabsTrigger 
+                value="table" 
+                className="gap-2"
+                onClick={() => handleViewChange('table')}
+              >
                 <FolderOpen className="h-4 w-4" />
                 Table View
               </TabsTrigger>
             </TabsList>
             <div className="flex items-center gap-4">
-              <form className="flex items-center gap-4" method="GET">
+              <form className="flex items-center gap-4" onSubmit={handleSearch}>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    name="search"
                     placeholder="Search categories..."
-                    defaultValue={searchQuery}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 w-80"
                   />
                 </div>
@@ -208,14 +257,33 @@ export default async function CategoriesPage({
                 </TableBody>
               </Table>
             </Card>
-            <Pagination
-              pagination={categoriesResponse.pagination}
-              baseUrl="/admin/categories"
-              searchParams={{
-                search: searchQuery,
-                ...(statusFilter !== 'all' && { status: statusFilter })
-              }}
-            />
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+                  {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                  {pagination.total} results
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!pagination.hasPreviousPage}
+                    onClick={() => fetchCategories(pagination.page - 1, searchQuery)}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!pagination.hasNextPage}
+                    onClick={() => fetchCategories(pagination.page + 1, searchQuery)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

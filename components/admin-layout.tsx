@@ -19,7 +19,8 @@ export function AdminLayout({ children, title = "Dashboard" }: AdminLayoutProps)
   const { user, isLoaded } = useUser()
 
   const getTimeBasedGreeting = () => {
-    const hour = new Date().getHours()
+    const now = new Date()
+    const hour = now.getHours()
     const greetings = {
       morning: ["Good morning", "Happy morning", "Lovely morning", "Beautiful morning"],
       afternoon: ["Good afternoon", "Happy afternoon", "Wonderful afternoon", "Pleasant afternoon"],
@@ -39,8 +40,18 @@ export function AdminLayout({ children, title = "Dashboard" }: AdminLayoutProps)
     }
 
     const greetingArray = greetings[timeOfDay]
-    const randomIndex = Math.floor(Math.random() * greetingArray.length)
-    return greetingArray[randomIndex]
+    // Use date and user ID to create consistent but varied greetings
+    const today = now.toDateString()
+    const userId = user?.id || ''
+    const seed = today + userId + timeOfDay
+    let hash = 0
+    for (let i = 0; i < seed.length; i++) {
+      const char = seed.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32bit integer
+    }
+    const index = Math.abs(hash) % greetingArray.length
+    return greetingArray[index]
   }
 
   if (!isLoaded) {
