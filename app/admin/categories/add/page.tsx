@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useClientApi } from "@/lib/client-api"
+import { useToast } from "@/hooks/use-toast"
 import { AdminLayout } from "@/components/admin-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,6 +16,7 @@ import { ArrowLeft, Save, X } from "lucide-react"
 export default function AddCategoryPage() {
   const router = useRouter()
   const api = useClientApi()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
@@ -55,10 +57,30 @@ export default function AddCategoryPage() {
       }
       
       await api.post('/categories', categoryData)
-      router.push('/admin/categories')
+      
+      toast({
+        title: "Success!",
+        description: `Category "${formData.name}" has been created successfully.`,
+        variant: "default"
+      })
+      
+      // Clear form data after successful save
+      setFormData({
+        name: "",
+        description: "",
+        slug: "",
+        isActive: true,
+        sortOrder: 1,
+      })
+      
     } catch (error) {
       console.error('Error creating category:', error)
       setError('Failed to create category. Please try again.')
+      toast({
+        title: "Error",
+        description: "Failed to create category. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setIsLoading(false)
     }

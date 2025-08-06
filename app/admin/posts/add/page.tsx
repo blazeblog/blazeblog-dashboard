@@ -21,11 +21,13 @@ import { useAutoSave } from "@/hooks/use-auto-save"
 import { DraftRecoveryDialog } from "@/components/draft-recovery-dialog"
 import { AutoSaveIndicator } from "@/components/auto-save-indicator"
 import { ConnectivityIndicator } from "@/components/connectivity-indicator"
+import { useToast } from "@/hooks/use-toast"
 import type { DraftPost } from "@/lib/indexeddb"
 
 export default function AddPostPage() {
   const router = useRouter()
   const api = useClientApi()
+  const { toast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -105,10 +107,33 @@ export default function AddPostPage() {
       }
       
       await api.post('/posts', postData)
-      router.push('/admin/posts')
+      
+      toast({
+        title: "Success!",
+        description: `Post "${formData.title}" has been ${formData.status === 'published' ? 'published' : 'saved as draft'} successfully.`,
+        variant: "default"
+      })
+      
+      // Clear form data after successful save
+      setFormData({
+        title: "",
+        content: "",
+        categoryId: "",
+        status: "draft",
+        excerpt: "",
+        tags: "",
+        featuredImage: "",
+        publishDate: "",
+      })
+      
     } catch (error) {
       console.error('Error creating post:', error)
       setError('Failed to create post. Please try again.')
+      toast({
+        title: "Error",
+        description: "Failed to save post. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setIsLoading(false)
     }

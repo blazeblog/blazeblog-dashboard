@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useClientApi, type Category } from "@/lib/client-api"
+import { useToast } from "@/hooks/use-toast"
 import { AdminLayout } from "@/components/admin-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,6 +29,7 @@ export default function EditCategoryPage() {
   const params = useParams()
   const categoryId = params.id as string
   const api = useClientApi()
+  const { toast } = useToast()
 
   const [category, setCategory] = useState<Category | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -96,10 +98,24 @@ export default function EditCategoryPage() {
       }
       
       await api.put(`/categories/${categoryId}`, categoryData)
-      router.push('/admin/categories')
+      
+      toast({
+        title: "Success!",
+        description: `Category "${formData.name}" has been updated successfully.`,
+        variant: "default"
+      })
+      
+      // Refresh the category data
+      await fetchCategory()
+      
     } catch (error) {
       console.error('Error updating category:', error)
       setError('Failed to update category. Please try again.')
+      toast({
+        title: "Error",
+        description: "Failed to update category. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setIsSaving(false)
     }
@@ -109,10 +125,24 @@ export default function EditCategoryPage() {
     setIsDeleting(true)
     try {
       await api.delete(`/categories/${categoryId}`)
+      
+      toast({
+        title: "Success!",
+        description: `Category "${category?.name}" has been deleted successfully.`,
+        variant: "default"
+      })
+      
+      // After deletion, redirect to categories list is appropriate
       router.push('/admin/categories')
+      
     } catch (error) {
       console.error('Error deleting category:', error)
       setError('Failed to delete category. Please try again.')
+      toast({
+        title: "Error",
+        description: "Failed to delete category. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setIsDeleting(false)
     }

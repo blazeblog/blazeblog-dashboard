@@ -3,17 +3,14 @@ import { redirect } from "next/navigation"
 import { AdminLayout } from "@/components/admin-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Search, Filter } from "lucide-react"
 import Link from "next/link"
 import { api, type PaginationParams, type PaginatedResponse, type Post, type Category } from "@/lib/api"
 import { Pagination } from "@/components/ui/pagination"
-import { PostActions } from "@/components/post-actions"
-import { ConnectivityIndicator } from "@/components/connectivity-indicator"
-import { ClientConnectivityIndicator } from "@/components/client-connectivity-indicator"
+import { PostsTable } from "@/components/posts-table"
 
 
 // Function to fetch posts from API with pagination
@@ -170,37 +167,7 @@ export default async function PostsPage({
                   <TableHead className="w-[70px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {posts.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No posts found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  posts.map((post) => (
-                    <TableRow key={post.id}>
-                      <TableCell className="font-medium">{post.title}</TableCell>
-                      <TableCell>{post.category?.name || 'Uncategorized'}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            post.status === "published" ? "default" : post.status === "draft" ? "secondary" : "outline"
-                          }
-                        >
-                          {post.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{post.user.username}</TableCell>
-                      <TableCell>-</TableCell>
-                      <TableCell>{new Date(post.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <PostActions postId={post.id} />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
+              <PostsTable posts={posts} />
             </Table>
 
             <Pagination

@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useClientApi, type Category, type Post } from "@/lib/client-api"
+import { useToast } from "@/hooks/use-toast"
 import { Save, X, FileText, Settings, Eye, ArrowLeft, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -34,6 +35,7 @@ export default function EditPostPage() {
   const params = useParams()
   const postId = params.id as string
   const api = useClientApi()
+  const { toast } = useToast()
 
   const [post, setPost] = useState<Post | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
@@ -104,10 +106,24 @@ export default function EditPostPage() {
       }
       
       await api.put(`/posts/${postId}`, postData)
-      router.push('/admin/posts')
+      
+      toast({
+        title: "Success!",
+        description: `Post "${formData.title}" has been ${formData.status === 'published' ? 'published' : 'updated'} successfully.`,
+        variant: "default"
+      })
+      
+      // Refresh the post data
+      await fetchPost()
+      
     } catch (error) {
       console.error('Error updating post:', error)
       setError('Failed to update post. Please try again.')
+      toast({
+        title: "Error",
+        description: "Failed to update post. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setIsSaving(false)
     }
@@ -117,10 +133,24 @@ export default function EditPostPage() {
     setIsDeleting(true)
     try {
       await api.delete(`/posts/${postId}`)
+      
+      toast({
+        title: "Success!",
+        description: `Post "${post?.title}" has been deleted successfully.`,
+        variant: "default"
+      })
+      
+      // After deletion, redirect to posts list is appropriate
       router.push('/admin/posts')
+      
     } catch (error) {
       console.error('Error deleting post:', error)
       setError('Failed to delete post. Please try again.')
+      toast({
+        title: "Error",
+        description: "Failed to delete post. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setIsDeleting(false)
     }
