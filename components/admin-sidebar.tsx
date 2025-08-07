@@ -8,6 +8,7 @@ import {
   Users,
   FileText,
   FolderOpen,
+  Hash,
   Settings,
   BarChart3,
   MessageSquare,
@@ -69,6 +70,15 @@ const navigation = [
         title: "Categories",
         url: "/admin/categories",
         icon: FolderOpen,
+        submenu: [
+          { title: "All Categories", url: "/admin/categories" },
+          { title: "Add New", url: "/admin/categories/add" },
+        ],
+      },
+      {
+        title: "Tags",
+        url: "/admin/tags",
+        icon: Hash,
       },
       {
         title: "Lead Forms",

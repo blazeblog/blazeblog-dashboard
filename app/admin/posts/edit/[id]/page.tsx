@@ -3,9 +3,9 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { useClientApi, type Category, type Post, type PostRevision } from "@/lib/client-api"
+import { useClientApi, type Category, type Post, type PostRevision, type Tag } from "@/lib/client-api"
 import { useToast } from "@/hooks/use-toast"
-import { Save, X, FileText, Settings, Eye, ArrowLeft, Trash2, Activity, Info } from "lucide-react"
+import { Save, X, FileText, Settings, Eye, ArrowLeft, Trash2, Activity, Info, Focus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,6 +20,10 @@ import { AdvancedTiptapEditor } from "@/components/advanced-tiptap-editor"
 import { PostPreview } from "@/components/post-preview"
 import { RevisionList } from "@/components/revision-list"
 import { RevisionDiffViewer } from "@/components/revision-diff-viewer"
+import { TagsInput } from "@/components/tags-input"
+import { SEOSuggestionsSidebar } from "@/components/seo-suggestions-sidebar"
+// import { FocusModeToggle, FocusModeContext, useFocusMode } from "@/components/focus-mode-toggle"
+import { generateSlug, generateMetaDescription, ensureTagsExist, suggestTagsFromContent } from "@/lib/auto-create-utils"
 import {
   Tooltip,
   TooltipContent,
@@ -58,6 +62,8 @@ export default function EditPostPage() {
     status: "draft" as 'draft' | 'published' | 'archived',
     excerpt: "",
     featuredImage: "",
+    slug: "",
+    tags: [] as Tag[],
   })
 
   const [activeTab, setActiveTab] = useState("editor")
@@ -67,6 +73,8 @@ export default function EditPostPage() {
   const [showDiffViewer, setShowDiffViewer] = useState(false)
   const [diffRevisions, setDiffRevisions] = useState<{rev1: PostRevision, rev2: PostRevision} | null>(null)
   const [revisionCount, setRevisionCount] = useState<number>(0)
+  // const { isFocusMode, toggleFocusMode, setFocusMode } = useFocusMode(false)
+  const [showSEOSidebar, setShowSEOSidebar] = useState(false) // Start with SEO sidebar hidden
 
   useEffect(() => {
     Promise.all([fetchPost(), fetchCategories()])
@@ -83,6 +91,14 @@ export default function EditPostPage() {
         status: response.status,
         excerpt: response.excerpt || "",
         featuredImage: response.featuredImage || "",
+        slug: generateSlug(response.title),
+        tags: response.tags?.map(tag => ({ 
+          id: tag.id,
+          name: tag.name,
+          slug: tag.slug,
+          createdAt: new Date().toISOString(),
+          postCount: 0
+        })) || [],
       })
     } catch (error) {
       console.error('Error fetching post:', error)
@@ -117,6 +133,8 @@ export default function EditPostPage() {
         status: formData.status,
         featuredImage: formData.featuredImage || undefined,
         categoryId: formData.categoryId ? parseInt(formData.categoryId) : undefined,
+        slug: formData.slug || generateSlug(formData.title),
+        tagIds: formData.tags.map(tag => tag.id),
       }
       
       await api.put(`/posts/${postId}`, postData)
@@ -185,6 +203,8 @@ export default function EditPostPage() {
       status: revision.status,
       excerpt: revision.excerpt || "",
       featuredImage: "", // Reset featured image as it's not in revision
+      slug: generateSlug(revision.title),
+      tags: [], // Reset tags as they're not in revision
     })
     
     // Switch to editor tab to show restored content
@@ -210,6 +230,27 @@ export default function EditPostPage() {
       default:
         return "bg-blue-500 text-white"
     }
+  }
+
+  // SEO suggestion handlers
+  const handleSlugSuggestion = (slug: string) => {
+    setFormData({ ...formData, slug })
+  }
+
+  const handleTagSuggestions = (tagNames: string[]) => {
+    ensureTagsExist(tagNames, { api, toast }).then(newTags => {
+      const uniqueTags = [...formData.tags]
+      newTags.forEach(tag => {
+        if (!uniqueTags.find(t => t.id === tag.id)) {
+          uniqueTags.push(tag)
+        }
+      })
+      setFormData({ ...formData, tags: uniqueTags.slice(0, 10) })
+    })
+  }
+
+  const handleExcerptSuggestion = (excerpt: string) => {
+    setFormData({ ...formData, excerpt })
   }
 
   if (isLoading) {
@@ -257,6 +298,17 @@ export default function EditPostPage() {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
+          {/* Focus mode temporarily disabled */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowSEOSidebar(!showSEOSidebar)}
+            className={showSEOSidebar ? "bg-blue-50 text-blue-600 border-blue-200" : ""}
+            title="Toggle SEO Suggestions"
+          >
+            <Focus className="mr-2 h-4 w-4" />
+            SEO
+          </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm">
@@ -301,10 +353,14 @@ export default function EditPostPage() {
           {error}
         </div>
       )}
+
+      <div className="flex flex-col lg:flex-row gap-6">
+      {/* Main Content */}
+      <div className={`flex-1 min-w-0 ${!showSEOSidebar ? 'max-w-4xl mx-auto' : ''}`}>
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt">
             <div className="space-y-2">
               <Label htmlFor="title">Post Title</Label>
               <Input
@@ -419,6 +475,16 @@ export default function EditPostPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
+                    <Label htmlFor="slug">URL Slug</Label>
+                    <Input
+                      id="slug"
+                      placeholder="url-friendly-slug"
+                      value={formData.slug}
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">URL: /posts/{formData.slug}</p>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="excerpt">Meta Description</Label>
                     <Textarea
                       id="excerpt"
@@ -428,6 +494,15 @@ export default function EditPostPage() {
                       onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
                     />
                     <p className="text-xs text-muted-foreground">{formData.excerpt.length}/160 characters</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tags (max 10)</Label>
+                    <TagsInput
+                      value={formData.tags}
+                      onChange={(tags) => setFormData({ ...formData, tags })}
+                      maxTags={10}
+                      placeholder="Add relevant tags..."
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -556,6 +631,29 @@ export default function EditPostPage() {
           </TabsContent>
         </Tabs>
       </form>
+      </div>
+
+      {/* SEO Suggestions Sidebar - Only show when enabled */}
+      {showSEOSidebar && (
+        <div className="w-full lg:w-80 flex-shrink-0">
+          <div className="sticky top-4 max-h-screen overflow-y-auto">
+            <SEOSuggestionsSidebar
+              title={formData.title}
+              content={formData.content}
+              excerpt={formData.excerpt}
+              slug={formData.slug}
+              tags={formData.tags}
+              featuredImage={formData.featuredImage}
+              onSlugSuggestion={handleSlugSuggestion}
+              onTagSuggestions={handleTagSuggestions}
+              onExcerptSuggestion={handleExcerptSuggestion}
+              className="space-y-4"
+            />
+          </div>
+        </div>
+      )}
+      </div>
+      {/* End flex container */}
     </AdminLayout>
   )
 }

@@ -3,8 +3,8 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useClientApi, type Category } from "@/lib/client-api"
-import { Save, X, FileText, Settings, Eye, ArrowLeft } from "lucide-react"
+import { useClientApi, type Category, type Tag } from "@/lib/client-api"
+import { Save, X, FileText, Settings, Eye, ArrowLeft, Focus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,6 +21,10 @@ import { useAutoSave } from "@/hooks/use-auto-save"
 import { DraftRecoveryDialog } from "@/components/draft-recovery-dialog"
 import { AutoSaveIndicator } from "@/components/auto-save-indicator"
 import { ConnectivityIndicator } from "@/components/connectivity-indicator"
+import { TagsInput } from "@/components/tags-input"
+import { SEOSuggestionsSidebar } from "@/components/seo-suggestions-sidebar"
+// import { FocusModeToggle, FocusModeContext, useFocusMode } from "@/components/focus-mode-toggle"
+import { generateSlug, ensureTagsExist } from "@/lib/auto-create-utils"
 import { useToast } from "@/hooks/use-toast"
 import type { DraftPost } from "@/lib/indexeddb"
 
@@ -39,12 +43,15 @@ export default function AddPostPage() {
     categoryId: "",
     status: "draft" as 'draft' | 'published' | 'archived',
     excerpt: "",
-    tags: "",
+    tags: [] as Tag[],
     featuredImage: "",
     publishDate: "",
+    slug: "",
   })
 
   const [activeTab, setActiveTab] = useState("editor")
+  // const { isFocusMode, toggleFocusMode } = useFocusMode(false)
+  const [showSEOSidebar, setShowSEOSidebar] = useState(false) // Start with SEO sidebar hidden
 
   const {
     lastSaved,
@@ -121,9 +128,10 @@ export default function AddPostPage() {
         categoryId: "",
         status: "draft",
         excerpt: "",
-        tags: "",
+        tags: [] as Tag[],
         featuredImage: "",
         publishDate: "",
+        slug: "",
       })
       
     } catch (error) {
@@ -146,9 +154,10 @@ export default function AddPostPage() {
       categoryId: draft.categoryId || '',
       status: draft.status,
       excerpt: draft.excerpt || '',
-      tags: '',
+      tags: [] as Tag[],
       featuredImage: draft.heroImage || '',
       publishDate: '',
+      slug: generateSlug(draft.title),
     })
     setShowDraftDialog(false)
   }
@@ -172,16 +181,37 @@ export default function AddPostPage() {
     }
   }
 
+  // SEO suggestion handlers
+  const handleSlugSuggestion = (slug: string) => {
+    setFormData({ ...formData, slug })
+  }
+
+  const handleTagSuggestions = (tagNames: string[]) => {
+    ensureTagsExist(tagNames, { api, toast }).then(newTags => {
+      const uniqueTags = [...formData.tags]
+      newTags.forEach(tag => {
+        if (!uniqueTags.find(t => t.id === tag.id)) {
+          uniqueTags.push(tag)
+        }
+      })
+      setFormData({ ...formData, tags: uniqueTags.slice(0, 10) })
+    })
+  }
+
+  const handleExcerptSuggestion = (excerpt: string) => {
+    setFormData({ ...formData, excerpt })
+  }
+
   return (
     <AdminLayout title="Create New Post">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" asChild>
+          {/* <Button variant="ghost" asChild>
             <a href="/admin/posts">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Posts
             </a>
-          </Button>
+          </Button> */}
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Create New Post</h2>
             <p className="text-muted-foreground">Write and publish your content</p>
@@ -197,6 +227,17 @@ export default function AddPostPage() {
             isSaving={isSaving} 
             autoSaveEnabled={autoSaveEnabled} 
           />
+          {/* Focus mode temporarily disabled */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowSEOSidebar(!showSEOSidebar)}
+            className={showSEOSidebar ? "bg-blue-50 text-blue-600 border-blue-200" : ""}
+            title="Toggle SEO Suggestions"
+          >
+            <Focus className="mr-2 h-4 w-4" />
+            SEO
+          </Button>
           {availableDrafts.length > 0 && (
             <Button 
               variant="outline" 
@@ -224,11 +265,14 @@ export default function AddPostPage() {
           {error}
         </div>
       )}
-      
+
+      <div className="flex flex-col lg:flex-row gap-6">
+      {/* Main Content */}
+      <div className={`flex-1 min-w-0 ${!showSEOSidebar ? 'max-w-4xl mx-auto' : ''}`}>
       <div className="space-y-6">
         {/* Title */}
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt">
             <div className="space-y-2">
               <Label htmlFor="title">Post Title</Label>
               <Input
@@ -343,6 +387,16 @@ export default function AddPostPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
+                    <Label htmlFor="slug">URL Slug</Label>
+                    <Input
+                      id="slug"
+                      placeholder="url-friendly-slug"
+                      value={formData.slug}
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">URL: /posts/{formData.slug}</p>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="excerpt">Meta Description</Label>
                     <Textarea
                       id="excerpt"
@@ -354,12 +408,12 @@ export default function AddPostPage() {
                     <p className="text-xs text-muted-foreground">{formData.excerpt.length}/160 characters</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="tags">Tags</Label>
-                    <Input
-                      id="tags"
-                      placeholder="tag1, tag2, tag3"
+                    <Label>Tags (max 10)</Label>
+                    <TagsInput
                       value={formData.tags}
-                      onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                      onChange={(tags) => setFormData({ ...formData, tags })}
+                      maxTags={10}
+                      placeholder="Add relevant tags..."
                     />
                   </div>
                 </CardContent>
@@ -405,6 +459,29 @@ export default function AddPostPage() {
           </TabsContent>
         </Tabs>
       </div>
+      </div>
+
+      {/* SEO Suggestions Sidebar - Only show when enabled */}
+      {showSEOSidebar && (
+        <div className="w-full lg:w-80 flex-shrink-0">
+          <div className="sticky top-4 max-h-screen overflow-y-auto">
+            <SEOSuggestionsSidebar
+              title={formData.title}
+              content={formData.content}
+              excerpt={formData.excerpt}
+              slug={formData.slug}
+              tags={formData.tags}
+              featuredImage={formData.featuredImage}
+              onSlugSuggestion={handleSlugSuggestion}
+              onTagSuggestions={handleTagSuggestions}
+              onExcerptSuggestion={handleExcerptSuggestion}
+              className="space-y-4"
+            />
+          </div>
+        </div>
+      )}
+      </div>
+      {/* End flex container */}
 
       <DraftRecoveryDialog
         isOpen={showDraftDialog}
