@@ -51,7 +51,7 @@ export default function AddPostPage() {
 
   const [activeTab, setActiveTab] = useState("editor")
   // const { isFocusMode, toggleFocusMode } = useFocusMode(false)
-  const [showSEOSidebar, setShowSEOSidebar] = useState(false) // Start with SEO sidebar hidden
+  const [showSEOSidebar, setShowSEOSidebar] = useState(true) 
 
   const {
     lastSaved,
@@ -268,11 +268,11 @@ export default function AddPostPage() {
 
       <div className="flex flex-col lg:flex-row gap-6">
       {/* Main Content */}
-      <div className={`flex-1 min-w-0 ${!showSEOSidebar ? 'max-w-4xl mx-auto' : ''}`}>
-      <div className="space-y-6">
+      <div className={`flex-1 min-w-0 ${!showSEOSidebar ? 'w-full max-w-none px-0' : ''}`}>
+      <div className={`space-y-6 ${!showSEOSidebar ? 'px-0' : ''}`}>
         {/* Title */}
         <Card>
-          <CardContent className="pt">
+          <CardContent className={`pt${!showSEOSidebar ? ' px-6' : 'px-2'}`}>
             <div className="space-y-2">
               <Label htmlFor="title">Post Title</Label>
               <Input

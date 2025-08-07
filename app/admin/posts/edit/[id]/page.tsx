@@ -74,7 +74,7 @@ export default function EditPostPage() {
   const [diffRevisions, setDiffRevisions] = useState<{rev1: PostRevision, rev2: PostRevision} | null>(null)
   const [revisionCount, setRevisionCount] = useState<number>(0)
   // const { isFocusMode, toggleFocusMode, setFocusMode } = useFocusMode(false)
-  const [showSEOSidebar, setShowSEOSidebar] = useState(false) // Start with SEO sidebar hidden
+  const [showSEOSidebar, setShowSEOSidebar] = useState(true)
 
   useEffect(() => {
     Promise.all([fetchPost(), fetchCategories()])
@@ -354,304 +354,303 @@ export default function EditPostPage() {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-6">
-      {/* Main Content */}
-      <div className={`flex-1 min-w-0 ${!showSEOSidebar ? 'max-w-4xl mx-auto' : ''}`}>
-      
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <Card>
-          <CardContent className="pt">
-            <div className="space-y-2">
-              <Label htmlFor="title">Post Title</Label>
-              <Input
-                id="title"
-                placeholder="Enter an engaging title..."
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="text-lg font-medium"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TooltipProvider>
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="editor" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Editor
-              </TabsTrigger>
-              <TabsTrigger value="preview" className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                Preview
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                Settings
-              </TabsTrigger>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="revisions" className="flex items-center gap-2">
-                    <Activity className="h-4 w-4" />
-                    Revisions
-                    {revisionCount > 0 && (
-                      <Badge variant="secondary" className="text-xs h-5 min-w-[20px] px-1 ml-1">
-                        {revisionCount}
-                      </Badge>
-                    )}
-                    <Info className="h-3 w-3 ml-1 text-muted-foreground" />
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>View revision history, compare versions, and restore previous versions</p>
-                </TooltipContent>
-              </Tooltip>
-            </TabsList>
-          </TooltipProvider>
-
-          <TabsContent value="editor" className="mt-4">
-            <AdvancedTiptapEditor
-              content={formData.content}
-              onChange={(content) => setFormData({ ...formData, content })}
-              placeholder="Start writing your amazing post..."
-              heroImage={formData.featuredImage}
-              onHeroImageChange={(url) => setFormData({ ...formData, featuredImage: url })}
-            />
-          </TabsContent>
-
-          <TabsContent value="preview" className="mt-4">
-            <PostPreview title={formData.title} content={formData.content} excerpt={formData.excerpt} />
-          </TabsContent>
-
-          <TabsContent value="settings" className="mt-4">
-            <div className="grid gap-6 lg:grid-cols-2 max-w-4xl">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Publish Settings</CardTitle>
-                  <CardDescription>Configure how and when to publish</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value: 'draft' | 'published' | 'archived') => setFormData({ ...formData, status: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="published">Published</SelectItem>
-                        <SelectItem value="archived">Archived</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
-                    <Select
-                      value={formData.categoryId}
-                      onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id.toString()}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>SEO Settings</CardTitle>
-                  <CardDescription>Optimize your post for search engines</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="slug">URL Slug</Label>
-                    <Input
-                      id="slug"
-                      placeholder="url-friendly-slug"
-                      value={formData.slug}
-                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    />
-                    <p className="text-xs text-muted-foreground">URL: /posts/{formData.slug}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="excerpt">Meta Description</Label>
-                    <Textarea
-                      id="excerpt"
-                      placeholder="Brief description for SEO and social sharing..."
-                      rows={3}
-                      value={formData.excerpt}
-                      onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                    />
-                    <p className="text-xs text-muted-foreground">{formData.excerpt.length}/160 characters</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tags (max 10)</Label>
-                    <TagsInput
-                      value={formData.tags}
-                      onChange={(tags) => setFormData({ ...formData, tags })}
-                      maxTags={10}
-                      placeholder="Add relevant tags..."
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="mt-6 max-w-4xl">
-              <CardHeader>
-                <CardTitle>Post Statistics</CardTitle>
-                <CardDescription>Overview of your post content</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 rounded-lg border">
-                    <div className="font-bold text-2xl text-blue-600 dark:text-blue-400">
-                      {
-                        formData.content
-                          .replace(/<[^>]*>/g, "")
-                          .split(" ")
-                          .filter((word) => word.length > 0).length
-                      }
-                    </div>
-                    <div className="text-muted-foreground font-medium">Words</div>
-                  </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 rounded-lg border">
-                    <div className="font-bold text-2xl text-green-600 dark:text-green-400">{formData.content.replace(/<[^>]*>/g, "").length}</div>
-                    <div className="text-muted-foreground font-medium">Characters</div>
-                  </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20 rounded-lg border">
-                    <div className="font-bold text-2xl text-purple-600 dark:text-purple-400">
-                      {Math.ceil(formData.content.replace(/<[^>]*>/g, "").split(" ").length / 200)}
-                    </div>
-                    <div className="text-muted-foreground font-medium">Min read</div>
-                  </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/20 dark:to-orange-900/20 rounded-lg border">
-                    <div className="font-bold text-2xl text-orange-600 dark:text-orange-400">{(formData.content.match(/<h[1-6][^>]*>/g) || []).length}</div>
-                    <div className="text-muted-foreground font-medium">Headings</div>
-                  </div>
+      <div className={`flex flex-col lg:flex-row gap-6`}>
+        {/* Main Content */}
+        <div className={`flex-1 min-w-0 ${!showSEOSidebar ? 'w-full max-w-none px-0' : ''}`}>
+          <div className={`space-y-6 ${!showSEOSidebar ? 'px-0' : ''}`}>
+            {/* Title */}
+            <Card>
+             <CardContent className={`pt${!showSEOSidebar ? ' px-6' : 'px-2'}`}>
+                <div className="space-y-2">
+                  <Label htmlFor="title">Post Title</Label>
+                  <Input
+                    id="title"
+                    placeholder="Enter an engaging title..."
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="text-lg font-medium"
+                  />
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="revisions" className="mt-4">
-            {showDiffViewer && diffRevisions ? (
-              <RevisionDiffViewer
-                postId={postId}
-                revision1={diffRevisions.rev1}
-                revision2={diffRevisions.rev2}
-                onClose={() => {
-                  setShowDiffViewer(false)
-                  setDiffRevisions(null)
-                }}
-                onRestore={handleRevisionRestore}
-                className="h-[800px]"
-              />
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RevisionList
-                  postId={postId}
-                  onRevisionSelect={handleRevisionSelect}
-                  onRevisionRestore={handleRevisionRestore}
-                  onRevisionCompare={handleRevisionCompare}
-                  onRevisionCountChange={setRevisionCount}
-                  className="h-[800px]"
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TooltipProvider>
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="editor" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Editor
+                  </TabsTrigger>
+                  <TabsTrigger value="preview" className="flex items-center gap-2">
+                    <Eye className="h-4 w-4" />
+                    Preview
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </TabsTrigger>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <TabsTrigger value="revisions" className="flex items-center gap-2">
+                        <Activity className="h-4 w-4" />
+                        Revisions
+                        {revisionCount > 0 && (
+                          <Badge variant="secondary" className="text-xs h-5 min-w-[20px] px-1 ml-1">
+                            {revisionCount}
+                          </Badge>
+                        )}
+                        <Info className="h-3 w-3 ml-1 text-muted-foreground" />
+                      </TabsTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>View revision history, compare versions, and restore previous versions</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TabsList>
+              </TooltipProvider>
+
+              <TabsContent value="editor" className="mt-4">
+                <AdvancedTiptapEditor
+                  content={formData.content}
+                  onChange={(content) => setFormData({ ...formData, content })}
+                  placeholder="Start writing your amazing post..."
+                  heroImage={formData.featuredImage}
+                  onHeroImageChange={(url) => setFormData({ ...formData, featuredImage: url })}
                 />
-                
-                {selectedRevision && (
-                  <Card className="h-[800px]">
+              </TabsContent>
+
+              <TabsContent value="preview" className="mt-4">
+                <PostPreview title={formData.title} content={formData.content} excerpt={formData.excerpt} />
+              </TabsContent>
+
+              <TabsContent value="settings" className="mt-4">
+                <div className="grid gap-6 lg:grid-cols-2 max-w-4xl">
+                  <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        Revision v{selectedRevision.versionNumber}
-                      </CardTitle>
-                      <CardDescription>
-                        {selectedRevision.creator?.username || 'Unknown'} • {selectedRevision.createdAt}
-                      </CardDescription>
+                      <CardTitle>Publish Settings</CardTitle>
+                      <CardDescription>Configure how and when to publish</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div>
-                        <h4 className="font-medium text-sm mb-2">Title</h4>
-                        <p className="text-sm bg-muted p-3 rounded-md">{selectedRevision.title}</p>
-                      </div>
-                      
-                      {selectedRevision.excerpt && (
-                        <div>
-                          <h4 className="font-medium text-sm mb-2">Excerpt</h4>
-                          <p className="text-sm bg-muted p-3 rounded-md">{selectedRevision.excerpt}</p>
-                        </div>
-                      )}
-                      
-                      <div>
-                        <h4 className="font-medium text-sm mb-2">Content Preview</h4>
-                        <div 
-                          className="text-sm bg-muted p-3 rounded-md prose prose-sm max-w-none overflow-auto max-h-[400px]"
-                          dangerouslySetInnerHTML={{ __html: selectedRevision.content }}
-                        />
-                      </div>
-                      
-                      <div className="flex gap-2 pt-4">
-                        <Button
-                          type="button"
-                          onClick={() => handleRevisionRestore(selectedRevision)}
-                          className="flex-1"
+                      <div className="space-y-2">
+                        <Label htmlFor="status">Status</Label>
+                        <Select
+                          value={formData.status}
+                          onValueChange={(value: 'draft' | 'published' | 'archived') => setFormData({ ...formData, status: value })}
                         >
-                          Restore This Version
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            if (diffRevisions?.rev1.id !== selectedRevision.id) {
-                              // Find current version for comparison
-                              const currentRevision = { ...selectedRevision, versionNumber: 999 } as PostRevision // Mock current
-                              handleRevisionCompare(selectedRevision, currentRevision)
-                            }
-                          }}
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="published">Published</SelectItem>
+                            <SelectItem value="archived">Archived</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="category">Category</Label>
+                        <Select
+                          value={formData.categoryId}
+                          onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
                         >
-                          Compare
-                        </Button>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id.toString()}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </CardContent>
                   </Card>
-                )}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </form>
-      </div>
 
-      {/* SEO Suggestions Sidebar - Only show when enabled */}
-      {showSEOSidebar && (
-        <div className="w-full lg:w-80 flex-shrink-0">
-          <div className="sticky top-4 max-h-screen overflow-y-auto">
-            <SEOSuggestionsSidebar
-              title={formData.title}
-              content={formData.content}
-              excerpt={formData.excerpt}
-              slug={formData.slug}
-              tags={formData.tags}
-              featuredImage={formData.featuredImage}
-              onSlugSuggestion={handleSlugSuggestion}
-              onTagSuggestions={handleTagSuggestions}
-              onExcerptSuggestion={handleExcerptSuggestion}
-              className="space-y-4"
-            />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>SEO Settings</CardTitle>
+                      <CardDescription>Optimize your post for search engines</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="slug">URL Slug</Label>
+                        <Input
+                          id="slug"
+                          placeholder="url-friendly-slug"
+                          value={formData.slug}
+                          onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground">URL: /posts/{formData.slug}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="excerpt">Meta Description</Label>
+                        <Textarea
+                          id="excerpt"
+                          placeholder="Brief description for SEO and social sharing..."
+                          rows={3}
+                          value={formData.excerpt}
+                          onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground">{formData.excerpt.length}/160 characters</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Tags (max 10)</Label>
+                        <TagsInput
+                          value={formData.tags}
+                          onChange={(tags) => setFormData({ ...formData, tags })}
+                          maxTags={10}
+                          placeholder="Add relevant tags..."
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card className="mt-6 max-w-4xl">
+                  <CardHeader>
+                    <CardTitle>Post Statistics</CardTitle>
+                    <CardDescription>Overview of your post content</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 rounded-lg border">
+                        <div className="font-bold text-2xl text-blue-600 dark:text-blue-400">
+                          {
+                            formData.content
+                              .replace(/<[^>]*>/g, "")
+                              .split(" ")
+                              .filter((word) => word.length > 0).length
+                          }
+                        </div>
+                        <div className="text-muted-foreground font-medium">Words</div>
+                      </div>
+                      <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 rounded-lg border">
+                        <div className="font-bold text-2xl text-green-600 dark:text-green-400">{formData.content.replace(/<[^>]*>/g, "").length}</div>
+                        <div className="text-muted-foreground font-medium">Characters</div>
+                      </div>
+                      <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20 rounded-lg border">
+                        <div className="font-bold text-2xl text-purple-600 dark:text-purple-400">
+                          {Math.ceil(formData.content.replace(/<[^>]*>/g, "").split(" ").length / 200)}
+                        </div>
+                        <div className="text-muted-foreground font-medium">Min read</div>
+                      </div>
+                      <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/20 dark:to-orange-900/20 rounded-lg border">
+                        <div className="font-bold text-2xl text-orange-600 dark:text-orange-400">{(formData.content.match(/<h[1-6][^>]*>/g) || []).length}</div>
+                        <div className="text-muted-foreground font-medium">Headings</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="revisions" className="mt-4">
+                {showDiffViewer && diffRevisions ? (
+                  <RevisionDiffViewer
+                    postId={postId}
+                    revision1={diffRevisions.rev1}
+                    revision2={diffRevisions.rev2}
+                    onClose={() => {
+                      setShowDiffViewer(false)
+                      setDiffRevisions(null)
+                    }}
+                    onRestore={handleRevisionRestore}
+                    className="h-[800px]"
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <RevisionList
+                      postId={postId}
+                      onRevisionSelect={handleRevisionSelect}
+                      onRevisionRestore={handleRevisionRestore}
+                      onRevisionCompare={handleRevisionCompare}
+                      onRevisionCountChange={setRevisionCount}
+                      className="h-[800px]"
+                    />
+                    
+                    {selectedRevision && (
+                      <Card className="h-[800px]">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <FileText className="h-5 w-5" />
+                            Revision v{selectedRevision.versionNumber}
+                          </CardTitle>
+                          <CardDescription>
+                            {selectedRevision.creator?.username || 'Unknown'} • {selectedRevision.createdAt}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <h4 className="font-medium text-sm mb-2">Title</h4>
+                            <p className="text-sm bg-muted p-3 rounded-md">{selectedRevision.title}</p>
+                          </div>
+                          
+                          {selectedRevision.excerpt && (
+                            <div>
+                              <h4 className="font-medium text-sm mb-2">Excerpt</h4>
+                              <p className="text-sm bg-muted p-3 rounded-md">{selectedRevision.excerpt}</p>
+                            </div>
+                          )}
+                          
+                          <div>
+                            <h4 className="font-medium text-sm mb-2">Content Preview</h4>
+                            <div 
+                              className="text-sm bg-muted p-3 rounded-md prose prose-sm max-w-none overflow-auto max-h-[400px]"
+                              dangerouslySetInnerHTML={{ __html: selectedRevision.content }}
+                            />
+                          </div>
+                          
+                          <div className="flex gap-2 pt-4">
+                            <Button
+                              type="button"
+                              onClick={() => handleRevisionRestore(selectedRevision)}
+                              className="flex-1"
+                            >
+                              Restore This Version
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                if (diffRevisions?.rev1.id !== selectedRevision.id) {
+                                  // Find current version for comparison
+                                  const currentRevision = { ...selectedRevision, versionNumber: 999 } as PostRevision // Mock current
+                                  handleRevisionCompare(selectedRevision, currentRevision)
+                                }
+                              }}
+                            >
+                              Compare
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
-      )}
+        {/* SEO Suggestions Sidebar - Only show when enabled */}
+        {showSEOSidebar && (
+          <div className="w-full lg:w-80 flex-shrink-0">
+            <div className="sticky top-4 max-h-screen overflow-y-auto">
+              <SEOSuggestionsSidebar
+                title={formData.title}
+                content={formData.content}
+                excerpt={formData.excerpt}
+                slug={formData.slug}
+                tags={formData.tags}
+                featuredImage={formData.featuredImage}
+                onSlugSuggestion={handleSlugSuggestion}
+                onTagSuggestions={handleTagSuggestions}
+                onExcerptSuggestion={handleExcerptSuggestion}
+                className="space-y-4"
+              />
+            </div>
+          </div>
+        )}
       </div>
       {/* End flex container */}
     </AdminLayout>

@@ -374,7 +374,7 @@ export function SEOSuggestionsSidebar({
                 Use: "{suggestedSlug.length > 30 ? suggestedSlug.substring(0, 30) + "..." : suggestedSlug}"
               </Button>
             )}
-
+{/* 
             {item.category === "Tags & Keywords" && content && (
               <Button 
                 size="sm" 
@@ -384,9 +384,9 @@ export function SEOSuggestionsSidebar({
               >
                 Suggest Tags from Content
               </Button>
-            )}
+            )} */}
 
-            {item.category === "Meta Description" && content && !excerpt && (
+            {/* {item.category === "Meta Description" && content && !excerpt && (
               <Button 
                 size="sm" 
                 variant="outline" 
@@ -395,7 +395,7 @@ export function SEOSuggestionsSidebar({
               >
                 Generate from Content
               </Button>
-            )}
+            )} */}
           </CardContent>
         </Card>
       ))}
