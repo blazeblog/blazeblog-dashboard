@@ -3,6 +3,67 @@
 import { useAuth } from "@clerk/nextjs"
 import type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision } from "./api"
 
+// Form-related types based on Forms API documentation
+export type FieldType = 
+  | 'text' 
+  | 'email' 
+  | 'phone' 
+  | 'textarea' 
+  | 'select' 
+  | 'checkbox' 
+  | 'radio' 
+  | 'date' 
+  | 'number' 
+  | 'rating'
+
+export interface Field {
+  id: string
+  type: FieldType
+  label: string
+  placeholder?: string
+  required: boolean
+  options?: string[]
+  fieldOrder: number
+  stepId: string
+}
+
+export interface Step {
+  id: string
+  title: string
+  description?: string
+  stepOrder: number
+  formId: string
+  fields: Field[]
+}
+
+export interface Form {
+  id: string
+  name: string
+  description?: string
+  isMultiStep: boolean
+  status: 'active' | 'draft' | 'archived'
+  createdAt: string
+  updatedAt: string
+  steps: Step[]
+  submissions?: Submission[]
+}
+
+export interface Submission {
+  id: string
+  formId: string
+  data: Record<string, any>
+  submittedAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface FormStats {
+  totalSubmissions: number
+  conversionRate: number
+  averageCompletionTime?: number
+  lastSubmissionAt?: string
+}
+
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
   body?: any
