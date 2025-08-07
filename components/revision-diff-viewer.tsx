@@ -39,9 +39,9 @@ import { cn } from "@/lib/utils"
 
 // Import react-diff-view components and utilities
 import { Diff, Hunk, parseDiff, markEdits } from "react-diff-view"
-import { diffLines, createPatch } from "diff"
+import { diffLines } from "diff"
 
-// Import react-diff-view styles
+// Import styles (our custom CSS last to override react-diff-view)
 import "react-diff-view/style/index.css"
 import "@/styles/diff-viewer.css"
 
@@ -108,7 +108,7 @@ export function RevisionDiffViewer({
       const getFieldContent = (revision: PostRevision, field: string) => {
         switch (field) {
           case 'title': return revision.title || ''
-          case 'content': return RevisionUtils.stripHtml(revision.content) || ''
+          case 'content': return RevisionUtils.htmlToReadableText(revision.content || '')
           case 'excerpt': return revision.excerpt || ''
           case 'meta': return `Title: ${revision.metaTitle || ''}\nDescription: ${revision.metaDescription || ''}`
           default: return revision.content || ''
@@ -118,49 +118,132 @@ export function RevisionDiffViewer({
       const oldContent = getFieldContent(selectedRevision1, diffField)
       const newContent = getFieldContent(selectedRevision2, diffField)
 
+      // Debug logging (will be removed in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Diff Debug Info:', {
+          field: diffField,
+          oldContentLength: oldContent.length,
+          newContentLength: newContent.length,
+          oldLines: oldContent.split('\n').length,
+          newLines: newContent.split('\n').length,
+          firstDifference: oldContent.split('\n').findIndex((line, index) => 
+            line !== (newContent.split('\n')[index] || '')
+          )
+        })
+      }
+
       // If content is the same, return null
       if (oldContent === newContent) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Content is identical, returning null')
+        }
         return null
       }
 
-      // Create a proper unified diff patch
-      const patch = createPatch(
-        'file', 
-        oldContent, 
-        newContent, 
-        `v${selectedRevision1.versionNumber}`,
-        `v${selectedRevision2.versionNumber}`,
-        { context: 3 }
-      )
+      // Try a simpler approach - use raw content without HTML processing if formatted version fails
+      let processedOldContent = oldContent
+      let processedNewContent = newContent
 
-      // Validate patch before parsing
-      if (!patch || patch.trim() === '') {
-        return null
+      // If the formatted HTML content seems too similar, try with raw content
+      if (Math.abs(oldContent.length - newContent.length) < 100) {
+        processedOldContent = selectedRevision1.content || ''
+        processedNewContent = selectedRevision2.content || ''
       }
 
-
-      // Parse the patch for react-diff-view
-      const diffFiles = parseDiff(patch)
+      // Use diffLines directly for more reliable results
+      const lineDiffs = diffLines(processedOldContent, processedNewContent)
       
-      if (!diffFiles || diffFiles.length === 0) return null
+      // Debug the diff in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Content lengths:', { old: processedOldContent.length, new: processedNewContent.length })
+        console.log('Line diffs:', lineDiffs.length)
+        console.log('Changes found:', lineDiffs.filter(change => change.added || change.removed).length)
+        console.log('Sample changes:', lineDiffs.slice(0, 3).map(change => ({
+          added: change.added,
+          removed: change.removed,
+          valueLength: change.value.length,
+          valuePreview: change.value.substring(0, 100)
+        })))
+      }
 
-      const diffFile = diffFiles[0]
-      if (!diffFile || !diffFile.hunks) return null
+      // If no changes detected, return null
+      const hasChanges = lineDiffs.some(change => change.added || change.removed)
+      if (!hasChanges) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('No changes detected in lineDiffs, falling back to simple diff')
+        }
+        return null
+      }
 
-      const hunks = diffFile.hunks
+      // Create a simple mock diff structure for react-diff-view
+      const changes: any[] = []
+      let oldLineNumber = 1
+      let newLineNumber = 1
 
-      // Mark edits for word-level highlighting (simplified)
-      let markedHunks
-      try {
-        markedHunks = markEdits(hunks, { type: 'word' as any })
-      } catch (error) {
-        console.warn('Failed to mark edits, using original hunks:', error)
-        markedHunks = hunks
+      lineDiffs.forEach(change => {
+        const lines = change.value.split('\n')
+        
+        lines.forEach(line => {
+          if (line.trim() === '') return // Skip empty lines
+          
+          if (change.removed) {
+            changes.push({
+              content: line,
+              type: 'delete',
+              isDelete: true,
+              oldLineNumber: oldLineNumber++,
+              lineNumber: oldLineNumber - 1
+            })
+          } else if (change.added) {
+            changes.push({
+              content: line,
+              type: 'insert',
+              isInsert: true,
+              newLineNumber: newLineNumber++,
+              lineNumber: newLineNumber - 1
+            })
+          } else {
+            changes.push({
+              content: line,
+              type: 'normal',
+              isNormal: true,
+              oldLineNumber: oldLineNumber++,
+              newLineNumber: newLineNumber++,
+              lineNumber: oldLineNumber - 1
+            })
+          }
+        })
+      })
+
+      // Create a hunk structure
+      const hunk = {
+        content: `@@ -1,${processedOldContent.split('\n').length} +1,${processedNewContent.split('\n').length} @@`,
+        oldStart: 1,
+        oldLines: processedOldContent.split('\n').length,
+        newStart: 1,
+        newLines: processedNewContent.split('\n').length,
+        changes: changes
+      }
+
+      const diffFile = {
+        oldRevision: `v${selectedRevision1.versionNumber}`,
+        newRevision: `v${selectedRevision2.versionNumber}`,
+        oldPath: `v${selectedRevision1.versionNumber}`,
+        newPath: `v${selectedRevision2.versionNumber}`,
+        type: 'modify' as const,
+        hunks: [hunk]
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Created diff structure:', { 
+          changesCount: changes.length,
+          hunksCount: 1
+        })
       }
 
       return {
         diffFile,
-        hunks: markedHunks
+        hunks: [hunk]
       }
     } catch (error) {
       console.error('Error generating diff:', error)
@@ -175,7 +258,7 @@ export function RevisionDiffViewer({
         const getFieldContent = (revision: PostRevision, field: string) => {
           switch (field) {
             case 'title': return revision.title || ''
-            case 'content': return RevisionUtils.stripHtml(revision.content) || ''
+            case 'content': return RevisionUtils.htmlToReadableText(revision.content || '')
             case 'excerpt': return revision.excerpt || ''
             case 'meta': return `Title: ${revision.metaTitle || ''}\nDescription: ${revision.metaDescription || ''}`
             default: return revision.content || ''
@@ -185,24 +268,28 @@ export function RevisionDiffViewer({
         const oldContent = getFieldContent(selectedRevision1, diffField)
         const newContent = getFieldContent(selectedRevision2, diffField)
         
-        const oldLines = oldContent.split('\n')
-        const newLines = newContent.split('\n')
-        
-        const maxLines = Math.max(oldLines.length, newLines.length)
+        // Use the same content processing logic
+        let processedOldContent = oldContent
+        let processedNewContent = newContent
+
+        // If the formatted HTML content seems too similar, try with raw content
+        if (Math.abs(oldContent.length - newContent.length) < 100) {
+          processedOldContent = selectedRevision1.content || ''
+          processedNewContent = selectedRevision2.content || ''
+        }
+
+        const lineDiffs = diffLines(processedOldContent, processedNewContent)
         let added = 0
         let removed = 0
         
-        for (let i = 0; i < maxLines; i++) {
-          const oldLine = oldLines[i] || ''
-          const newLine = newLines[i] || ''
-          
-          if (!oldLine && newLine) added++
-          else if (oldLine && !newLine) removed++
-          else if (oldLine !== newLine) {
-            added++
-            removed++
+        lineDiffs.forEach(change => {
+          const lines = change.value.split('\n').filter(line => line.trim() !== '')
+          if (change.added) {
+            added += lines.length
+          } else if (change.removed) {
+            removed += lines.length
           }
-        }
+        })
         
         return { added, removed, unchanged: 0, total: added + removed }
       }
@@ -266,15 +353,21 @@ export function RevisionDiffViewer({
     const getFieldContent = (revision: PostRevision, field: string) => {
       switch (field) {
         case 'title': return revision.title || ''
-        case 'content': return RevisionUtils.stripHtml(revision.content) || ''
+        case 'content': return RevisionUtils.htmlToReadableText(revision.content || '')
         case 'excerpt': return revision.excerpt || ''
         case 'meta': return `Title: ${revision.metaTitle || ''}\nDescription: ${revision.metaDescription || ''}`
         default: return revision.content || ''
       }
     }
 
-    const oldContent = getFieldContent(selectedRevision1, diffField)
-    const newContent = getFieldContent(selectedRevision2, diffField)
+    let oldContent = getFieldContent(selectedRevision1, diffField)
+    let newContent = getFieldContent(selectedRevision2, diffField)
+
+    // Use raw content if processed content seems too similar
+    if (Math.abs(oldContent.length - newContent.length) < 100) {
+      oldContent = selectedRevision1.content || ''
+      newContent = selectedRevision2.content || ''
+    }
 
     const oldLines = oldContent.split('\n')
     const newLines = newContent.split('\n')
@@ -366,15 +459,21 @@ export function RevisionDiffViewer({
       const getFieldContent = (revision: PostRevision, field: string) => {
         switch (field) {
           case 'title': return revision.title || ''
-          case 'content': return RevisionUtils.stripHtml(revision.content) || ''
+          case 'content': return RevisionUtils.htmlToReadableText(revision.content || '')
           case 'excerpt': return revision.excerpt || ''
           case 'meta': return `Title: ${revision.metaTitle || ''}\nDescription: ${revision.metaDescription || ''}`
           default: return revision.content || ''
         }
       }
 
-      const oldContent = getFieldContent(selectedRevision1, diffField)
-      const newContent = getFieldContent(selectedRevision2, diffField)
+      let oldContent = getFieldContent(selectedRevision1, diffField)  
+      let newContent = getFieldContent(selectedRevision2, diffField)
+
+      // Use raw content if processed content seems too similar
+      if (Math.abs(oldContent.length - newContent.length) < 100) {
+        oldContent = selectedRevision1.content || ''
+        newContent = selectedRevision2.content || ''
+      }
 
       if (oldContent === newContent) {
         return (
@@ -413,7 +512,11 @@ export function RevisionDiffViewer({
         </div>
         
         <ScrollArea className="h-[500px]">
-          <div className="diff-viewer">
+          <div className="diff-viewer" style={{
+            color: 'var(--foreground)',
+            '--diff-text-color': 'var(--foreground)',
+            '--diff-bg-color': 'var(--background)'
+          } as React.CSSProperties}>
             {hunks && hunks.length > 0 ? (
               <Diff viewType={viewType} diffType={diffFile.type || 'modify'} hunks={hunks as any}>
                 {(hunksData: any) => 

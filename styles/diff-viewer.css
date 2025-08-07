@@ -4,12 +4,62 @@
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.5;
+  color: hsl(var(--foreground));
 }
 
+/* Force dark mode with maximum priority - override react-diff-view */
+html.dark .diff-viewer,
+html.dark .diff-viewer *,
+html.dark [class*="diff"],
+html.dark [class*="diff"] *,
+:root.dark .diff-viewer,
+:root.dark .diff-viewer *,
+:root.dark [class*="diff"],
+:root.dark [class*="diff"] * {
+  color: #ffffff !important;
+  background-color: transparent !important;
+}
+
+html.dark [class*="diff-line"],
+:root.dark [class*="diff-line"] {
+  color: #ffffff !important;
+}
+
+html.dark [class*="diff-gutter"],
+:root.dark [class*="diff-gutter"] {
+  background-color: hsl(217 33% 17%) !important;
+  color: hsl(215 20% 65%) !important;
+}
+
+/* Target react-diff-view classes directly */
+html.dark .diff-decoration-gutter,
+html.dark .diff-gutter-col,
+html.dark .diff-gutter-normal,
+html.dark .diff-gutter-add,
+html.dark .diff-gutter-delete,
+html.dark .diff-line,
+html.dark .diff-line-normal,
+html.dark .diff-line-add,
+html.dark .diff-line-delete,
+html.dark .diff-code,
+:root.dark .diff-decoration-gutter,
+:root.dark .diff-gutter-col,
+:root.dark .diff-gutter-normal,
+:root.dark .diff-gutter-add,
+:root.dark .diff-gutter-delete,
+:root.dark .diff-line,
+:root.dark .diff-line-normal,
+:root.dark .diff-line-add,
+:root.dark .diff-line-delete,
+:root.dark .diff-code {
+  color: #ffffff !important;
+}
+
+/* Light mode styles */
 .diff-viewer .diff-gutter {
-  background: hsl(var(--muted));
-  border-right: 1px solid hsl(var(--border));
-  color: hsl(var(--muted-foreground));
+  background: hsl(220 13% 91%);
+  border-right: 1px solid hsl(217 7% 78%);
+  color: hsl(215 16% 47%);
   width: 60px;
   text-align: center;
   user-select: none;
@@ -17,81 +67,182 @@
 }
 
 .diff-viewer .diff-gutter-normal {
-  background: hsl(var(--background));
+  background: hsl(0 0% 100%);
+  color: hsl(215 16% 47%);
 }
 
 .diff-viewer .diff-gutter-add {
-  background: hsl(142.1 70.6% 45.3% / 0.1);
-  border-right-color: hsl(142.1 70.6% 45.3% / 0.3);
+  background: hsl(142 76% 36% / 0.15);
+  border-right-color: hsl(142 76% 36% / 0.4);
+  color: hsl(142 76% 36%);
 }
 
 .diff-viewer .diff-gutter-delete {
-  background: hsl(0 84.2% 60.2% / 0.1);
-  border-right-color: hsl(0 84.2% 60.2% / 0.3);
+  background: hsl(0 72% 51% / 0.15);
+  border-right-color: hsl(0 72% 51% / 0.4);
+  color: hsl(0 72% 51%);
 }
 
 .diff-viewer .diff-line {
   padding: 2px 12px;
   border-left: 3px solid transparent;
+  color: hsl(222 84% 5%);
 }
 
 .diff-viewer .diff-line-normal {
-  background: hsl(var(--background));
+  background: hsl(0 0% 100%);
+  color: hsl(222 84% 5%);
 }
 
 .diff-viewer .diff-line-add {
-  background: hsl(142.1 70.6% 45.3% / 0.1);
-  border-left-color: hsl(142.1 70.6% 45.3%);
+  background: hsl(142 76% 36% / 0.1);
+  border-left-color: hsl(142 76% 36%);
+  color: hsl(222 84% 5%);
 }
 
 .diff-viewer .diff-line-delete {
-  background: hsl(0 84.2% 60.2% / 0.1);
-  border-left-color: hsl(0 84.2% 60.2%);
+  background: hsl(0 72% 51% / 0.1);
+  border-left-color: hsl(0 72% 51%);
+  color: hsl(222 84% 5%);
 }
 
 .diff-viewer .diff-code {
   white-space: pre-wrap;
   word-break: break-word;
+  color: hsl(222 84% 5%);
 }
 
 .diff-viewer .diff-code-edit {
-  background: hsl(var(--primary) / 0.2);
+  background: hsl(221 83% 53% / 0.2);
   border-radius: 3px;
   padding: 1px 2px;
   margin: 0 1px;
+  color: hsl(222 84% 5%);
 }
 
 .diff-viewer .diff-code-edit-add {
-  background: hsl(142.1 70.6% 45.3% / 0.3);
+  background: hsl(142 76% 36% / 0.3);
+  color: hsl(222 84% 5%);
 }
 
 .diff-viewer .diff-code-edit-delete {
-  background: hsl(0 84.2% 60.2% / 0.3);
+  background: hsl(0 72% 51% / 0.3);
+  color: hsl(222 84% 5%);
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .dark .diff-viewer .diff-gutter-add {
-    background: hsl(142.1 70.6% 45.3% / 0.2);
-  }
-  
-  .dark .diff-viewer .diff-gutter-delete {
-    background: hsl(0 84.2% 60.2% / 0.2);
-  }
-  
-  .dark .diff-viewer .diff-line-add {
-    background: hsl(142.1 70.6% 45.3% / 0.15);
-  }
-  
-  .dark .diff-viewer .diff-line-delete {
-    background: hsl(0 84.2% 60.2% / 0.15);
-  }
-  
-  .dark .diff-viewer .diff-code-edit-add {
-    background: hsl(142.1 70.6% 45.3% / 0.4);
-  }
-  
-  .dark .diff-viewer .diff-code-edit-delete {
-    background: hsl(0 84.2% 60.2% / 0.4);
-  }
+/* Dark mode support with higher specificity */
+:root.dark .diff-viewer,
+html.dark .diff-viewer {
+  color: hsl(210 40% 98%) !important;
+}
+
+:root.dark .diff-viewer .diff-gutter,
+html.dark .diff-viewer .diff-gutter {
+  background: hsl(217 33% 17%) !important;
+  border-right-color: hsl(217 26% 27%) !important;
+  color: hsl(215 20% 65%) !important;
+}
+
+:root.dark .diff-viewer .diff-gutter-normal,
+html.dark .diff-viewer .diff-gutter-normal {
+  background: hsl(224 71% 4%) !important;
+  color: hsl(215 20% 65%) !important;
+}
+
+:root.dark .diff-viewer .diff-gutter-add,
+html.dark .diff-viewer .diff-gutter-add {
+  background: hsl(142 76% 36% / 0.25) !important;
+  border-right-color: hsl(142 76% 36% / 0.5) !important;
+  color: hsl(142 76% 60%) !important;
+}
+
+:root.dark .diff-viewer .diff-gutter-delete,
+html.dark .diff-viewer .diff-gutter-delete {
+  background: hsl(0 72% 51% / 0.25) !important;
+  border-right-color: hsl(0 72% 51% / 0.5) !important;
+  color: hsl(0 84% 75%) !important;
+}
+
+:root.dark .diff-viewer .diff-line,
+html.dark .diff-viewer .diff-line {
+  color: hsl(210 40% 98%) !important;
+}
+
+:root.dark .diff-viewer .diff-line-normal,
+html.dark .diff-viewer .diff-line-normal {
+  background: hsl(224 71% 4%) !important;
+  color: hsl(210 40% 98%) !important;
+}
+
+:root.dark .diff-viewer .diff-line-add,
+html.dark .diff-viewer .diff-line-add {
+  background: hsl(142 76% 36% / 0.2) !important;
+  border-left-color: hsl(142 76% 60%) !important;
+  color: hsl(210 40% 98%) !important;
+}
+
+:root.dark .diff-viewer .diff-line-delete,
+html.dark .diff-viewer .diff-line-delete {
+  background: hsl(0 72% 51% / 0.2) !important;
+  border-left-color: hsl(0 84% 75%) !important;
+  color: hsl(210 40% 98%) !important;
+}
+
+:root.dark .diff-viewer .diff-code,
+html.dark .diff-viewer .diff-code {
+  color: hsl(210 40% 98%) !important;
+}
+
+:root.dark .diff-viewer .diff-code-edit,
+html.dark .diff-viewer .diff-code-edit {
+  background: hsl(221 83% 53% / 0.3) !important;
+  color: hsl(210 40% 98%) !important;
+}
+
+:root.dark .diff-viewer .diff-code-edit-add,
+html.dark .diff-viewer .diff-code-edit-add {
+  background: hsl(142 76% 36% / 0.4) !important;
+  color: hsl(210 40% 98%) !important;
+}
+
+:root.dark .diff-viewer .diff-code-edit-delete,
+html.dark .diff-viewer .diff-code-edit-delete {
+  background: hsl(0 72% 51% / 0.4) !important;
+  color: hsl(210 40% 98%) !important;
+}
+
+/* Additional dark mode styles for simple diff fallback */
+:root.dark pre,
+html.dark pre {
+  color: hsl(210 40% 98%) !important;
+}
+
+:root.dark .bg-red-50,
+html.dark .bg-red-50 {
+  background: hsl(0 72% 51% / 0.2) !important;
+}
+
+:root.dark .bg-green-50,
+html.dark .bg-green-50 {
+  background: hsl(142 76% 36% / 0.2) !important;
+}
+
+:root.dark .text-red-600,
+html.dark .text-red-600 {
+  color: hsl(0 84% 75%) !important;
+}
+
+:root.dark .text-green-600,
+html.dark .text-green-600 {
+  color: hsl(142 76% 60%) !important;
+}
+
+:root.dark .text-red-400,
+html.dark .text-red-400 {
+  color: hsl(0 84% 75%) !important;
+}
+
+:root.dark .text-green-400,
+html.dark .text-green-400 {
+  color: hsl(142 76% 60%) !important;
 }

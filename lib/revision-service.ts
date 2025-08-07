@@ -151,4 +151,42 @@ export class RevisionUtils {
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + '...'
   }
+
+  /**
+   * Convert HTML content to clean readable text for diff comparison
+   */
+  static htmlToReadableText(htmlContent: string): string {
+    return htmlContent
+      // Replace common HTML elements with readable versions (without markdown symbols)
+      .replace(/<p[^>]*>/g, '\n')  // Start paragraphs on new lines
+      .replace(/<\/p>/g, '\n')     // End paragraphs with newlines
+      .replace(/<br[^>]*>/g, '\n') // Line breaks
+      .replace(/<h[1-6][^>]*>/g, '\n') // Headers (just newline, no ##)
+      .replace(/<\/h[1-6]>/g, '\n')
+      .replace(/<li[^>]*>/g, '\n- ') // List items (simple dash)
+      .replace(/<\/li>/g, '')
+      .replace(/<ul[^>]*>/g, '\n')  // Lists
+      .replace(/<\/ul>/g, '\n')
+      .replace(/<ol[^>]*>/g, '\n')
+      .replace(/<\/ol>/g, '\n')
+      .replace(/<strong[^>]*>/g, '')  // Remove bold formatting
+      .replace(/<\/strong>/g, '')
+      .replace(/<em[^>]*>/g, '')       // Remove italic formatting
+      .replace(/<\/em>/g, '')
+      .replace(/<code[^>]*>/g, '')     // Remove code formatting
+      .replace(/<\/code>/g, '')
+      .replace(/<pre[^>]*>/g, '\n') // Code blocks (just newlines)
+      .replace(/<\/pre>/g, '\n')
+      .replace(/<blockquote[^>]*>/g, '\n') // Quotes (just newlines)
+      .replace(/<\/blockquote>/g, '\n')
+      // Remove all other HTML tags
+      .replace(/<[^>]*>/g, '')
+      // Clean up multiple newlines and whitespace
+      .replace(/\n\s*\n\s*\n/g, '\n\n')
+      .replace(/^\s+|\s+$/g, '')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .join('\n')
+  }
 }

@@ -71,10 +71,10 @@ const navigation = [
         icon: FolderOpen,
       },
       {
-        title: "Forms",
+        title: "Lead Forms",
         url: "/admin/forms",
         icon: MessageSquare,
-        badge: "Pro",
+        badge: "New",
       },
     ],
   },
