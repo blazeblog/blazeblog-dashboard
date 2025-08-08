@@ -15,6 +15,7 @@ import {
   Shield,
   ChevronRight,
   Globe,
+  MessageCircle,
 } from "lucide-react"
 
 import {
@@ -37,7 +38,25 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
-const navigation = [
+interface SubmenuItem {
+  title: string
+  url: string
+}
+
+interface NavigationItem {
+  title: string
+  url: string
+  icon: React.ComponentType<{ className?: string }>
+  badge?: string
+  submenu?: SubmenuItem[]
+}
+
+interface NavigationSection {
+  title: string
+  items: NavigationItem[]
+}
+
+const navigation: NavigationSection[] = [
   {
     title: "Overview",
     items: [
@@ -46,12 +65,12 @@ const navigation = [
         url: "/admin",
         icon: LayoutDashboard,
       },
-      {
-        title: "Analytics",
-        url: "/admin/analytics",
-        icon: BarChart3,
-        badge: "New",
-      },
+      // {
+      //   title: "Analytics",
+      //   url: "/admin/analytics",
+      //   icon: BarChart3,
+      //   badge: "New",
+      // },
     ],
   },
   {
@@ -79,6 +98,19 @@ const navigation = [
         title: "Tags",
         url: "/admin/tags",
         icon: Hash,
+          submenu: [
+          { title: "All Tags", url: "/admin/tags" },
+          { title: "Add New", url: "/admin/tags/add" },
+        ],
+      },
+      {
+        title: "Comments",
+        url: "/admin/comments",
+        icon: MessageCircle,
+        submenu: [
+          { title: "All Comments", url: "/admin/comments" },
+          { title: "Pending Approval", url: "/admin/comments?status=pending" },
+        ],
       },
       {
         title: "Lead Forms",
@@ -88,21 +120,21 @@ const navigation = [
       },
     ],
   },
-  {
-    title: "User Management",
-    items: [
-      {
-        title: "Users",
-        url: "/admin/users",
-        icon: Users,
-      },
-      {
-        title: "Roles & Permissions",
-        url: "/admin/roles",
-        icon: Shield,
-      },
-    ],
-  },
+  // {
+  //   title: "User Management",
+  //   items: [
+  //     {
+  //       title: "Users",
+  //       url: "/admin/users",
+  //       icon: Users,
+  //     },
+  //     {
+  //       title: "Roles & Permissions",
+  //       url: "/admin/roles",
+  //       icon: Shield,
+  //     },
+  //   ],
+  // },
   {
     title: "System",
     items: [

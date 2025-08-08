@@ -30,6 +30,11 @@ interface PaginationParams {
   slug?: string
   description?: string
   isActive?: boolean
+  // Comment specific filters
+  postId?: number
+  isApproved?: boolean
+  topLevelOnly?: boolean
+  parentCommentId?: number
 }
 
 interface PaginatedResponse<T> {
@@ -116,6 +121,26 @@ interface PostRevision {
     username: string
     email: string
   }
+}
+
+interface Comment {
+  id: number
+  content: string
+  authorName: string
+  authorEmail: string
+  authorWebsite?: string
+  postId: number
+  parentCommentId?: number
+  isApproved: boolean
+  createdAt: string
+  updatedAt: string
+  post?: {
+    id: number
+    title: string
+    slug: string
+  }
+  replies?: Comment[]
+  replyCount?: number
 }
 
 /**
@@ -206,6 +231,12 @@ function buildQueryString(params: PaginationParams): string {
   if (params.description) searchParams.set('description', params.description)
   if (params.isActive !== undefined) searchParams.set('isActive', params.isActive.toString())
   
+  // Comment specific filters
+  if (params.postId !== undefined) searchParams.set('postId', params.postId.toString())
+  if (params.isApproved !== undefined) searchParams.set('isApproved', params.isApproved.toString())
+  if (params.topLevelOnly !== undefined) searchParams.set('topLevelOnly', params.topLevelOnly.toString())
+  if (params.parentCommentId !== undefined) searchParams.set('parentCommentId', params.parentCommentId.toString())
+  
   const queryString = searchParams.toString()
   return queryString ? `?${queryString}` : ''
 }
@@ -234,4 +265,4 @@ export const api = {
 }
 
 // Export types for use in components
-export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision }
+export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment }

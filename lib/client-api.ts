@@ -1,7 +1,7 @@
 "use client"
 
 import { useAuth } from "@clerk/nextjs"
-import type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision } from "./api"
+import type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment } from "./api"
 
 // Form-related types based on Forms API documentation
 export type FieldType = 
@@ -102,6 +102,12 @@ function buildQueryString(params: PaginationParams): string {
   if (params.description) searchParams.set('description', params.description)
   if (params.isActive !== undefined) searchParams.set('isActive', params.isActive.toString())
   
+  // Comment specific filters
+  if (params.postId !== undefined) searchParams.set('postId', params.postId.toString())
+  if (params.isApproved !== undefined) searchParams.set('isApproved', params.isApproved.toString())
+  if (params.topLevelOnly !== undefined) searchParams.set('topLevelOnly', params.topLevelOnly.toString())
+  if (params.parentCommentId !== undefined) searchParams.set('parentCommentId', params.parentCommentId.toString())
+  
   const queryString = searchParams.toString()
   return queryString ? `?${queryString}` : ''
 }
@@ -182,4 +188,4 @@ export function useClientApi() {
   }
 }
 
-export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision }
+export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment }

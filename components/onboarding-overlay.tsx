@@ -23,12 +23,12 @@ import {
   X,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { useOnboarding } from "@/hooks/use-onboarding"
+import { useOnboarding, useSlugCheck } from "@/hooks/use-onboarding"
 
 // Mock themes data - will be replaced with API
 const mockThemes = [
   {
-    id: "minimal",
+    id: "1",
     name: "Minimal",
     description: "Clean and simple design focused on content",
     preview: "bg-gradient-to-br from-slate-50 to-slate-100",
@@ -36,7 +36,7 @@ const mockThemes = [
     category: "Professional"
   },
   {
-    id: "tech",
+    id: "2",
     name: "TechHub",
     description: "Modern tech-focused design with dark elements",
     preview: "bg-gradient-to-br from-blue-900 to-purple-900",
@@ -44,7 +44,7 @@ const mockThemes = [
     category: "Tech"
   },
   {
-    id: "creative",
+    id: "3",
     name: "Creative",
     description: "Vibrant and artistic design for creative professionals",
     preview: "bg-gradient-to-br from-pink-400 to-orange-400",
@@ -52,7 +52,7 @@ const mockThemes = [
     category: "Creative"
   },
   {
-    id: "business",
+    id: "4",
     name: "Business Pro",
     description: "Professional business-focused design",
     preview: "bg-gradient-to-br from-gray-800 to-gray-900",
@@ -60,7 +60,7 @@ const mockThemes = [
     category: "Business"
   },
   {
-    id: "nature",
+    id: "5",
     name: "Nature",
     description: "Earth-toned design inspired by nature",
     preview: "bg-gradient-to-br from-green-600 to-emerald-700",
@@ -68,7 +68,7 @@ const mockThemes = [
     category: "Lifestyle"
   },
   {
-    id: "elegant",
+    id: "6",
     name: "Elegant",
     description: "Sophisticated and refined design",
     preview: "bg-gradient-to-br from-purple-800 to-indigo-900",
@@ -98,6 +98,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
   const router = useRouter()
   const { toast } = useToast()
   const { hasCompletedOnboarding, isOnboarded } = useOnboarding()
+  const { checkSlug, result: slugResult, clearResult } = useSlugCheck()
   
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     companyName: "",
@@ -152,7 +153,10 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
       case "company":
         return onboardingData.companyName.trim().length > 0
       case "blog":
-        return onboardingData.blogSlug.trim().length >= 3 && /^[a-z0-9-]+$/.test(onboardingData.blogSlug)
+        return onboardingData.blogSlug.trim().length >= 3 && 
+               /^[a-z0-9-]+$/.test(onboardingData.blogSlug) && 
+               !slugResult.exists && 
+               !slugResult.isChecking
       case "theme":
         return onboardingData.selectedTheme.length > 0
       default:
@@ -180,22 +184,12 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
     setIsLoading(true)
     
     try {
-      // Mock API call to create the blog setup - will be replaced with real API
-      const setupData = {
+      // Call the complete-onboarding API with proper data structure
+      await hasCompletedOnboarding({
         companyName: onboardingData.companyName,
-        website: onboardingData.website,
-        blogSlug: onboardingData.blogSlug,
-        selectedTheme: onboardingData.selectedTheme,
-        description: onboardingData.description,
-      }
-      
-      console.log("Setting up blog with data:", setupData)
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Mark onboarding as completed
-      hasCompletedOnboarding()
+        blogUrl: `${onboardingData.blogSlug}.blazeblog.xyz`,
+        themeId: parseInt(onboardingData.selectedTheme)
+      })
       
       toast({
         title: "🎉 Welcome to BlazeBlog!",
@@ -209,6 +203,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
       }, 1500)
       
     } catch (error) {
+      console.error('Onboarding error:', error)
       toast({
         title: "Setup Error",
         description: "There was an issue setting up your blog. Please try again.",
@@ -223,6 +218,13 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
     // Only allow lowercase letters, numbers, and hyphens
     const sanitized = value.toLowerCase().replace(/[^a-z0-9-]/g, "")
     setOnboardingData(prev => ({ ...prev, blogSlug: sanitized }))
+    
+    // Check slug availability with debouncing
+    if (sanitized.trim().length >= 3) {
+      checkSlug(sanitized)
+    } else {
+      clearResult()
+    }
   }
 
   const handleClose = () => {
@@ -434,12 +436,45 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                         placeholder="your-blog-name"
                         value={onboardingData.blogSlug}
                         onChange={(e) => handleSlugChange(e.target.value)}
-                        className="h-12 pr-40 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
+                        className={`h-12 pr-40 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm ${
+                          onboardingData.blogSlug.length >= 3 && slugResult.exists
+                            ? "border-red-300 focus:border-red-500" 
+                            : onboardingData.blogSlug.length >= 3 && !slugResult.exists && !slugResult.isChecking
+                            ? "border-green-300 focus:border-green-500"
+                            : ""
+                        }`}
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500 bg-gray-100/80 dark:bg-gray-700/80 backdrop-blur-sm px-2 py-1 rounded">
                         .blazeblog.xyz
                       </div>
                     </div>
+                    
+                    {/* Slug status indicator */}
+                    {onboardingData.blogSlug.length >= 3 && (
+                      <div className="mt-2">
+                        {slugResult.isChecking ? (
+                          <div className="flex items-center space-x-2 text-blue-600">
+                            <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600" />
+                            <span className="text-sm">Checking availability...</span>
+                          </div>
+                        ) : slugResult.error ? (
+                          <div className="flex items-center space-x-2 text-red-600">
+                            <X className="h-3 w-3" />
+                            <span className="text-sm">Error checking availability</span>
+                          </div>
+                        ) : slugResult.exists ? (
+                          <div className="flex items-center space-x-2 text-red-600">
+                            <X className="h-3 w-3" />
+                            <span className="text-sm">This URL is already taken</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2 text-green-600">
+                            <CheckCircle className="h-3 w-3" />
+                            <span className="text-sm">Available!</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     
                     {onboardingData.blogSlug && (
                       <div className="p-4 bg-blue-50/80 dark:bg-blue-950/50 backdrop-blur-sm rounded-lg border border-blue-200/50 dark:border-blue-800/50">
