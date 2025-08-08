@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useClientApi, type Category, type Tag } from "@/lib/client-api"
+import { useClientApi, type Category, type Tag, type Post } from "@/lib/client-api"
 import { Save, X, FileText, Settings, Eye, ArrowLeft, Focus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,7 @@ import { AutoSaveIndicator } from "@/components/auto-save-indicator"
 import { ConnectivityIndicator } from "@/components/connectivity-indicator"
 import { TagsInput } from "@/components/tags-input"
 import { SEOSuggestionsSidebar } from "@/components/seo-suggestions-sidebar"
+import { RelatedPostsSelector } from "@/components/related-posts-selector"
 // import { FocusModeToggle, FocusModeContext, useFocusMode } from "@/components/focus-mode-toggle"
 import { generateSlug, ensureTagsExist } from "@/lib/auto-create-utils"
 import { useToast } from "@/hooks/use-toast"
@@ -47,6 +48,7 @@ export default function AddPostPage() {
     featuredImage: "",
     publishDate: "",
     slug: "",
+    relatedPosts: [] as Post[],
   })
 
   const [activeTab, setActiveTab] = useState("editor")
@@ -110,7 +112,8 @@ export default function AddPostPage() {
         status: formData.status,
         featuredImage: formData.featuredImage || undefined,
         categoryId: formData.categoryId ? parseInt(formData.categoryId) : undefined,
-        userId: 1, // This should come from auth context
+        userId: 1,
+        relatedPostIds: formData.relatedPosts.map(post => post.id), // Pass related post IDs in order
       }
       
       await api.post('/posts', postData)
@@ -132,6 +135,7 @@ export default function AddPostPage() {
         featuredImage: "",
         publishDate: "",
         slug: "",
+        relatedPosts: [],
       })
       
     } catch (error) {
@@ -158,6 +162,7 @@ export default function AddPostPage() {
       featuredImage: draft.heroImage || '',
       publishDate: '',
       slug: generateSlug(draft.title),
+      relatedPosts: [] as Post[],
     })
     setShowDraftDialog(false)
   }
@@ -186,8 +191,9 @@ export default function AddPostPage() {
     setFormData({ ...formData, slug })
   }
 
-  const handleTagSuggestions = (tagNames: string[]) => {
-    ensureTagsExist(tagNames, { api, toast }).then(newTags => {
+  const handleTagSuggestions = async (tagNames: string[]) => {
+    try {
+      const newTags = await ensureTagsExist(tagNames, { api, toast })
       const uniqueTags = [...formData.tags]
       newTags.forEach(tag => {
         if (!uniqueTags.find(t => t.id === tag.id)) {
@@ -195,7 +201,9 @@ export default function AddPostPage() {
         }
       })
       setFormData({ ...formData, tags: uniqueTags.slice(0, 10) })
-    })
+    } catch (error) {
+      console.error('Error handling tag suggestions:', error)
+    }
   }
 
   const handleExcerptSuggestion = (excerpt: string) => {
@@ -325,7 +333,8 @@ export default function AddPostPage() {
           </TabsContent>
 
           <TabsContent value="settings" className="mt-4">
-            <div className="grid gap-6 lg:grid-cols-2 max-w-4xl">
+            <div className="space-y-6 max-w-4xl">
+              <div className="grid gap-6 lg:grid-cols-2">
               {/* Publishing Settings */}
               <Card>
                 <CardHeader>
@@ -420,6 +429,13 @@ export default function AddPostPage() {
               </Card>
             </div>
 
+            {/* Related Posts */}
+            <RelatedPostsSelector
+              selectedPosts={formData.relatedPosts}
+              onChange={(posts) => setFormData({ ...formData, relatedPosts: posts })}
+              maxSelection={5}
+            />
+
             {/* Post Statistics */}
             <Card className="mt-6 max-w-4xl">
               <CardHeader>
@@ -456,6 +472,7 @@ export default function AddPostPage() {
                 </div>
               </CardContent>
             </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
@@ -483,6 +500,7 @@ export default function AddPostPage() {
       </div>
       {/* End flex container */}
 
+      {/* DraftRecoveryDialog
       <DraftRecoveryDialog
         isOpen={showDraftDialog}
         onClose={() => setShowDraftDialog(false)}
@@ -490,6 +508,7 @@ export default function AddPostPage() {
         onRecover={handleDraftRecover}
         onDelete={handleDeleteDraft}
       />
+      */}
     </AdminLayout>
   )
 }

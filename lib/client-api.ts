@@ -64,6 +64,37 @@ export interface FormStats {
   lastSubmissionAt?: string
 }
 
+// Related Posts types
+export interface RelatedPost {
+  id: number
+  postId: number
+  relatedPostId: number
+  sortOrder: number
+  createdAt?: string
+  updatedAt?: string
+  relatedPost?: Post
+  post?: Post
+}
+
+export interface CreateRelatedPostRequest {
+  postId: number
+  relatedPostId: number
+  sortOrder: number
+}
+
+export interface BulkCreateRelatedPostsRequest {
+  postId: number
+  relatedPostIds: number[]
+}
+
+export interface UpdateRelatedPostRequest {
+  sortOrder: number
+}
+
+export interface ReorderRelatedPostsRequest {
+  relatedPostIds: number[]
+}
+
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
   body?: any
@@ -185,6 +216,41 @@ export function useClientApi() {
       
     delete: <T = any>(endpoint: string, options?: Omit<ApiOptions, 'method'>) =>
       makeRequest<T>(endpoint, { ...options, method: 'DELETE' }),
+
+    // Related Posts API methods
+    relatedPosts: {
+      // Create single related post relation
+      create: (data: CreateRelatedPostRequest) =>
+        makeRequest<RelatedPost>('/related-posts', { method: 'POST', body: data }),
+      
+      // Bulk create related posts
+      bulkCreate: (data: BulkCreateRelatedPostsRequest) =>
+        makeRequest<RelatedPost[]>('/related-posts/bulk', { method: 'POST', body: data }),
+      
+      // Get related posts for a specific post
+      getRelatedPosts: (postId: number, includePosts: boolean = true) =>
+        makeRequest<RelatedPost[]>(`/related-posts/post/${postId}?includePosts=${includePosts}`),
+      
+      // Get posts that reference this post
+      getReferencedBy: (relatedPostId: number, includePosts: boolean = true) =>
+        makeRequest<RelatedPost[]>(`/related-posts/referenced-by/${relatedPostId}?includePosts=${includePosts}`),
+      
+      // Update related post (sort order)
+      update: (id: number, data: UpdateRelatedPostRequest) =>
+        makeRequest<RelatedPost>(`/related-posts/${id}`, { method: 'PUT', body: data }),
+      
+      // Reorder related posts
+      reorder: (postId: number, data: ReorderRelatedPostsRequest) =>
+        makeRequest<RelatedPost[]>(`/related-posts/post/${postId}/reorder`, { method: 'PUT', body: data }),
+      
+      // Delete specific relation
+      delete: (id: number) =>
+        makeRequest<void>(`/related-posts/${id}`, { method: 'DELETE' }),
+      
+      // Delete all relations for a post
+      deleteAll: (postId: number) =>
+        makeRequest<{ deleted: number }>(`/related-posts/post/${postId}/all`, { method: 'DELETE' }),
+    },
   }
 }
 

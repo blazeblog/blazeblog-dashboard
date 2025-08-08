@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { useClientApi, type Category, type Post, type PostRevision, type Tag } from "@/lib/client-api"
+import { useClientApi, type Category, type Post, type PostRevision, type Tag, type RelatedPost } from "@/lib/client-api"
 import { useToast } from "@/hooks/use-toast"
 import { Save, X, FileText, Settings, Eye, ArrowLeft, Trash2, Activity, Info, Focus } from "lucide-react"
 
@@ -22,6 +22,7 @@ import { RevisionList } from "@/components/revision-list"
 import { RevisionDiffViewer } from "@/components/revision-diff-viewer"
 import { TagsInput } from "@/components/tags-input"
 import { SEOSuggestionsSidebar } from "@/components/seo-suggestions-sidebar"
+import { RelatedPostsSelector } from "@/components/related-posts-selector"
 // import { FocusModeToggle, FocusModeContext, useFocusMode } from "@/components/focus-mode-toggle"
 import { generateSlug, generateMetaDescription, ensureTagsExist, suggestTagsFromContent } from "@/lib/auto-create-utils"
 import {
@@ -64,6 +65,7 @@ export default function EditPostPage() {
     featuredImage: "",
     slug: "",
     tags: [] as Tag[],
+    relatedPosts: [] as Post[], // Add this if not present
   })
 
   const [activeTab, setActiveTab] = useState("editor")
@@ -84,6 +86,15 @@ export default function EditPostPage() {
     try {
       const response = await api.get<Post>(`/posts/${postId}`)
       setPost(response)
+      
+      let relatedPosts: Post[] = []
+      try {
+        const relatedResponse = await api.relatedPosts.getRelatedPosts(parseInt(postId), true)
+        relatedPosts = relatedResponse.map(rel => rel.relatedPost!).filter(Boolean)
+      } catch (relatedError) {
+        console.error('Error fetching related posts:', relatedError)
+      }
+      
       setFormData({
         title: response.title,
         content: response.content,
@@ -99,6 +110,7 @@ export default function EditPostPage() {
           createdAt: new Date().toISOString(),
           postCount: 0
         })) || [],
+        relatedPosts,
       })
     } catch (error) {
       console.error('Error fetching post:', error)
@@ -120,11 +132,9 @@ export default function EditPostPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     setIsSaving(true)
-    setError('')
-    
+    setError("")
     try {
       const postData = {
         title: formData.title,
@@ -133,21 +143,16 @@ export default function EditPostPage() {
         status: formData.status,
         featuredImage: formData.featuredImage || undefined,
         categoryId: formData.categoryId ? parseInt(formData.categoryId) : undefined,
-        slug: formData.slug || generateSlug(formData.title),
-        tagIds: formData.tags.map(tag => tag.id),
+        slug: formData.slug,
+        tags: formData.tags,
+        relatedPostIds: formData.relatedPosts.map(post => post.id), // Pass related post IDs in order
       }
-      
       await api.put(`/posts/${postId}`, postData)
-      
       toast({
         title: "Success!",
-        description: `Post "${formData.title}" has been ${formData.status === 'published' ? 'published' : 'updated'} successfully.`,
+        description: `Post "${formData.title}" has been updated successfully.`,
         variant: "default"
       })
-      
-      // Refresh the post data
-      await fetchPost()
-      
     } catch (error) {
       console.error('Error updating post:', error)
       setError('Failed to update post. Please try again.')
@@ -205,6 +210,7 @@ export default function EditPostPage() {
       featuredImage: "", // Reset featured image as it's not in revision
       slug: generateSlug(revision.title),
       tags: [], // Reset tags as they're not in revision
+      relatedPosts: [], // Reset related posts as they're not in revision
     })
     
     // Switch to editor tab to show restored content
@@ -507,6 +513,14 @@ export default function EditPostPage() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Related Posts */}
+                <RelatedPostsSelector
+                  currentPostId={parseInt(postId)}
+                  selectedPosts={formData.relatedPosts}
+                  onChange={(posts) => setFormData({ ...formData, relatedPosts: posts })}
+                  maxSelection={5}
+                />
 
                 <Card className="mt-6 max-w-4xl">
                   <CardHeader>
