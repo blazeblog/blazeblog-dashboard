@@ -87,12 +87,14 @@ export default function EditPostPage() {
       const response = await api.get<Post>(`/posts/${postId}`)
       setPost(response)
       
+      // Extract related posts from the API response
+      // The API returns relatedPosts array with nested relatedPost objects
       let relatedPosts: Post[] = []
-      try {
-        const relatedResponse = await api.relatedPosts.getRelatedPosts(parseInt(postId), true)
-        relatedPosts = relatedResponse.map(rel => rel.relatedPost!).filter(Boolean)
-      } catch (relatedError) {
-        console.error('Error fetching related posts:', relatedError)
+      if (response.relatedPosts && Array.isArray(response.relatedPosts)) {
+        relatedPosts = response.relatedPosts
+          .sort((a: any, b: any) => a.sortOrder - b.sortOrder) // Sort by sortOrder
+          .map((rel: any) => rel.relatedPost) // Extract the actual post data
+          .filter(Boolean) // Remove any null/undefined entries
       }
       
       setFormData(prev => ({
@@ -111,7 +113,7 @@ export default function EditPostPage() {
           createdAt: new Date().toISOString(),
           postCount: 0
         })) || [],
-        relatedPosts,
+        relatedPosts, // Use the extracted related posts
       }))
     } catch (error) {
       console.error('Error fetching post:', error)
@@ -145,8 +147,8 @@ export default function EditPostPage() {
         featuredImage: formData.featuredImage || undefined,
         categoryId: formData.categoryId ? parseInt(formData.categoryId) : undefined,
         slug: formData.slug,
-        tags: formData.tags,
-        relatedPostIds: formData.relatedPosts.map(post => post.id), // Pass related post IDs in order
+        tagIds: formData.tags.map(tag => tag.id), // Optimized: Send only tag IDs instead of full objects
+        relatedPostIds: formData.relatedPosts.map(post => post.id), // Optimized: Send only post IDs instead of full objects
       }
       await api.put(`/posts/${postId}`, postData)
       toast({

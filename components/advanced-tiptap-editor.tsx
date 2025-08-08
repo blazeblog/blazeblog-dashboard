@@ -155,6 +155,20 @@ export function AdvancedTiptapEditor({
     },
   })
 
+  // Sync content when prop changes
+  useEffect(() => {
+    if (editor && content !== undefined && editor.getHTML() !== content) {
+      editor.commands.setContent(content, false) // false = don't emit update event to prevent infinite loop
+    }
+  }, [editor, content])
+
+  // Sync hero image when prop changes
+  useEffect(() => {
+    if (heroImage !== undefined && heroImageUrl !== heroImage) {
+      setHeroImageUrl(heroImage)
+    }
+  }, [heroImage, heroImageUrl])
+
   const handleHeroImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {

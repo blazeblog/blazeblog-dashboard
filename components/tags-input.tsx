@@ -40,46 +40,76 @@ export function TagsInput({
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const currentValueRef = useRef(value)
+  const abortControllerRef = useRef<AbortController | null>(null)
   const api = useClientApi()
   const { toast } = useToast()
 
-  // Fetch tag suggestions based on input
-  const fetchSuggestions = useCallback(async (query: string) => {
-    if (!query.trim() || query.length < 2) {
+  // Update ref when value changes
+  useEffect(() => {
+    currentValueRef.current = value
+  }, [value])
+
+  // Debounced suggestion fetch - completely isolated to avoid any dependency issues
+  useEffect(() => {
+    // If input is empty or too short, clear suggestions immediately
+    if (!inputValue.trim() || inputValue.length < 2) {
       setSuggestions([])
       setShowSuggestions(false)
+      setIsLoading(false)
       return
     }
 
-    try {
-      setIsLoading(true)
-      const response = await api.getPaginated<Tag>("/tags", {
-        search: query,
-        limit: 10
-      })
-      
-      // Filter out already selected tags
-      const filteredSuggestions = response.data.filter(
-        tag => !value.some(selectedTag => selectedTag.id === tag.id)
-      )
-      
-      setSuggestions(filteredSuggestions)
-      setShowSuggestions(filteredSuggestions.length > 0)
-    } catch (error) {
-      console.error("Error fetching tag suggestions:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [api, value])
+    const timer = setTimeout(async () => {
+      // Cancel previous request if it exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
 
-  // Debounced suggestion fetch
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchSuggestions(inputValue)
+      // Create new abort controller for this request
+      abortControllerRef.current = new AbortController()
+
+      try {
+        setIsLoading(true)
+        const response = await api.getPaginated<Tag>("/tags", {
+          search: inputValue,
+          limit: 10
+        })
+        
+        // Check if request was aborted
+        if (abortControllerRef.current?.signal.aborted) {
+          return
+        }
+        
+        // Filter out already selected tags using ref to avoid dependency issues
+        const filteredSuggestions = response.data.filter(
+          tag => !currentValueRef.current.some(selectedTag => selectedTag.id === tag.id)
+        )
+        
+        setSuggestions(filteredSuggestions)
+        setShowSuggestions(filteredSuggestions.length > 0)
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return // Request was cancelled, ignore error
+        }
+        console.error("Error fetching tag suggestions:", error)
+      } finally {
+        setIsLoading(false)
+        abortControllerRef.current = null
+      }
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [inputValue, fetchSuggestions])
+  }, [inputValue]) // Only inputValue as dependency - no api dependency!
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
 
   // Create new tag
   const createTag = async (name: string): Promise<Tag> => {

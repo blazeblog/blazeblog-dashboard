@@ -31,9 +31,9 @@ export default async function SettingsPage() {
         <Tabs defaultValue="general" className="space-y-4">
           <TabsList>
             <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            {/* <TabsTrigger value="security">Security</TabsTrigger> */}
+            {/* <TabsTrigger value="notifications">Notifications</TabsTrigger> */}
+            {/* <TabsTrigger value="appearance">Appearance</TabsTrigger> */}
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">

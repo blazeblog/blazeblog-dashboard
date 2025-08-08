@@ -75,6 +75,16 @@ interface Post {
     name: string
     slug: string
   }[]
+  relatedPosts?: {
+    id: number
+    relatedPostId: number
+    sortOrder: number
+    relatedPost: {
+      id: number
+      title: string
+      slug: string | null
+    }
+  }[]
 }
 
 interface Category {

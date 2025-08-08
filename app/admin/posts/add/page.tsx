@@ -113,7 +113,8 @@ export default function AddPostPage() {
         featuredImage: formData.featuredImage || undefined,
         categoryId: formData.categoryId ? parseInt(formData.categoryId) : undefined,
         userId: 1,
-        relatedPostIds: formData.relatedPosts.map(post => post.id), // Pass related post IDs in order
+        tagIds: formData.tags.map(tag => tag.id), // Optimized: Send only tag IDs instead of full objects
+        relatedPostIds: formData.relatedPosts.map(post => post.id), // Optimized: Send only post IDs instead of full objects
       }
       
       await api.post('/posts', postData)
@@ -246,7 +247,7 @@ export default function AddPostPage() {
             <Focus className="mr-2 h-4 w-4" />
             SEO
           </Button>
-          {availableDrafts.length > 0 && (
+          {/* {availableDrafts.length > 0 && (
             <Button 
               variant="outline" 
               size="sm" 
@@ -254,7 +255,7 @@ export default function AddPostPage() {
             >
               Recover Drafts ({availableDrafts.length})
             </Button>
-          )}
+          )} */}
           <Button variant="outline" size="sm" asChild>
             <a href="/admin/posts">
               <X className="mr-2 h-4 w-4" />
