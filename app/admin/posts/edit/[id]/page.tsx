@@ -95,7 +95,8 @@ export default function EditPostPage() {
         console.error('Error fetching related posts:', relatedError)
       }
       
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         title: response.title,
         content: response.content,
         categoryId: response.categoryId?.toString() || "",
@@ -111,7 +112,7 @@ export default function EditPostPage() {
           postCount: 0
         })) || [],
         relatedPosts,
-      })
+      }))
     } catch (error) {
       console.error('Error fetching post:', error)
       setError('Failed to load post')
@@ -200,23 +201,19 @@ export default function EditPostPage() {
   }
 
   const handleRevisionRestore = async (revision: PostRevision) => {
-    // Update form data with restored content
-    setFormData({
+    setFormData(prev => ({
+      ...prev,
       title: revision.title,
       content: revision.content,
       categoryId: revision.categoryId?.toString() || "",
       status: revision.status,
       excerpt: revision.excerpt || "",
-      featuredImage: "", // Reset featured image as it's not in revision
+      featuredImage: "",
       slug: generateSlug(revision.title),
-      tags: [], // Reset tags as they're not in revision
-      relatedPosts: [], // Reset related posts as they're not in revision
-    })
-    
-    // Switch to editor tab to show restored content
+      tags: [],
+      relatedPosts: [],
+    }))
     setActiveTab("editor")
-    
-    // Refresh the post data
     await fetchPost()
   }
 
@@ -518,7 +515,7 @@ export default function EditPostPage() {
                 <RelatedPostsSelector
                   currentPostId={parseInt(postId)}
                   selectedPosts={formData.relatedPosts}
-                  onChange={(posts) => setFormData({ ...formData, relatedPosts: posts })}
+                  onChange={(posts) => setFormData(prev => ({ ...prev, relatedPosts: posts }))}
                   maxSelection={5}
                 />
 

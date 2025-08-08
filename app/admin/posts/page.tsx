@@ -17,7 +17,6 @@ import { PostsTable } from "@/components/posts-table"
 async function getPosts(params: PaginationParams = {}): Promise<PaginatedResponse<Post>> {
   try {
     const response = await api.getPaginated<Post>('/posts', {
-      page: 1,
       limit: 10,
       sortBy: 'createdAt',
       sortOrder: 'DESC',

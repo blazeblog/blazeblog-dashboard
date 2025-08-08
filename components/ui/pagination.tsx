@@ -46,6 +46,11 @@ export function Pagination({ pagination, baseUrl, searchParams = {} }: Paginatio
     return pages.sort((a, b) => a - b)
   }
 
+  // Clamp page number to valid range
+  const clampPage = (page: number) => {
+    return Math.max(1, Math.min(page, pagination.totalPages))
+  }
+
   if (pagination.totalPages <= 1) return null
 
   const visiblePages = getVisiblePages()
@@ -64,7 +69,7 @@ export function Pagination({ pagination, baseUrl, searchParams = {} }: Paginatio
           disabled={!pagination.hasPreviousPage}
           asChild
         >
-          <Link href={buildUrl(pagination.page - 1)}>
+          <Link href={buildUrl(clampPage(pagination.page - 1))}>
             <ChevronLeft className="h-4 w-4" />
             Previous
           </Link>
@@ -93,7 +98,7 @@ export function Pagination({ pagination, baseUrl, searchParams = {} }: Paginatio
           disabled={!pagination.hasNextPage}
           asChild
         >
-          <Link href={buildUrl(pagination.page + 1)}>
+          <Link href={buildUrl(clampPage(pagination.page + 1))}>
             Next
             <ChevronRight className="h-4 w-4" />
           </Link>
