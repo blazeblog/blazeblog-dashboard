@@ -77,16 +77,16 @@ export function AdminLayout({ children, title = "Dashboard" }: AdminLayoutProps)
               <h1 className="text-lg font-semibold">{title}</h1>
             </div>
             <div className="flex items-center gap-2">
-              <div className="relative hidden md:block">
+              {/* <div className="relative hidden md:block">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input type="search" placeholder="Search..." className="w-[200px] pl-8 md:w-[300px]" />
-              </div>
+              </div> */}
               <Button variant="ghost" size="icon" className="md:hidden">
                 <Search className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon">
+              {/* <Button variant="ghost" size="icon">
                 <Bell className="h-4 w-4" />
-              </Button>
+              </Button> */}
               <ThemeToggle />
               <UserButton
                 afterSignOutUrl="/"

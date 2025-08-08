@@ -25,7 +25,6 @@ export default function CategoriesPage() {
   const api = useClientApi()
   
   const [categories, setCategories] = useState<Category[]>([])
-  const [categoriesWithCounts, setCategoriesWithCounts] = useState<Category[]>([])
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 12,
@@ -60,7 +59,7 @@ export default function CategoriesPage() {
   const fetchCategories = async (page = 1, search = '') => {
     try {
       setIsLoading(true)
-      const [categoriesResponse, countsResponse] = await Promise.all([
+      const [categoriesResponse] = await Promise.all([
         api.getPaginated<Category>('/categories', {
           page,
           limit: 12,
@@ -68,12 +67,10 @@ export default function CategoriesPage() {
           sortBy: 'name',
           sortOrder: 'ASC',
         }),
-        api.get<Category[]>('/categories/with-counts')
       ])
       
       setCategories(categoriesResponse.data)
       setPagination(categoriesResponse.pagination)
-      setCategoriesWithCounts(countsResponse)
     } catch (error) {
       console.error('Error fetching categories:', error)
       setError('Failed to load categories')
@@ -178,8 +175,6 @@ export default function CategoriesPage() {
           <TabsContent value="grid" className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {categories.map((category) => {
-                const categoryWithCount = categoriesWithCounts.find(c => c.id === category.id)
-                const postCount = categoryWithCount?.posts?.length || 0
                 return (
                 <Card key={category.id} className="relative">
                   <CardHeader>
@@ -195,7 +190,7 @@ export default function CategoriesPage() {
                   <CardContent>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="text-sm text-muted-foreground">{postCount} posts</div>
+                        <div className="text-sm text-muted-foreground">{category.postCount} posts</div>
                         <Badge variant={category.isActive ? "default" : "secondary"}>
                           {category.isActive ? 'Active' : 'Inactive'}
                         </Badge>
@@ -223,8 +218,6 @@ export default function CategoriesPage() {
                 </TableHeader>
                 <TableBody>
                   {categories.map((category) => {
-                    const categoryWithCount = categoriesWithCounts.find(c => c.id === category.id)
-                    const postCount = categoryWithCount?.posts?.length || 0
                     return (
                     <TableRow key={category.id}>
                       <TableCell>
@@ -240,7 +233,7 @@ export default function CategoriesPage() {
                         <code className="text-sm bg-muted px-2 py-1 rounded">{category.slug}</code>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{postCount}</Badge>
+                        <Badge variant="outline">{category.postCount}</Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={category.isActive ? "default" : "secondary"}>

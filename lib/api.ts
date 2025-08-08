@@ -85,6 +85,7 @@ interface Category {
   isActive: boolean
   sortOrder?: number
   createdAt: string
+  postCount?: number
   posts?: {
     id: number
   }[]
