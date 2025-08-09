@@ -32,25 +32,24 @@ export function RelatedPostsSelector({
   const { toast } = useToast()
 
   useEffect(() => {
-    fetchAvailablePosts()
+    if (searchQuery.trim()) {
+      fetchAvailablePosts()
+    }
   }, [currentPostId, searchQuery])
 
   const fetchAvailablePosts = async () => {
+    if (!searchQuery.trim()) {
+      setAvailablePosts([])
+      return
+    }
+
     setIsLoading(true)
     try {
-      let response
-      if (searchQuery.trim()) {
-        response = await api.getPaginated<Post>('/posts/search', {
-          title: searchQuery.trim(),
-          limit: 10,
-          status: 'published',
-        })
-      } else {
-        response = await api.getPaginated<Post>('/posts', {
-          limit: 10,
-          status: 'published',
-        })
-      }
+      const response = await api.getPaginated<Post>('/posts/search', {
+        title: searchQuery.trim(),
+        limit: 10,
+        status: 'published',
+      })
       let posts = response.data
       if (currentPostId) {
         posts = posts.filter(post => post.id !== currentPostId)
@@ -124,6 +123,13 @@ export function RelatedPostsSelector({
     })
   }
 
+  const formatPostDescription = (post: Post) => {
+    if (post.excerpt) {
+      return post.excerpt.length > 50 ? post.excerpt.substring(0, 50) + '...' : post.excerpt
+    }
+    return post.title || "Untitled Post"
+  }
+
   return (
     <Card>
       <CardHeader className="pb-4">
@@ -187,16 +193,23 @@ export function RelatedPostsSelector({
           </div>
 
           {/* Available Posts */}
-          <div className="space-y-1 max-h-48 overflow-y-auto border rounded-lg p-2 bg-gray-50/50 dark:bg-gray-800/50">
-            {availablePosts.length === 0 ? (
+          <div className="space-y-1 max-h-48 overflow-y-auto border rounded-lg p-2 bg-gray-50/50 dark:bg-gray-800/50 min-h-[192px]">
+            {isLoading ? (
               <div className="text-center text-gray-500 py-8">
-                {isLoading ? "Loading posts..." : "No posts found"}
+                Loading posts...
+              </div>
+            ) : availablePosts.length === 0 && searchQuery.trim() === "" ? (
+              <div className="text-center text-gray-500 py-8">
+                Please enter a search query to find posts.
+              </div>
+            ) : availablePosts.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                No posts found.
               </div>
             ) : (
               availablePosts.map((post) => {
                 const isSelected = selectedPosts.find(p => p.id === post.id)
                 const isMaxReached = selectedPosts.length >= maxSelection
-                
                 return (
                   <div
                     key={post.id}
@@ -211,10 +224,7 @@ export function RelatedPostsSelector({
                         {post.title}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {post.excerpt ? 
-                          (post.excerpt.length > 50 ? post.excerpt.substring(0, 50) + '...' : post.excerpt)
-                          : post.slug
-                        }
+                        {formatPostDescription(post)}
                       </div>
                     </div>
                     {isSelected ? (

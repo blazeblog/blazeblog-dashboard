@@ -25,53 +25,90 @@ export async function ensureTagsExist(
 ): Promise<Tag[]> {
   const results: Tag[] = []
   const maxTags = 10
+  const createdTags: string[] = []
+  const foundTags: string[] = []
+  const failedTags: string[] = []
 
   // Limit to max tags
   const limitedTagNames = tagNames.slice(0, maxTags)
+
+  // First, get all existing tags to avoid multiple API calls
+  const allExistingTags = await api.getPaginated<Tag>("/tags", { limit: 100 })
 
   for (const tagName of limitedTagNames) {
     const trimmedName = tagName.trim()
     if (!trimmedName) continue
 
     try {
-      // First, try to find existing tag
-      const existingTags = await api.getPaginated<Tag>("/tags", {
-        search: trimmedName,
-        limit: 1
-      })
-
-      const exactMatch = existingTags.data.find(
+      // Check if tag already exists (case insensitive)
+      const exactMatch = allExistingTags.data.find(
         (tag: any) => tag.name.toLowerCase() === trimmedName.toLowerCase()
       )
 
       if (exactMatch) {
         results.push(exactMatch)
+        foundTags.push(trimmedName)
       } else {
-        // Create new tag
+        // Create new tag with unique slug handling
+        let slug = slugify(trimmedName)
+        let slugAttempt = 0
+        
+        // Check for slug conflicts and create unique slug
+        while (allExistingTags.data.some((tag: any) => tag.slug === slug)) {
+          slugAttempt++
+          slug = `${slugify(trimmedName)}-${slugAttempt}`
+        }
+
         const newTag = await api.post<Tag>("/tags", {
           name: trimmedName,
-          slug: slugify(trimmedName)
+          slug: slug
         })
 
         results.push(newTag)
-
-        toast({
-          title: "Tag created",
-          description: `Created new tag "${trimmedName}"`,
-          variant: "default",
-          duration: 3000
-        })
+        createdTags.push(trimmedName)
+        
+        // Add to existing tags list to prevent duplicate slugs in same batch
+        allExistingTags.data.push(newTag)
       }
     } catch (error) {
       console.error(`Error creating/finding tag "${trimmedName}":`, error)
+      failedTags.push(trimmedName)
       
-      toast({
-        title: "Tag creation failed",
-        description: `Failed to create tag "${trimmedName}"`,
-        variant: "destructive",
-        duration: 3000
-      })
+      // Log specific error details for debugging
+      if (error instanceof Error) {
+        console.error(`Tag creation error details for "${trimmedName}":`, error.message)
+      }
     }
+  }
+
+  // Show consolidated toast messages
+  if (createdTags.length > 0) {
+    toast({
+      title: `${createdTags.length} tag${createdTags.length === 1 ? '' : 's'} created`,
+      description: `Created: ${createdTags.join(', ')}`,
+      variant: "default",
+      duration: 4000
+    })
+  }
+
+  if (foundTags.length > 0 && createdTags.length === 0) {
+    // Only show "found existing" message if no new tags were created
+    toast({
+      title: "Using existing tags",
+      description: `Found ${foundTags.length} existing tag${foundTags.length === 1 ? '' : 's'}`,
+      variant: "default",
+      duration: 3000
+    })
+  }
+
+  if (failedTags.length > 0) {
+    const errorCount = failedTags.length
+    toast({
+      title: `${errorCount} tag${errorCount === 1 ? '' : 's'} failed to create`,
+      description: `Check console for details. Failed: ${failedTags.join(', ')}`,
+      variant: "destructive",
+      duration: 5000
+    })
   }
 
   return results

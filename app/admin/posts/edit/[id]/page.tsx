@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useClientApi, type Category, type Post, type PostRevision, type Tag, type RelatedPost } from "@/lib/client-api"
 import { useToast } from "@/hooks/use-toast"
-import { Save, X, FileText, Settings, Eye, ArrowLeft, Trash2, Activity, Info, Focus } from "lucide-react"
+import { Save, X, FileText, Settings, Eye, ArrowLeft, Trash2, Activity, Info, Focus, BookOpen } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -62,6 +62,7 @@ export default function EditPostPage() {
     categoryId: "",
     status: "draft" as 'draft' | 'published' | 'archived',
     excerpt: "",
+    metaDescription: "", // Added meta description field
     featuredImage: "",
     slug: "",
     tags: [] as Tag[],
@@ -104,6 +105,7 @@ export default function EditPostPage() {
         categoryId: response.categoryId?.toString() || "",
         status: response.status,
         excerpt: response.excerpt || "",
+        metaDescription: response.excerpt || "", // Use excerpt as meta description for now
         featuredImage: response.featuredImage || "",
         slug: generateSlug(response.title),
         tags: response.tags?.map(tag => ({ 
@@ -113,7 +115,7 @@ export default function EditPostPage() {
           createdAt: new Date().toISOString(),
           postCount: 0
         })) || [],
-        relatedPosts, // Use the extracted related posts
+        relatedPosts, 
       }))
     } catch (error) {
       console.error('Error fetching post:', error)
@@ -143,6 +145,7 @@ export default function EditPostPage() {
         title: formData.title,
         content: formData.content,
         excerpt: formData.excerpt || undefined,
+        metaDescription: formData.metaDescription || undefined,
         status: formData.status,
         featuredImage: formData.featuredImage || undefined,
         categoryId: formData.categoryId ? parseInt(formData.categoryId) : undefined,
@@ -158,11 +161,30 @@ export default function EditPostPage() {
       })
     } catch (error) {
       console.error('Error updating post:', error)
-      setError('Failed to update post. Please try again.')
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const status = (error as any)?.status
+      
+      setError(errorMessage)
+      
+      // Show different messages based on status code
+      let title = "Error"
+      let description = errorMessage
+      
+      if (status === 400) {
+        title = "Validation Error"
+        description = errorMessage.includes('API Error:') 
+          ? errorMessage.replace('API Error: 400 Bad Request', '').trim() || errorMessage
+          : errorMessage
+      } else {
+        description = `Failed to update post: ${errorMessage}`
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to update post. Please try again.",
-        variant: "destructive"
+        title,
+        description,
+        variant: "destructive",
+        duration: 8000
       })
     } finally {
       setIsSaving(false)
@@ -238,8 +260,13 @@ export default function EditPostPage() {
   }
 
   // SEO suggestion handlers
+  const handleTitleSuggestion = (title: string) => {
+    console.log('handleTitleSuggestion called with:', title)
+    setFormData(prev => ({ ...prev, title }))
+  }
   const handleSlugSuggestion = (slug: string) => {
-    setFormData({ ...formData, slug })
+    console.log('handleSlugSuggestion called with:', slug)
+    setFormData(prev => ({ ...prev, slug }))
   }
 
   const handleTagSuggestions = (tagNames: string[]) => {
@@ -250,12 +277,18 @@ export default function EditPostPage() {
           uniqueTags.push(tag)
         }
       })
-      setFormData({ ...formData, tags: uniqueTags.slice(0, 10) })
+      setFormData(prev => ({ ...prev, tags: uniqueTags.slice(0, 10) }))
     })
   }
 
   const handleExcerptSuggestion = (excerpt: string) => {
-    setFormData({ ...formData, excerpt })
+    console.log('handleExcerptSuggestion called with:', excerpt)
+    setFormData(prev => ({ ...prev, excerpt }))
+  }
+
+  const handleMetaDescriptionSuggestion = (metaDescription: string) => {
+    console.log('handleMetaDescriptionSuggestion called with:', metaDescription)
+    setFormData(prev => ({ ...prev, metaDescription }))
   }
 
   if (isLoading) {
@@ -490,15 +523,15 @@ export default function EditPostPage() {
                         <p className="text-xs text-muted-foreground">URL: /posts/{formData.slug}</p>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="excerpt">Meta Description</Label>
+                        <Label htmlFor="metaDescription">Meta Description</Label>
                         <Textarea
-                          id="excerpt"
+                          id="metaDescription"
                           placeholder="Brief description for SEO and social sharing..."
                           rows={3}
-                          value={formData.excerpt}
-                          onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                          value={formData.metaDescription}
+                          onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
                         />
-                        <p className="text-xs text-muted-foreground">{formData.excerpt.length}/160 characters</p>
+                        <p className="text-xs text-muted-foreground">{formData.metaDescription.length}/160 characters</p>
                       </div>
                       <div className="space-y-2">
                         <Label>Tags (max 10)</Label>
@@ -512,6 +545,21 @@ export default function EditPostPage() {
                     </CardContent>
                   </Card>
                 </div>
+
+                    <Card>
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <BookOpen className="h-5 w-5" />
+                        Excerpt
+                      </CardTitle>
+                      <Textarea
+                        id="excerpt"
+                        placeholder="Write a brief excerpt for your post...."
+                        value={formData.excerpt}
+                        onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                      />
+                    </CardHeader>
+                  </Card>
 
                 {/* Related Posts */}
                 <RelatedPostsSelector
@@ -652,13 +700,15 @@ export default function EditPostPage() {
               <SEOSuggestionsSidebar
                 title={formData.title}
                 content={formData.content}
-                excerpt={formData.excerpt}
+                excerpt={formData.metaDescription} // Use metaDescription for SEO analysis
                 slug={formData.slug}
                 tags={formData.tags}
                 featuredImage={formData.featuredImage}
+                onTitleSuggestion={handleTitleSuggestion}
                 onSlugSuggestion={handleSlugSuggestion}
                 onTagSuggestions={handleTagSuggestions}
                 onExcerptSuggestion={handleExcerptSuggestion}
+                onMetaDescriptionSuggestion={handleMetaDescriptionSuggestion}
                 className="space-y-4"
               />
             </div>

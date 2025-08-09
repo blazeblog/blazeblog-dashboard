@@ -167,19 +167,55 @@ async function clientApiCall<T = any>(
       cache,
       headers: {
         ...(token && { 'Authorization': `Bearer ${token}` }),
-        'Content-Type': 'application/json',
         ...headers,
       },
     }
 
+    // Only set Content-Type for JSON if it's not already set (allows FormData to set its own)
+    if (!headers['Content-Type'] && !(body instanceof FormData)) {
+      config.headers = {
+        ...config.headers,
+        'Content-Type': 'application/json',
+      }
+    }
+
     if (body && method !== 'GET') {
-      config.body = JSON.stringify(body)
+      config.body = body instanceof FormData ? body : JSON.stringify(body)
     }
 
     const response = await fetch(`${apiUrl}${endpoint}`, config)
     
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`)
+      let errorMessage = `API Error: ${response.status} ${response.statusText}`
+      let errorData = null
+      
+      try {
+        errorData = await response.json()
+        console.log('API Error Response:', errorData)
+        
+        if (errorData.message) {
+          if (Array.isArray(errorData.message)) {
+            // Handle validation errors array
+            errorMessage = errorData.message.join(', ')
+          } else if (typeof errorData.message === 'string') {
+            // Handle single error message
+            errorMessage = errorData.message
+          }
+        } else if (errorData.error) {
+          errorMessage = errorData.error
+        }
+        
+        console.log('Formatted error message:', errorMessage)
+      } catch (parseError) {
+        // If can't parse JSON, use default error message
+        console.warn('Could not parse error response:', parseError)
+      }
+      
+      const error = new Error(errorMessage)
+      ;(error as any).status = response.status
+      ;(error as any).statusText = response.statusText
+      ;(error as any).responseData = errorData
+      throw error
     }
     
     const data = await response.json()

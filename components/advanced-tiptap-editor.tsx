@@ -15,6 +15,8 @@ import Placeholder from "@tiptap/extension-placeholder"
 
 
 import { useState, useCallback, useRef, useEffect } from "react"
+import { useClientApi } from "@/lib/client-api"
+import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -78,6 +80,9 @@ export function AdvancedTiptapEditor({
   const [showDraftDialog, setShowDraftDialog] = useState(false)
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageFileInputRef = useRef<HTMLInputElement>(null)
+  const api = useClientApi()
+  const { toast } = useToast()
 
   // Connectivity detection
   useEffect(() => {
@@ -158,7 +163,8 @@ export function AdvancedTiptapEditor({
   // Sync content when prop changes
   useEffect(() => {
     if (editor && content !== undefined && editor.getHTML() !== content) {
-      editor.commands.setContent(content, false) // false = don't emit update event to prevent infinite loop
+      // Use the correct parameter structure - second parameter is boolean for emitUpdate
+      editor.commands.setContent(content, false)
     }
   }, [editor, content])
 
@@ -197,6 +203,35 @@ export function AdvancedTiptapEditor({
     }
   }, [editor, linkUrl])
 
+
+
+  const handleImageFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      try {
+        const formData = new FormData()
+        formData.append('image', file)
+        
+        const response = await api.post('/file/upload', formData)
+        
+        if (response && response.url) {
+          setImageUrl(response.url)
+          toast({
+            title: "Success",
+            description: "Image uploaded successfully",
+            variant: "default"
+          })
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error)
+        toast({
+          title: 'Error',
+          description: 'Failed to upload image. Please try again.',
+          variant: 'destructive',
+        })
+      }
+    }
+  }
 
   if (!editor) {
     return (
@@ -456,6 +491,28 @@ export function AdvancedTiptapEditor({
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
+                        <Label>Upload Image</Label>
+                        <input
+                          ref={imageFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageFileUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => imageFileInputRef.current?.click()}
+                          className="w-full"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Choose Image File
+                        </Button>
+                      </div>
+                      <div className="text-center text-muted-foreground text-sm">
+                        or
+                      </div>
+                      <div>
                         <Label htmlFor="image-url">Image URL</Label>
                         <Input
                           id="image-url"
@@ -473,7 +530,7 @@ export function AdvancedTiptapEditor({
                           placeholder="Describe the image"
                         />
                       </div>
-                      <Button onClick={insertImage} className="w-full">
+                      <Button onClick={insertImage} className="w-full" disabled={!imageUrl}>
                         Insert Image
                       </Button>
                     </div>

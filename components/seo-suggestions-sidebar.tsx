@@ -17,9 +17,12 @@ import {
   Target,
   Search,
   Eye,
-  Clock
+  Clock,
+  Sparkles,
+  Loader2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useAIMetadata } from "@/hooks/use-ai-metadata"
 import type { Tag } from "@/lib/client-api"
 
 interface SEOSuggestionsProps {
@@ -29,9 +32,11 @@ interface SEOSuggestionsProps {
   slug?: string
   tags: Tag[]
   featuredImage?: string
+  onTitleSuggestion?: (title: string) => void
   onSlugSuggestion: (slug: string) => void
   onTagSuggestions: (tags: string[]) => void
   onExcerptSuggestion: (excerpt: string) => void
+  onMetaDescriptionSuggestion?: (metaDescription: string) => void
   className?: string
 }
 
@@ -95,12 +100,21 @@ export function SEOSuggestionsSidebar({
   slug,
   tags,
   featuredImage,
+  onTitleSuggestion,
   onSlugSuggestion,
   onTagSuggestions,
   onExcerptSuggestion,
+  onMetaDescriptionSuggestion,
   className
 }: SEOSuggestionsProps) {
   const [suggestedSlug, setSuggestedSlug] = useState("")
+  const [rateLimitInfo, setRateLimitInfo] = useState<{
+    totalRequests: number
+    availableRequests: number
+    timeWindow: string
+    usedRequests: number
+  } | null>(null)
+  const { generateMetadata, isGenerating, getRateLimitInfo } = useAIMetadata()
 
   // Generate slug suggestion when title changes
   useEffect(() => {
@@ -109,6 +123,113 @@ export function SEOSuggestionsSidebar({
       setSuggestedSlug(newSlug)
     }
   }, [title])
+
+  // Fetch rate limit info only on component mount
+  useEffect(() => {
+    const fetchRateLimitInfo = async () => {
+      const info = await getRateLimitInfo()
+      setRateLimitInfo(info)
+    }
+    
+    fetchRateLimitInfo()
+  }, []) // Empty dependency array - only runs on mount
+
+  // Update rate limit info after AI generation
+  const updateRateLimitInfo = async () => {
+    const info = await getRateLimitInfo()
+    setRateLimitInfo(info)
+  }
+
+  // Handle AI metadata generation
+  const handleAIGeneration = async () => {
+    if (!content.trim()) {
+      console.log('No content provided for AI generation')
+      return
+    }
+
+    console.log('Starting AI metadata generation...')
+    const currentSlug = slug || suggestedSlug
+    const currentTitle = title
+    
+    console.log('SEO Sidebar - Values being passed:', {
+      content: content.substring(0, 100) + '...',
+      slug: slug,
+      suggestedSlug: suggestedSlug,
+      currentSlug: currentSlug,
+      title: title,
+      currentTitle: currentTitle
+    })
+    
+    const result = await generateMetadata(content, currentSlug, currentTitle)
+    console.log('AI metadata result:', result)
+    
+    if (result) {
+      console.log('Processing AI suggestions...')
+      
+      // Apply AI suggestions with individual logging
+      if (result.title && onTitleSuggestion) {
+        console.log('Calling onTitleSuggestion with:', result.title)
+        onTitleSuggestion(result.title)
+      } else {
+        console.log('Title suggestion skipped:', { 
+          hasTitle: !!result.title, 
+          hasCallback: !!onTitleSuggestion 
+        })
+      }
+      
+      if (result.slug && onSlugSuggestion) {
+        console.log('Calling onSlugSuggestion with:', result.slug)
+        onSlugSuggestion(result.slug)
+      } else if (result.title) {
+        // Fallback: generate slug from title if no slug provided
+        const generatedSlug = slugify(result.title)
+        console.log('Calling onSlugSuggestion with generated slug:', generatedSlug)
+        onSlugSuggestion(generatedSlug)
+      } else {
+        console.log('Slug suggestion skipped:', { 
+          hasSlug: !!result.slug, 
+          hasTitle: !!result.title,
+          hasCallback: !!onSlugSuggestion 
+        })
+      }
+      
+      if (result.excerpt && onExcerptSuggestion) {
+        console.log('Calling onExcerptSuggestion with:', result.excerpt)
+        onExcerptSuggestion(result.excerpt)
+      } else {
+        console.log('Excerpt suggestion skipped:', { 
+          hasExcerpt: !!result.excerpt, 
+          hasCallback: !!onExcerptSuggestion 
+        })
+      }
+      
+      if (result.metaDescription && onMetaDescriptionSuggestion) {
+        console.log('Calling onMetaDescriptionSuggestion with:', result.metaDescription)
+        onMetaDescriptionSuggestion(result.metaDescription)
+      } else {
+        console.log('Meta description suggestion skipped:', { 
+          hasMetaDescription: !!result.metaDescription, 
+          hasCallback: !!onMetaDescriptionSuggestion 
+        })
+      }
+      
+      if (result.tags && result.tags.length > 0) {
+        console.log('Calling onTagSuggestions with:', result.tags)
+        onTagSuggestions(result.tags)
+      } else {
+        console.log('Tag suggestions skipped:', { 
+          hasTags: !!(result.tags && result.tags.length > 0), 
+          hasCallback: !!onTagSuggestions 
+        })
+      }
+
+      // Update rate limit info
+      updateRateLimitInfo()
+      console.log('AI metadata processing complete')
+    } else {
+      console.log('No result from AI metadata generation')
+    }
+  }
 
   // Calculate SEO scores and suggestions
   const seoAnalysis = useMemo((): SEOScore[] => {
@@ -303,6 +424,58 @@ export function SEOSuggestionsSidebar({
           >
             {overallScore >= 80 ? "Excellent" : overallScore >= 60 ? "Good" : "Needs Improvement"}
           </Badge>
+        </CardContent>
+      </Card>
+
+      {/* AI Metadata Generation */}
+      <Card className="border-2 border-dashed border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50/50 to-indigo-50/50 dark:from-purple-950/20 dark:to-indigo-950/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            AI Metadata Generator
+          </CardTitle>
+          <CardDescription>
+            Generate optimized metadata using AI
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            onClick={handleAIGeneration}
+            disabled={isGenerating || (rateLimitInfo && rateLimitInfo.availableRequests <= 0) || !content.trim()}
+            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+            size="sm"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate Metadata
+              </>
+            )}
+          </Button>
+          
+          {/* Rate limit info with color coding */}
+          {rateLimitInfo && (
+            <div className="mt-2 text-center">
+              {rateLimitInfo.availableRequests <= 0 ? (
+                <p className="text-xs text-red-600 dark:text-red-400">
+                  {rateLimitInfo.usedRequests} of {rateLimitInfo.totalRequests} requests used for the day
+                </p>
+              ) : (
+                <p className={`text-xs ${
+                  rateLimitInfo.availableRequests / rateLimitInfo.totalRequests <= 0.2 
+                    ? 'text-red-600 dark:text-red-400' 
+                    : 'text-green-600 dark:text-green-400'
+                }`}>
+                  {rateLimitInfo.availableRequests}/{rateLimitInfo.totalRequests} requests remaining
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

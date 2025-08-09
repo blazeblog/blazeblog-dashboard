@@ -184,16 +184,16 @@ export default function AdminDashboard() {
               </Button>
 
               <Button asChild className="h-20 flex-col gap-2 bg-transparent" variant="outline">
-                <Link href="/admin/users">
-                  <Users className="h-6 w-6" />
-                  Manage Users
+                <Link href="/admin/tags/add">
+                  <Tag className="h-6 w-6" />
+                  Add Tag
                 </Link>
               </Button>
 
               <Button asChild className="h-20 flex-col gap-2 bg-transparent" variant="outline">
-                <Link href="/admin/analytics">
-                  <BarChart3 className="h-6 w-6" />
-                  View Analytics
+                <Link href="/admin/categories/add">
+                  <Hash className="h-6 w-6" />
+                  Add Category
                 </Link>
               </Button>
 
