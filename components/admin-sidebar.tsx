@@ -139,7 +139,7 @@ const navigation: NavigationSection[] = [
     title: "System",
     items: [
       {
-        title: "Settings",
+        title: "Site Settings",
         url: "/admin/settings",
         icon: Settings,
       },
