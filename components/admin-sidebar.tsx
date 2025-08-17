@@ -116,7 +116,7 @@ const navigation: NavigationSection[] = [
         title: "Lead Forms",
         url: "/admin/forms",
         icon: MessageSquare,
-        badge: "New",
+        badge: "Beta",
       },
     ],
   },

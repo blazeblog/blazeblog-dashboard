@@ -96,7 +96,7 @@ export function SiteConfigForm() {
 
   const fetchConfig = async () => {
     try {
-      const response = await api.get<{ data: ConfigData }>('/onboarding/config')
+      const response = await api.get<{ data: ConfigData }>('/customer/config')
       
       const data = response.data || response
       
@@ -150,7 +150,7 @@ export function SiteConfigForm() {
   const saveConfig = async () => {
     setSaving(true)
     try {
-      await api.patch('/onboarding/config', config)
+      await api.patch('/customer/config', config)
       toast({
         title: "Success!",
         description: "Site configuration has been updated successfully.",
@@ -257,111 +257,23 @@ export function SiteConfigForm() {
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="general" className="flex items-center gap-2">
+      <Tabs defaultValue="site-config" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="site-config" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            General
+            Site Configuration
+          </TabsTrigger>
+          <TabsTrigger value="feature-flags" className="flex items-center gap-2">
+            <Flag className="h-4 w-4" />
+            Feature Flags
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart className="h-4 w-4" />
-            Analytics & Tracking
+            Analytics
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general" className="space-y-4 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Flag className="h-5 w-5" />
-                Feature Flags
-              </CardTitle>
-              <CardDescription>Control which features are enabled on your site</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Enable Tags Page</Label>
-                  <p className="text-sm text-muted-foreground">Show tags page for content categorization</p>
-                </div>
-                <Switch
-                  checked={config.featureFlags.enableTagsPage}
-                  onCheckedChange={(checked) => updateFeatureFlag('enableTagsPage', checked)}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Enable Authors Page</Label>
-                  <p className="text-sm text-muted-foreground">Show authors page with contributor profiles</p>
-                </div>
-                <Switch
-                  checked={config.featureFlags.enableAuthorsPage}
-                  onCheckedChange={(checked) => updateFeatureFlag('enableAuthorsPage', checked)}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Enable Comments</Label>
-                  <p className="text-sm text-muted-foreground">Allow users to comment</p>
-                </div>
-                <Switch
-                  checked={config.featureFlags.enableComments}
-                  onCheckedChange={(checked) => updateFeatureFlag('enableComments', checked)}
-                />
-              </div>
-              {config.featureFlags.enableComments && (
-                <>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Auto Approve Comments</Label>
-                      <p className="text-sm text-muted-foreground">Automatically approve new comments without moderation</p>
-                    </div>
-                    <Switch
-                      checked={config.featureFlags.autoApproveComments}
-                      onCheckedChange={(checked) => updateFeatureFlag('autoApproveComments', checked)}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Enable Comments Reply</Label>
-                      <p className="text-sm text-muted-foreground">Allow users to reply to comments</p>
-                    </div>
-                    <Switch
-                      checked={config.featureFlags.enableCommentsReply}
-                      onCheckedChange={(checked) => updateFeatureFlag('enableCommentsReply', checked)}
-                    />
-                  </div>
-                </>
-              )}
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Enable Categories Page</Label>
-                  <p className="text-sm text-muted-foreground">Show categories page for content organization</p>
-                </div>
-                <Switch
-                  checked={config.featureFlags.enableCategoriesPage}
-                  onCheckedChange={(checked) => updateFeatureFlag('enableCategoriesPage', checked)}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Maintenance Mode</Label>
-                  <p className="text-sm text-muted-foreground">Enable maintenance mode to prevent public access</p>
-                </div>
-                <Switch
-                  checked={config.featureFlags.maintenanceMode}
-                  onCheckedChange={(checked) => updateFeatureFlag('maintenanceMode', checked)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
+        <TabsContent value="site-config" className="space-y-4 mt-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -466,6 +378,104 @@ export function SiteConfigForm() {
               <Button onClick={saveConfig} disabled={saving}>
                 <Save className="mr-2 h-4 w-4" />
                 {saving ? 'Saving...' : 'Save Configuration'}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="feature-flags" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Flag className="h-5 w-5" />
+                Feature Flags
+              </CardTitle>
+              <CardDescription>Control which features are enabled on your site</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable Tags Page</Label>
+                  <p className="text-sm text-muted-foreground">Show tags page for content categorization</p>
+                </div>
+                <Switch
+                  checked={config.featureFlags.enableTagsPage}
+                  onCheckedChange={(checked) => updateFeatureFlag('enableTagsPage', checked)}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable Authors Page</Label>
+                  <p className="text-sm text-muted-foreground">Show authors page with contributor profiles</p>
+                </div>
+                <Switch
+                  checked={config.featureFlags.enableAuthorsPage}
+                  onCheckedChange={(checked) => updateFeatureFlag('enableAuthorsPage', checked)}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable Comments</Label>
+                  <p className="text-sm text-muted-foreground">Allow users to comment</p>
+                </div>
+                <Switch
+                  checked={config.featureFlags.enableComments}
+                  onCheckedChange={(checked) => updateFeatureFlag('enableComments', checked)}
+                />
+              </div>
+              {config.featureFlags.enableComments && (
+                <>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Auto Approve Comments</Label>
+                      <p className="text-sm text-muted-foreground">Automatically approve new comments without moderation</p>
+                    </div>
+                    <Switch
+                      checked={config.featureFlags.autoApproveComments}
+                      onCheckedChange={(checked) => updateFeatureFlag('autoApproveComments', checked)}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Enable Comments Reply</Label>
+                      <p className="text-sm text-muted-foreground">Allow users to reply to comments</p>
+                    </div>
+                    <Switch
+                      checked={config.featureFlags.enableCommentsReply}
+                      onCheckedChange={(checked) => updateFeatureFlag('enableCommentsReply', checked)}
+                    />
+                  </div>
+                </>
+              )}
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable Categories Page</Label>
+                  <p className="text-sm text-muted-foreground">Show categories page for content organization</p>
+                </div>
+                <Switch
+                  checked={config.featureFlags.enableCategoriesPage}
+                  onCheckedChange={(checked) => updateFeatureFlag('enableCategoriesPage', checked)}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Maintenance Mode</Label>
+                  <p className="text-sm text-muted-foreground">Enable maintenance mode to prevent public access</p>
+                </div>
+                <Switch
+                  checked={config.featureFlags.maintenanceMode}
+                  onCheckedChange={(checked) => updateFeatureFlag('maintenanceMode', checked)}
+                />
+              </div>
+              <Button onClick={saveConfig} disabled={saving} className="w-full mt-6">
+                <Save className="mr-2 h-4 w-4" />
+                {saving ? 'Saving...' : 'Save Feature Flags'}
               </Button>
             </CardContent>
           </Card>
@@ -697,7 +707,7 @@ export function SiteConfigForm() {
               
               <Button onClick={saveConfig} disabled={saving} className="w-full mt-6">
                 <Save className="mr-2 h-4 w-4" />
-                {saving ? 'Saving...' : 'Save Tracking Configuration'}
+                {saving ? 'Saving...' : 'Save Analytics Configuration'}
               </Button>
             </CardContent>
           </Card>

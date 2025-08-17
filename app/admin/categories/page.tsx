@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, FolderOpen, Grid3X3 } from "lucide-react"
+import { Plus, Search, FolderOpen } from "lucide-react"
 import { CategoryActions } from "@/components/category-actions"
 
 
@@ -33,28 +33,11 @@ export default function CategoriesPage() {
     hasNextPage: false,
     hasPreviousPage: false
   })
-  const [currentView, setCurrentView] = useState<'grid' | 'table'>('grid')
+  const [currentView, setCurrentView] = useState<'table'>('table')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // Load view preference from localStorage on component mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedView = localStorage.getItem('categories-view') as 'grid' | 'table' | null
-      if (savedView) {
-        setCurrentView(savedView)
-      }
-    }
-  }, [])
-
-  // Save view preference to localStorage when it changes
-  const handleViewChange = (view: 'grid' | 'table') => {
-    setCurrentView(view)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('categories-view', view)
-    }
-  }
 
   const fetchCategories = async (page = 1, search = '') => {
     try {
@@ -128,82 +111,33 @@ export default function CategoriesPage() {
           </div>
         )}
 
-        <Tabs value={currentView} className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger 
-                value="grid" 
-                className="gap-2"
-                onClick={() => handleViewChange('grid')}
-              >
-                <Grid3X3 className="h-4 w-4" />
-                Grid View
-              </TabsTrigger>
-              <TabsTrigger 
-                value="table" 
-                className="gap-2"
-                onClick={() => handleViewChange('table')}
-              >
-                <FolderOpen className="h-4 w-4" />
-                Table View
-              </TabsTrigger>
-            </TabsList>
-            <div className="flex items-center gap-4">
-              <form className="flex items-center gap-4" onSubmit={handleSearch}>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search categories..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 w-80"
-                  />
-                </div>
-                <Button type="submit" variant="outline">
-                  Search
-                </Button>
-              </form>
-              <Button className="gap-2" asChild>
-                <a href="/admin/categories/add">
-                  <Plus className="h-4 w-4" />
-                  Add Category
-                </a>
+        <div className="flex items-center justify-between">
+          <div></div>
+          <div className="flex items-center gap-4">
+            <form className="flex items-center gap-4" onSubmit={handleSearch}>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search categories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 w-80"
+                />
+              </div>
+              <Button type="submit" variant="outline">
+                Search
               </Button>
-            </div>
+            </form>
+            <Button className="gap-2" asChild>
+              <a href="/admin/categories/add">
+                <Plus className="h-4 w-4" />
+                Add Category
+              </a>
+            </Button>
           </div>
+        </div>
 
-          <TabsContent value="grid" className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {categories.map((category) => {
-                return (
-                <Card key={category.id} className="relative">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 rounded-full bg-blue-500" />
-                        <CardTitle className="text-lg">{category.name}</CardTitle>
-                      </div>
-                      <CategoryActions categoryId={category.id} />
-                    </div>
-                    <CardDescription>{category.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm text-muted-foreground">{category.postCount} posts</div>
-                        <Badge variant={category.isActive ? "default" : "secondary"}>
-                          {category.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                )
-              })}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="table" className="space-y-6">
+        <div className="space-y-6">
             <Card>
               <Table>
                 <TableHeader>
@@ -217,36 +151,44 @@ export default function CategoriesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {categories.map((category) => {
-                    return (
-                    <TableRow key={category.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="h-4 w-4 rounded-full bg-blue-500" />
-                          <div>
-                            <div className="font-medium">{category.name}</div>
-                            <div className="text-sm text-muted-foreground">{category.description}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <code className="text-sm bg-muted px-2 py-1 rounded">{category.slug}</code>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{category.postCount}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={category.isActive ? "default" : "secondary"}>
-                          {category.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{new Date(category.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <CategoryActions categoryId={category.id} />
+                  {categories.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No categories found
                       </TableCell>
                     </TableRow>
-                    )
-                  })}
+                  ) : (
+                    categories.map((category) => {
+                      return (
+                      <TableRow key={category.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="h-4 w-4 rounded-full bg-blue-500" />
+                            <div>
+                              <div className="font-medium">{category.name}</div>
+                              <div className="text-sm text-muted-foreground">{category.description}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-sm bg-muted px-2 py-1 rounded">{category.slug}</code>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{category.posts?.length || 0}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={category.isActive ? "default" : "secondary"}>
+                            {category.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{new Date(category.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <CategoryActions categoryId={category.id} />
+                        </TableCell>
+                      </TableRow>
+                      )
+                    })
+                  )}
                 </TableBody>
               </Table>
             </Card>
@@ -277,8 +219,7 @@ export default function CategoriesPage() {
                 </div>
               </div>
             )}
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
     </AdminLayout>
   )

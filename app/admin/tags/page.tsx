@@ -11,13 +11,23 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Hash, Grid3X3, FolderOpen, Edit, Trash2 } from "lucide-react"
+import { Plus, Search, Hash, FolderOpen, Edit, Trash2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 
 export default function TagsPage() {
@@ -27,7 +37,6 @@ export default function TagsPage() {
   const { toast } = useToast()
   
   const [tags, setTags] = useState<Tag[]>([])
-  const [tagsWithCounts, setTagsWithCounts] = useState<Tag[]>([])
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 12,
@@ -36,48 +45,30 @@ export default function TagsPage() {
     hasNextPage: false,
     hasPreviousPage: false
   })
-  const [currentView, setCurrentView] = useState<'grid' | 'table'>('grid')
+  const [currentView, setCurrentView] = useState<'table'>('table')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [newTagName, setNewTagName] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [tagToDelete, setTagToDelete] = useState<{id: number, name: string} | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  // Load view preference from localStorage on component mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedView = localStorage.getItem('tags-view') as 'grid' | 'table' | null
-      if (savedView) {
-        setCurrentView(savedView)
-      }
-    }
-  }, [])
-
-  // Save view preference to localStorage when it changes
-  const handleViewChange = (view: 'grid' | 'table') => {
-    setCurrentView(view)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('tags-view', view)
-    }
-  }
 
   const fetchTags = async (page = 1, search = '') => {
     try {
       setIsLoading(true)
-      const [tagsResponse, countsResponse] = await Promise.all([
-        api.getPaginated<Tag>('/tags', {
-          page,
-          limit: 12,
-          search,
-          sortBy: 'name',
-          sortOrder: 'ASC',
-        }),
-        api.get<Tag[]>('/tags/with-counts')
-      ])
+      const tagsResponse = await api.getPaginated<Tag>('/tags', {
+        page,
+        limit: 12,
+        search,
+        sortBy: 'name',
+        sortOrder: 'ASC',
+      })
       
       setTags(tagsResponse.data)
       setPagination(tagsResponse.pagination)
-      setTagsWithCounts(countsResponse)
     } catch (error) {
       console.error('Error fetching tags:', error)
       setError('Failed to load tags')
@@ -125,16 +116,20 @@ export default function TagsPage() {
   }
 
   const handleDeleteTag = async (tagId: number, tagName: string) => {
-    if (!confirm(`Are you sure you want to delete the tag "${tagName}"? This action cannot be undone.`)) {
-      return
-    }
+    setTagToDelete({id: tagId, name: tagName})
+    setShowDeleteDialog(true)
+  }
 
+  const confirmDelete = async () => {
+    if (!tagToDelete) return
+    
+    setIsDeleting(true)
     try {
-      await api.delete(`/tags/${tagId}`)
+      await api.delete(`/tags/${tagToDelete.id}`)
       
       toast({
         title: "Success!",
-        description: `Tag "${tagName}" deleted successfully.`,
+        description: `Tag "${tagToDelete.name}" deleted successfully.`,
         variant: "default"
       })
 
@@ -146,6 +141,10 @@ export default function TagsPage() {
         description: "Failed to delete tag. Please try again.",
         variant: "destructive"
       })
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteDialog(false)
+      setTagToDelete(null)
     }
   }
 
@@ -219,96 +218,27 @@ export default function TagsPage() {
           </CardContent>
         </Card>
 
-        <Tabs value={currentView} className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger 
-                value="grid" 
-                className="gap-2"
-                onClick={() => handleViewChange('grid')}
-              >
-                <Grid3X3 className="h-4 w-4" />
-                Grid View
-              </TabsTrigger>
-              <TabsTrigger 
-                value="table" 
-                className="gap-2"
-                onClick={() => handleViewChange('table')}
-              >
-                <FolderOpen className="h-4 w-4" />
-                Table View
-              </TabsTrigger>
-            </TabsList>
-            <div className="flex items-center gap-4">
-              <form className="flex items-center gap-4" onSubmit={handleSearch}>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search tags..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 w-80"
-                  />
-                </div>
-                <Button type="submit" variant="outline">
-                  Search
-                </Button>
-              </form>
-            </div>
+        <div className="flex items-center justify-between">
+          <div></div>
+          <div className="flex items-center gap-4">
+            <form className="flex items-center gap-4" onSubmit={handleSearch}>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search tags..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 w-80"
+                />
+              </div>
+              <Button type="submit" variant="outline">
+                Search
+              </Button>
+            </form>
           </div>
+        </div>
 
-          <TabsContent value="grid" className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {tags.map((tag) => {
-                const tagWithCount = tagsWithCounts.find(t => t.id === tag.id)
-                const postCount = tagWithCount?.postCount || 0
-                return (
-                <Card key={tag.id} className="relative">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Hash className="h-4 w-4 text-muted-foreground" />
-                        <CardTitle className="text-lg">{tag.name}</CardTitle>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <span className="sr-only">Actions</span>
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" />
-                            </svg>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteTag(tag.id, tag.name)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <code className="text-xs bg-muted px-2 py-1 rounded">{tag.slug}</code>
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-muted-foreground">{postCount} posts</div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(tag.createdAt).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                )
-              })}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="table" className="space-y-6">
+        <div className="space-y-6">
             <Card>
               <Table>
                 <TableHeader>
@@ -321,50 +251,56 @@ export default function TagsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tags.map((tag) => {
-                    const tagWithCount = tagsWithCounts.find(t => t.id === tag.id)
-                    const postCount = tagWithCount?.postCount || 0
-                    return (
-                    <TableRow key={tag.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Hash className="h-4 w-4 text-muted-foreground" />
-                          <div className="font-medium">{tag.name}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <code className="text-sm bg-muted px-2 py-1 rounded">{tag.slug}</code>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{postCount}</Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(tag.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <span className="sr-only">Actions</span>
-                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" />
-                              </svg>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteTag(tag.id, tag.name)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                  {tags.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        No tags found
                       </TableCell>
                     </TableRow>
-                    )
-                  })}
+                  ) : (
+                    tags.map((tag) => {
+                      return (
+                      <TableRow key={tag.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Hash className="h-4 w-4 text-muted-foreground" />
+                            <div className="font-medium">{tag.name}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-sm bg-muted px-2 py-1 rounded">{tag.slug}</code>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{tag.posts?.length || 0}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(tag.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <span className="sr-only">Actions</span>
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" />
+                                </svg>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteTag(tag.id, tag.name)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                      )
+                    })
+                  )}
                 </TableBody>
               </Table>
             </Card>
@@ -395,8 +331,28 @@ export default function TagsPage() {
                 </div>
               </div>
             )}
-          </TabsContent>
-        </Tabs>
+        </div>
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the tag "{tagToDelete?.name}".
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Tag'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AdminLayout>
   )

@@ -51,7 +51,7 @@ export function useOnboarding(): OnboardingStatus {
     
     try {
       // Call the complete-onboarding API - it will update user metadata server-side
-      await api.patch('/onboarding/complete', {
+      await api.patch('/customer/complete', {
         companyName: data.companyName,
         blogUrl: data.blogUrl,
         themeId: data.themeId
@@ -105,7 +105,7 @@ export function useSlugCheck(): {
       const response = await api.get<{
         message: string
         exists: boolean
-      }>(`/onboarding/check-blog-slug?slug=${encodeURIComponent(slug)}`)
+      }>(`/customer/check-blog-slug?slug=${encodeURIComponent(slug)}`)
       
       setResult({
         exists: response.exists,
