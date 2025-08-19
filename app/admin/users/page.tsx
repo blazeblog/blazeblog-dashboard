@@ -1,452 +1,251 @@
-"use client"
-
-import { useState } from "react"
+import { auth } from "@clerk/nextjs/server"
+import { redirect } from "next/navigation"
 import { AdminLayout } from "@/components/admin-layout"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MoreHorizontal, Plus, Search, Users, Shield, Key, UserPlus, Edit, Trash2, Eye, Settings } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Shield, Mail } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-// Mock data
-const users = [
+// Mock data - replace with real data from your API
+const mockUsers = [
   {
     id: 1,
     name: "John Doe",
     email: "john@example.com",
     avatar: "/placeholder-user.jpg",
-    roles: ["Admin"],
-    status: "Active",
-    lastLogin: "2024-01-15",
-    createdAt: "2024-01-01",
+    role: "Admin",
+    status: "active",
+    createdAt: "2024-01-15T08:00:00Z",
+    lastLogin: "2024-01-16T10:30:00Z",
   },
   {
     id: 2,
     name: "Jane Smith",
     email: "jane@example.com",
     avatar: "/placeholder-user.jpg",
-    roles: ["Editor"],
-    status: "Active",
-    lastLogin: "2024-01-14",
-    createdAt: "2024-01-02",
+    role: "Editor",
+    status: "active",
+    createdAt: "2024-01-14T16:45:00Z",
+    lastLogin: "2024-01-16T09:15:00Z",
   },
   {
     id: 3,
-    name: "Bob Johnson",
-    email: "bob@example.com",
+    name: "Mike Johnson",
+    email: "mike@example.com",
     avatar: "/placeholder-user.jpg",
-    roles: ["Viewer"],
-    status: "Inactive",
-    lastLogin: "2024-01-10",
-    createdAt: "2024-01-03",
+    role: "User",
+    status: "pending",
+    createdAt: "2024-01-13T11:20:00Z",
+    lastLogin: null,
+  },
+  {
+    id: 4,
+    name: "Sarah Wilson",
+    email: "sarah@example.com",
+    avatar: "/placeholder-user.jpg",
+    role: "Editor",
+    status: "inactive",
+    createdAt: "2024-01-12T14:30:00Z",
+    lastLogin: "2024-01-14T16:20:00Z",
   },
 ]
 
-const roles = [
-  {
-    id: 1,
-    name: "Admin",
-    description: "Full access to all features",
-    permissions: ["create", "read", "update", "delete", "manage"],
-    userCount: 1,
-    color: "bg-red-500",
-  },
-  {
-    id: 2,
-    name: "Editor",
-    description: "Can create and edit content",
-    permissions: ["create", "read", "update"],
-    userCount: 1,
-    color: "bg-blue-500",
-  },
-  {
-    id: 3,
-    name: "Viewer",
-    description: "Read-only access",
-    permissions: ["read"],
-    userCount: 1,
-    color: "bg-green-500",
-  },
-]
+export default async function UsersPage() {
+  const { userId } = await auth()
 
-const permissions = [
-  { id: 1, name: "create", description: "Create new content" },
-  { id: 2, name: "read", description: "View content" },
-  { id: 3, name: "update", description: "Edit existing content" },
-  { id: 4, name: "delete", description: "Delete content" },
-  { id: 5, name: "manage", description: "Manage system settings" },
-  { id: 6, name: "assign", description: "Assign roles to users" },
-]
-
-export default function UsersPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedRole, setSelectedRole] = useState<string>("")
-  const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false)
-  const [isAssignRoleOpen, setIsAssignRoleOpen] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<number | null>(null)
-  const [newRole, setNewRole] = useState({
-    name: "",
-    description: "",
-    permissions: [] as string[],
-  })
-
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
-
-  const handleCreateRole = () => {
-    // API call to create role
-    console.log("Creating role:", newRole)
-    setIsCreateRoleOpen(false)
-    setNewRole({ name: "", description: "", permissions: [] })
-  }
-
-  const handleAssignRole = () => {
-    // API call to assign role
-    console.log("Assigning role:", selectedRole, "to user:", selectedUser)
-    setIsAssignRoleOpen(false)
-    setSelectedUser(null)
-    setSelectedRole("")
+  if (!userId) {
+    redirect("/sign-in")
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Users">
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Users & Permissions</h1>
-            <p className="text-muted-foreground">Manage users, roles, and permissions</p>
+            <h2 className="text-2xl font-bold tracking-tight">Users</h2>
+            <p className="text-muted-foreground">Manage user accounts and permissions</p>
           </div>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
         </div>
 
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="users" className="gap-2">
-              <Users className="h-4 w-4" />
-              Users
-            </TabsTrigger>
-            <TabsTrigger value="roles" className="gap-2">
-              <Shield className="h-4 w-4" />
-              Roles
-            </TabsTrigger>
-            <TabsTrigger value="permissions" className="gap-2">
-              <Key className="h-4 w-4" />
-              Permissions
-            </TabsTrigger>
-          </TabsList>
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Shield className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{mockUsers.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+              <Shield className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{mockUsers.filter((u) => u.status === "active").length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Users</CardTitle>
+              <Shield className="h-4 w-4 text-yellow-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{mockUsers.filter((u) => u.status === "pending").length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Admins</CardTitle>
+              <Shield className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{mockUsers.filter((u) => u.role === "Admin").length}</div>
+            </CardContent>
+          </Card>
+        </div>
 
-          <TabsContent value="users" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search users..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-80"
-                  />
-                </div>
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Filters</CardTitle>
+            <CardDescription>Filter and search users</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search users..." className="pl-8" />
               </div>
-              <Button className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                Add User
+              <Select>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="editor">Editor</SelectItem>
+                  <SelectItem value="user">User</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline">
+                <Filter className="mr-2 h-4 w-4" />
+                Filter
               </Button>
             </div>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Roles</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Login</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+        {/* Users Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>All Users ({mockUsers.length})</CardTitle>
+            <CardDescription>A list of all registered users</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Last Login</TableHead>
+                  <TableHead className="w-[70px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
+                          <AvatarFallback>
+                            {user.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">{user.name}</div>
+                          <div className="text-sm text-muted-foreground">{user.email}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          user.role === "Admin" ? "destructive" : user.role === "Editor" ? "default" : "secondary"
+                        }
+                      >
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          user.status === "active" ? "default" : user.status === "pending" ? "secondary" : "outline"
+                        }
+                      >
+                        {user.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : "Never"}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Mail className="mr-2 h-4 w-4" />
+                            Send Email
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-                            <AvatarFallback>
-                              {user.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{user.name}</div>
-                            <div className="text-sm text-muted-foreground">{user.email}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {user.roles.map((role) => (
-                            <Badge key={role} variant="secondary">
-                              {role}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.status === "Active" ? "default" : "secondary"}>{user.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{user.lastLogin}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{user.createdAt}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem className="gap-2">
-                              <Eye className="h-4 w-4" />
-                              View Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2">
-                              <Edit className="h-4 w-4" />
-                              Edit User
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="gap-2"
-                              onClick={() => {
-                                setSelectedUser(user.id)
-                                setIsAssignRoleOpen(true)
-                              }}
-                            >
-                              <Settings className="h-4 w-4" />
-                              Manage Roles
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="gap-2 text-destructive">
-                              <Trash2 className="h-4 w-4" />
-                              Delete User
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="roles" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold">Roles</h2>
-                <p className="text-sm text-muted-foreground">Manage user roles and their permissions</p>
-              </div>
-              <Dialog open={isCreateRoleOpen} onOpenChange={setIsCreateRoleOpen}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Create Role
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create New Role</DialogTitle>
-                    <DialogDescription>Create a new role and assign permissions</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="roleName">Role Name</Label>
-                      <Input
-                        id="roleName"
-                        value={newRole.name}
-                        onChange={(e) => setNewRole((prev) => ({ ...prev, name: e.target.value }))}
-                        placeholder="Enter role name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="roleDescription">Description</Label>
-                      <Input
-                        id="roleDescription"
-                        value={newRole.description}
-                        onChange={(e) => setNewRole((prev) => ({ ...prev, description: e.target.value }))}
-                        placeholder="Enter role description"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Permissions</Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {permissions.map((permission) => (
-                          <div key={permission.id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={permission.name}
-                              checked={newRole.permissions.includes(permission.name)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setNewRole((prev) => ({
-                                    ...prev,
-                                    permissions: [...prev.permissions, permission.name],
-                                  }))
-                                } else {
-                                  setNewRole((prev) => ({
-                                    ...prev,
-                                    permissions: prev.permissions.filter((p) => p !== permission.name),
-                                  }))
-                                }
-                              }}
-                            />
-                            <Label htmlFor={permission.name} className="text-sm">
-                              {permission.name}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsCreateRoleOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreateRole}>Create Role</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {roles.map((role) => (
-                <Card key={role.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-3 w-3 rounded-full ${role.color}`} />
-                        <CardTitle className="text-lg">{role.name}</CardTitle>
-                      </div>
-                      <Badge variant="secondary">{role.userCount} users</Badge>
-                    </div>
-                    <CardDescription>{role.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Permissions:</Label>
-                      <div className="flex flex-wrap gap-1">
-                        {role.permissions.map((permission) => (
-                          <Badge key={permission} variant="outline" className="text-xs">
-                            {permission}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="permissions" className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold">System Permissions</h2>
-              <p className="text-sm text-muted-foreground">Available permissions in the system</p>
-            </div>
-
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Permission</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Used in Roles</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {permissions.map((permission) => (
-                    <TableRow key={permission.id}>
-                      <TableCell>
-                        <Badge variant="outline">{permission.name}</Badge>
-                      </TableCell>
-                      <TableCell>{permission.description}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {roles
-                            .filter((role) => role.permissions.includes(permission.name))
-                            .map((role) => (
-                              <Badge key={role.id} variant="secondary" className="text-xs">
-                                {role.name}
-                              </Badge>
-                            ))}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* Assign Role Dialog */}
-        <Dialog open={isAssignRoleOpen} onOpenChange={setIsAssignRoleOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Assign Role</DialogTitle>
-              <DialogDescription>Select a role to assign to the user</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Select Role</Label>
-                <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map((role) => (
-                      <SelectItem key={role.id} value={role.name}>
-                        {role.name} - {role.description}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAssignRoleOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAssignRole}>Assign Role</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   )

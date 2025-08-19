@@ -1,6 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useAuth } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
+import { useClientApi, type PaginationParams, type PaginatedResponse, type Category } from "@/lib/client-api"
 import { AdminLayout } from "@/components/admin-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,91 +13,86 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { MoreHorizontal, Plus, Search, FolderOpen, Grid3X3, Edit, Trash2, FileText } from "lucide-react"
+import { Plus, Search, FolderOpen } from "lucide-react"
+import { CategoryActions } from "@/components/category-actions"
 
-// Mock data
-const categories = [
-  {
-    id: 1,
-    name: "Technology",
-    slug: "technology",
-    description: "Articles about technology and innovation",
-    color: "#3B82F6",
-    postCount: 15,
-    status: "Active",
-    createdAt: "2024-01-01",
-  },
-  {
-    id: 2,
-    name: "Design",
-    slug: "design",
-    description: "UI/UX design and creative content",
-    color: "#8B5CF6",
-    postCount: 8,
-    status: "Active",
-    createdAt: "2024-01-02",
-  },
-  {
-    id: 3,
-    name: "Business",
-    slug: "business",
-    description: "Business strategies and entrepreneurship",
-    color: "#10B981",
-    postCount: 12,
-    status: "Active",
-    createdAt: "2024-01-03",
-  },
-  {
-    id: 4,
-    name: "Lifestyle",
-    slug: "lifestyle",
-    description: "Lifestyle and personal development",
-    color: "#F59E0B",
-    postCount: 5,
-    status: "Inactive",
-    createdAt: "2024-01-04",
-  },
-]
 
 const colors = ["#3B82F6", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#EC4899", "#6366F1", "#14B8A6"]
 
 export default function CategoriesPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [newCategory, setNewCategory] = useState({
-    name: "",
-    description: "",
-    color: colors[0],
+  const { isSignedIn, isLoaded } = useAuth()
+  const router = useRouter()
+  const api = useClientApi()
+  
+  const [categories, setCategories] = useState<Category[]>([])
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 12,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false
   })
+  const [currentView, setCurrentView] = useState<'table'>('table')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const filteredCategories = categories.filter(
-    (category) =>
-      category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      category.description.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
 
-  const handleCreateCategory = () => {
-    // API call to create category
-    console.log("Creating category:", newCategory)
-    setIsCreateOpen(false)
-    setNewCategory({ name: "", description: "", color: colors[0] })
+  const fetchCategories = async (page = 1, search = '') => {
+    try {
+      setIsLoading(true)
+      const [categoriesResponse] = await Promise.all([
+        api.getPaginated<Category>('/categories', {
+          page,
+          limit: 12,
+          search,
+          sortBy: 'name',
+          sortOrder: 'ASC',
+        }),
+      ])
+      
+      setCategories(categoriesResponse.data)
+      setPagination(categoriesResponse.pagination)
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+      setError('Failed to load categories')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    fetchCategories(1, searchQuery)
+  }
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push('/sign-in')
+      return
+    }
+    
+    if (isSignedIn) {
+      fetchCategories()
+    }
+  }, [isLoaded, isSignedIn, router])
+
+  if (!isLoaded || isLoading) {
+    return (
+      <AdminLayout title="Categories">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p>Loading categories...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    )
+  }
+
+  if (!isSignedIn) {
+    return null
   }
 
   return (
@@ -107,139 +105,39 @@ export default function CategoriesPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="grid" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger value="grid" className="gap-2">
-                <Grid3X3 className="h-4 w-4" />
-                Grid View
-              </TabsTrigger>
-              <TabsTrigger value="table" className="gap-2">
-                <FolderOpen className="h-4 w-4" />
-                Table View
-              </TabsTrigger>
-            </TabsList>
-            <div className="flex items-center gap-4">
+        {error && (
+          <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-2 rounded-md">
+            {error}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <div></div>
+          <div className="flex items-center gap-4">
+            <form className="flex items-center gap-4" onSubmit={handleSearch}>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search categories..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 w-80"
                 />
               </div>
-              <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Category
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create New Category</DialogTitle>
-                    <DialogDescription>Add a new category to organize your content</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="categoryName">Category Name</Label>
-                      <Input
-                        id="categoryName"
-                        value={newCategory.name}
-                        onChange={(e) => setNewCategory((prev) => ({ ...prev, name: e.target.value }))}
-                        placeholder="Enter category name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="categoryDescription">Description</Label>
-                      <Textarea
-                        id="categoryDescription"
-                        value={newCategory.description}
-                        onChange={(e) => setNewCategory((prev) => ({ ...prev, description: e.target.value }))}
-                        placeholder="Enter category description"
-                        rows={3}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Color</Label>
-                      <div className="flex gap-2">
-                        {colors.map((color) => (
-                          <button
-                            key={color}
-                            className={`h-8 w-8 rounded-full border-2 ${
-                              newCategory.color === color ? "border-foreground" : "border-transparent"
-                            }`}
-                            style={{ backgroundColor: color }}
-                            onClick={() => setNewCategory((prev) => ({ ...prev, color }))}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreateCategory}>Create Category</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
+              <Button type="submit" variant="outline">
+                Search
+              </Button>
+            </form>
+            <Button className="gap-2" asChild>
+              <a href="/admin/categories/add">
+                <Plus className="h-4 w-4" />
+                Add Category
+              </a>
+            </Button>
           </div>
+        </div>
 
-          <TabsContent value="grid" className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredCategories.map((category) => (
-                <Card key={category.id} className="relative">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 rounded-full" style={{ backgroundColor: category.color }} />
-                        <CardTitle className="text-lg">{category.name}</CardTitle>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem className="gap-2">
-                            <FileText className="h-4 w-4" />
-                            View Posts
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2">
-                            <Edit className="h-4 w-4" />
-                            Edit Category
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="gap-2 text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                            Delete Category
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <CardDescription>{category.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm text-muted-foreground">{category.postCount} posts</div>
-                        <Badge variant={category.status === "Active" ? "default" : "secondary"}>
-                          {category.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="table" className="space-y-6">
+        <div className="space-y-6">
             <Card>
               <Table>
                 <TableHeader>
@@ -253,61 +151,75 @@ export default function CategoriesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCategories.map((category) => (
-                    <TableRow key={category.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="h-4 w-4 rounded-full" style={{ backgroundColor: category.color }} />
-                          <div>
-                            <div className="font-medium">{category.name}</div>
-                            <div className="text-sm text-muted-foreground">{category.description}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <code className="text-sm bg-muted px-2 py-1 rounded">{category.slug}</code>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{category.postCount}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={category.status === "Active" ? "default" : "secondary"}>
-                          {category.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{category.createdAt}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem className="gap-2">
-                              <FileText className="h-4 w-4" />
-                              View Posts
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2">
-                              <Edit className="h-4 w-4" />
-                              Edit Category
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="gap-2 text-destructive">
-                              <Trash2 className="h-4 w-4" />
-                              Delete Category
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                  {categories.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No categories found
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    categories.map((category) => {
+                      return (
+                      <TableRow key={category.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="h-4 w-4 rounded-full bg-blue-500" />
+                            <div>
+                              <div className="font-medium">{category.name}</div>
+                              <div className="text-sm text-muted-foreground">{category.description}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-sm bg-muted px-2 py-1 rounded">{category.slug}</code>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{category.posts?.length || 0}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={category.isActive ? "default" : "secondary"}>
+                            {category.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{new Date(category.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <CategoryActions categoryId={category.id} />
+                        </TableCell>
+                      </TableRow>
+                      )
+                    })
+                  )}
                 </TableBody>
               </Table>
             </Card>
-          </TabsContent>
-        </Tabs>
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+                  {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                  {pagination.total} results
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!pagination.hasPreviousPage}
+                    onClick={() => fetchCategories(pagination.page - 1, searchQuery)}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!pagination.hasNextPage}
+                    onClick={() => fetchCategories(pagination.page + 1, searchQuery)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+        </div>
       </div>
     </AdminLayout>
   )
