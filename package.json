@@ -6,7 +6,8 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "deploy": "npm run build && pm2 reload dashboard-fe || pm2 start npm --name dashboard-fe -- start -- --port 3000"
   },
   "dependencies": {
     "@clerk/nextjs": "latest",
