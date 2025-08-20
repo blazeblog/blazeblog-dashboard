@@ -35,6 +35,11 @@ interface PaginationParams {
   isApproved?: boolean
   topLevelOnly?: boolean
   parentCommentId?: number
+  // User specific filters
+  username?: string
+  email?: string
+  firstName?: string
+  lastName?: string
 }
 
 interface PaginatedResponse<T> {
@@ -154,6 +159,20 @@ interface Comment {
   replyCount?: number
 }
 
+interface User {
+  id: number
+  username: string
+  email: string
+  firstName?: string
+  lastName?: string
+  avatar?: string
+  bio?: string
+  clerkUserId?: string
+  customerId: number
+  createdAt: string
+  updatedAt: string
+}
+
 /**
  * Common API function with Clerk JWT authentication
  * @param endpoint - API endpoint (e.g., '/posts', '/users')
@@ -248,6 +267,12 @@ function buildQueryString(params: PaginationParams): string {
   if (params.topLevelOnly !== undefined) searchParams.set('topLevelOnly', params.topLevelOnly.toString())
   if (params.parentCommentId !== undefined) searchParams.set('parentCommentId', params.parentCommentId.toString())
   
+  // User specific filters
+  if (params.username) searchParams.set('username', params.username)
+  if (params.email) searchParams.set('email', params.email)
+  if (params.firstName) searchParams.set('firstName', params.firstName)
+  if (params.lastName) searchParams.set('lastName', params.lastName)
+  
   const queryString = searchParams.toString()
   return queryString ? `?${queryString}` : ''
 }
@@ -276,4 +301,4 @@ export const api = {
 }
 
 // Export types for use in components
-export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment }
+export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment, User }

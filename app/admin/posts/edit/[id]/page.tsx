@@ -414,7 +414,7 @@ export default function EditPostPage() {
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TooltipProvider>
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="editor" className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
                     Editor
@@ -427,7 +427,7 @@ export default function EditPostPage() {
                     <Settings className="h-4 w-4" />
                     Settings
                   </TabsTrigger>
-                  <Tooltip>
+                  {/* <Tooltip>
                     <TooltipTrigger asChild>
                       <TabsTrigger value="revisions" className="flex items-center gap-2">
                         <Activity className="h-4 w-4" />
@@ -443,7 +443,7 @@ export default function EditPostPage() {
                     <TooltipContent>
                       <p>View revision history, compare versions, and restore previous versions</p>
                     </TooltipContent>
-                  </Tooltip>
+                  </Tooltip> */}
                 </TabsList>
               </TooltipProvider>
 

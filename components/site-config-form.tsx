@@ -438,7 +438,7 @@ export function SiteConfigForm() {
                       onCheckedChange={(checked) => updateFeatureFlag('autoApproveComments', checked)}
                     />
                   </div>
-                  <Separator />
+                  {/* <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>Enable Comments Reply</Label>
@@ -448,7 +448,7 @@ export function SiteConfigForm() {
                       checked={config.featureFlags.enableCommentsReply}
                       onCheckedChange={(checked) => updateFeatureFlag('enableCommentsReply', checked)}
                     />
-                  </div>
+                  </div> */}
                 </>
               )}
               <Separator />

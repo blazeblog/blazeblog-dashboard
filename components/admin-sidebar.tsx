@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Globe,
   MessageCircle,
+  Palette,
 } from "lucide-react"
 
 import {
@@ -120,24 +121,29 @@ const navigation: NavigationSection[] = [
       },
     ],
   },
-  // {
-  //   title: "User Management",
-  //   items: [
-  //     {
-  //       title: "Users",
-  //       url: "/admin/users",
-  //       icon: Users,
-  //     },
-  //     {
-  //       title: "Roles & Permissions",
-  //       url: "/admin/roles",
-  //       icon: Shield,
-  //     },
-  //   ],
-  // },
+  {
+    title: "User Management",
+    items: [
+      {
+        title: "Users",
+        url: "/admin/users",
+        icon: Users,
+      },
+      // {
+      //   title: "Roles & Permissions",
+      //   url: "/admin/roles",
+      //   icon: Shield,
+      // },
+    ],
+  },
   {
     title: "System",
     items: [
+      {
+        title: "Themes",
+        url: "/admin/themes",
+        icon: Palette,
+      },
       {
         title: "Site Settings",
         url: "/admin/settings",
