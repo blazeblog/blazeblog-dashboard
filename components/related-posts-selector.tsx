@@ -213,10 +213,13 @@ export function RelatedPostsSelector({
                 return (
                   <div
                     key={post.id}
+                    onClick={() => !isSelected && !isMaxReached && handleAddPost(post)}
                     className={`flex items-center gap-2 p-2 rounded-md transition-colors ${
                       isSelected
                         ? "bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700"
-                        : "hover:bg-white dark:hover:bg-gray-700/50 border border-transparent"
+                        : isMaxReached
+                        ? "bg-gray-50 dark:bg-gray-800 border border-transparent opacity-50 cursor-not-allowed"
+                        : "hover:bg-white dark:hover:bg-gray-700/50 border border-transparent cursor-pointer hover:shadow-sm"
                     }`}
                   >
                     <div className="flex-1 min-w-0">
@@ -231,16 +234,14 @@ export function RelatedPostsSelector({
                       <Badge variant="default" className="text-xs px-2">
                         Selected
                       </Badge>
+                    ) : !isMaxReached ? (
+                      <div className="text-xs text-gray-400 px-2 py-1">
+                        Click to add
+                      </div>
                     ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAddPost(post)}
-                        disabled={isMaxReached}
-                        className="h-6 text-xs px-2"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
+                      <div className="text-xs text-gray-400 px-2 py-1">
+                        Max reached
+                      </div>
                     )}
                   </div>
                 )

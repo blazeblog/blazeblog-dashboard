@@ -17,6 +17,7 @@ import {
   Globe,
   MessageCircle,
   Palette,
+  Mail,
 } from "lucide-react"
 
 import {
@@ -38,6 +39,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { getImageUrl } from "@/lib/image-utils"
 
 interface SubmenuItem {
   title: string
@@ -118,6 +120,14 @@ const navigation: NavigationSection[] = [
         url: "/admin/forms",
         icon: MessageSquare,
         badge: "Beta",
+      },
+      {
+        title: "Newsletter",
+        url: "/admin/newsletter",
+        icon: Mail,
+        submenu: [
+          { title: "Subscribers", url: "/admin/newsletter" },
+        ],
       },
     ],
   },
@@ -248,7 +258,7 @@ export function AdminSidebar() {
             <SidebarMenuButton size="lg" asChild>
               <div className="flex items-center gap-2 p-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.imageUrl || "/placeholder.svg"} alt={user?.firstName || "User"} />
+                  <AvatarImage src={getImageUrl(user?.imageUrl) || "/placeholder.svg"} alt={user?.firstName || "User"} />
                   <AvatarFallback>
                     {user?.firstName?.[0] || user?.emailAddresses[0]?.emailAddress[0] || "U"}
                   </AvatarFallback>

@@ -108,12 +108,20 @@ interface Category {
 
 interface Tag {
   id: number
+  customerId: number
   name: string
   slug: string
+  description?: string | null
+  color?: string | null
+  isActive: boolean
   postCount?: number
   createdAt: string
+  updatedAt: string
   posts?: {
     id: number
+    title: string
+    status: string
+    createdAt: string
   }[]
 }
 

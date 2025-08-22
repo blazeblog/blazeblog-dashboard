@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Palette, Check, Eye, Monitor, Smartphone, ExternalLink, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useClientApi } from "@/lib/client-api"
+import { getImageUrl } from "@/lib/image-utils"
 
 interface Theme {
   id: number
@@ -194,7 +195,7 @@ export function ThemesPage() {
                 
                 <div className="relative group">
                   <img
-                    src={theme.previewImageUrl || '/placeholder.jpg'}
+                    src={getImageUrl(theme.previewImageUrl) || '/placeholder.jpg'}
                     alt={theme.name}
                     className="aspect-video w-full object-cover rounded-t-lg"
                   />
@@ -318,8 +319,8 @@ export function ThemesPage() {
               <div className={`mx-auto ${showMobileView ? 'max-w-sm' : 'w-full'}`}>
                 <img
                   src={showMobileView ? 
-                    (previewTheme.mobileViewImages?.[0] || previewTheme.previewImageUrl || '/placeholder.jpg') : 
-                    (previewTheme.desktopViewImages?.[0] || previewTheme.previewImageUrl || '/placeholder.jpg')
+                    (getImageUrl(previewTheme.mobileViewImages?.[0]) || getImageUrl(previewTheme.previewImageUrl) || '/placeholder.jpg') : 
+                    (getImageUrl(previewTheme.desktopViewImages?.[0]) || getImageUrl(previewTheme.previewImageUrl) || '/placeholder.jpg')
                   }
                   alt={`${previewTheme.name} ${showMobileView ? 'mobile' : 'desktop'} preview`}
                   className="w-full h-auto rounded-lg border"

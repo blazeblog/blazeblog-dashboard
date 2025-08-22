@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@clerk/nextjs"
+import { usePageTitle } from "@/hooks/use-page-title"
 import { useRouter } from "next/navigation"
 import { useClientApi, type PaginationParams, type PaginatedResponse, type Tag } from "@/lib/client-api"
 import { AdminLayout } from "@/components/admin-layout"
@@ -29,8 +30,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
+import { LoadingState } from "@/components/loading-state"
 
 export default function TagsPage() {
+  usePageTitle("Tags - BlazeBlog Admin")
   const { isSignedIn, isLoaded } = useAuth()
   const router = useRouter()
   const api = useClientApi()
@@ -162,12 +165,7 @@ export default function TagsPage() {
   if (!isLoaded || isLoading) {
     return (
       <AdminLayout title="Tags">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-            <p>Loading tags...</p>
-          </div>
-        </div>
+        <LoadingState message="Loading Tags" />
       </AdminLayout>
     )
   }
@@ -260,7 +258,12 @@ export default function TagsPage() {
                   ) : (
                     tags.map((tag) => {
                       return (
-                      <TableRow key={tag.id}>
+                      <TableRow 
+                        key={tag.id} 
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => router.push(`/admin/tags/edit/${tag.id}`)}
+                        title="Click to edit tag"
+                      >
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Hash className="h-4 w-4 text-muted-foreground" />
@@ -276,7 +279,7 @@ export default function TagsPage() {
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(tag.createdAt).toLocaleDateString()}
                         </TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
@@ -287,6 +290,12 @@ export default function TagsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={() => router.push(`/admin/tags/edit/${tag.id}`)}
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={() => handleDeleteTag(tag.id, tag.name)}
                                 className="text-destructive focus:text-destructive"

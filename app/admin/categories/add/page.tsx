@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { ArrowLeft, Save, X } from "lucide-react"
+import { ArrowLeft, Save, X, AlertTriangle } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export default function AddCategoryPage() {
   const router = useRouter()
@@ -144,7 +145,24 @@ export default function AddCategoryPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
+              <div className="flex items-center gap-2 mb-2">
+                <Label htmlFor="slug">Slug</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <AlertTriangle className="h-4 w-4 text-amber-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-semibold text-amber-600">⚠️ URL Impact Warning</p>
+                      <p className="text-sm mt-1">
+                        Changing the slug affects the category URL (/categories/your-slug). 
+                        This may break existing bookmarks, social media shares, 
+                        and SEO rankings if already published.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="slug"
                 value={formData.slug}
@@ -152,7 +170,7 @@ export default function AddCategoryPage() {
                 placeholder="URL-friendly identifier (auto-generated if left empty)"
               />
               <p className="text-xs text-muted-foreground">
-                This will be used in URLs. Leave empty to auto-generate from name.
+                URL: /categories/{formData.slug || 'your-slug'}
               </p>
             </div>
             

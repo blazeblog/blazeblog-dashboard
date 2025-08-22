@@ -95,6 +95,38 @@ export interface ReorderRelatedPostsRequest {
   relatedPostIds: number[]
 }
 
+// Newsletter types
+export interface Newsletter {
+  id: number
+  customerId: number
+  email: string
+  name?: string
+  company?: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NewsletterStats {
+  totalSubscriptions: number
+  activeSubscriptions: number
+  inactiveSubscriptions: number
+  recentSubscriptions: number
+}
+
+export interface CreateNewsletterRequest {
+  email: string
+  name?: string
+  company?: string
+}
+
+export interface UpdateNewsletterRequest {
+  email?: string
+  name?: string
+  company?: string
+  isActive?: boolean
+}
+
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
   body?: any
@@ -292,6 +324,33 @@ export function useClientApi() {
       // Delete all relations for a post
       deleteAll: (postId: number) =>
         makeRequest<{ deleted: number }>(`/related-posts/post/${postId}/all`, { method: 'DELETE' }),
+    },
+
+    // Newsletter API methods
+    newsletter: {
+      // Create newsletter subscription
+      create: (data: CreateNewsletterRequest) =>
+        makeRequest<Newsletter>('/newsletters', { method: 'POST', body: data }),
+      
+      // Get all newsletters with pagination and filters
+      getAll: (params: PaginationParams = {}) =>
+        makeRequest<PaginatedResponse<Newsletter>>(`/newsletters${buildQueryString(params)}`),
+      
+      // Get newsletter by ID
+      getById: (id: number) =>
+        makeRequest<Newsletter>(`/newsletters/${id}`),
+      
+      // Update newsletter
+      update: (id: number, data: UpdateNewsletterRequest) =>
+        makeRequest<Newsletter>(`/newsletters/${id}`, { method: 'PUT', body: data }),
+      
+      // Delete newsletter
+      delete: (id: number) =>
+        makeRequest<void>(`/newsletters/${id}`, { method: 'DELETE' }),
+      
+      // Get newsletter statistics
+      getStats: () =>
+        makeRequest<{ data: NewsletterStats }>('/newsletters/stats/overview'),
     },
   }
 }

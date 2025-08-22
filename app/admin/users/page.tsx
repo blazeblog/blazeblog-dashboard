@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useClientApi } from "@/lib/client-api"
+import { usePageTitle } from "@/hooks/use-page-title"
 import type { User, PaginatedResponse, PaginationParams } from "@/lib/client-api"
 import { AdminLayout } from "@/components/admin-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,6 +19,8 @@ import { LoadingState } from "@/components/loading-state"
 import { ErrorState } from "@/components/error-state"
 
 export default function UsersPage() {
+  usePageTitle("Users - BlazeBlog Admin")
+  
   const router = useRouter()
   const api = useClientApi()
   const [users, setUsers] = useState<PaginatedResponse<User> | null>(null)
@@ -91,7 +94,7 @@ export default function UsersPage() {
     window.open(`mailto:${user.email}`, '_blank')
   }
 
-  if (loading && !users) return <LoadingState />
+  if (loading && !users) return <LoadingState message="Loading Users" />
   if (error && !users) return <ErrorState message={error} onRetry={fetchUsers} />
 
   return (

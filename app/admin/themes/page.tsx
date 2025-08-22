@@ -1,5 +1,10 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
+import { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Themes - BlazeBlog Admin"
+}
 import { AdminLayout } from "@/components/admin-layout"
 import { ThemesPage } from "@/components/themes-page"
 

@@ -12,11 +12,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Save, Calendar, Clock, User as UserIcon, Mail } from "lucide-react"
+import { ArrowLeft, Save, Calendar, Clock, User as UserIcon, Mail, AlertTriangle } from "lucide-react"
 import { LoadingState } from "@/components/loading-state"
 import { ErrorState } from "@/components/error-state"
 import { Separator } from "@/components/ui/separator"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { formatDistanceToNow } from "date-fns"
+import { getImageUrl } from "@/lib/image-utils"
 
 export default function UserDetailPage() {
   const params = useParams()
@@ -29,6 +31,7 @@ export default function UserDetailPage() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    username: '',
     bio: '',
     avatar: ''
   })
@@ -50,6 +53,7 @@ export default function UserDetailPage() {
       setFormData({
         firstName: response.firstName || '',
         lastName: response.lastName || '',
+        username: response.username || '',
         bio: response.bio || '',
         avatar: response.avatar || ''
       })
@@ -86,6 +90,7 @@ export default function UserDetailPage() {
       const updateData = {
         firstName: formData.firstName.trim() || null,
         lastName: formData.lastName.trim() || null,
+        username: formData.username.trim() || null,
         bio: formData.bio.trim() || null,
         avatar: formData.avatar.trim() || null
       }
@@ -124,7 +129,7 @@ export default function UserDetailPage() {
     }
   }
 
-  if (loading) return <LoadingState />
+  if (loading) return <LoadingState message="Loading User Details" />
   if (error) return <ErrorState message={error} onRetry={fetchUser} />
   if (!user) return <ErrorState message="User not found" />
 
@@ -173,7 +178,7 @@ export default function UserDetailPage() {
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16">
                 {formData.avatar ? (
-                  <AvatarImage src={formData.avatar} alt="Avatar" />
+                  <AvatarImage src={getImageUrl(formData.avatar)} alt="Avatar" />
                 ) : null}
                 <AvatarFallback className="text-lg">
                   {getUserInitials(user)}
@@ -183,7 +188,6 @@ export default function UserDetailPage() {
                 <h3 className="text-lg font-semibold">{getUserDisplayName(user)}</h3>
                 <div className="flex gap-2 mt-1">
                   <Badge variant="outline">@{user.username}</Badge>
-                  <Badge variant="secondary">ID: {user.id}</Badge>
                 </div>
                 <div className="mt-2">
                   <Label htmlFor="avatar">Avatar URL</Label>
@@ -205,13 +209,37 @@ export default function UserDetailPage() {
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="username">Username (Read Only)</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="username">Username</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangle className="h-4 w-4 text-amber-500 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="font-semibold text-amber-600">⚠️ Important Warning</p>
+                          <p className="text-sm mt-1">
+                            Changing the username will affect all author page links and URLs 
+                            where this user is referenced. This may break existing bookmarks 
+                            and SEO rankings for author pages.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <Input
                     id="username"
-                    value={user.username}
-                    disabled
-                    className="bg-muted"
+                    value={formData.username}
+                    onChange={(e) => handleInputChange('username', e.target.value)}
+                    placeholder="Enter username (affects author page URLs)"
+                    className={formData.username !== user.username ? "border-amber-300 bg-amber-50 dark:bg-amber-950/20" : ""}
                   />
+                  {formData.username !== user.username && (
+                    <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Username change detected - author page URLs will be affected
+                    </p>
+                  )}
                 </div>
                 
                 <div>

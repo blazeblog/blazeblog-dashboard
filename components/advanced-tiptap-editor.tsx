@@ -12,11 +12,13 @@ import Highlight from "@tiptap/extension-highlight"
 import { TextStyle } from "@tiptap/extension-text-style"
 import { Color } from "@tiptap/extension-color"
 import Placeholder from "@tiptap/extension-placeholder"
+import Dropcursor from "@tiptap/extension-dropcursor"
 
 
 import { useState, useCallback, useRef, useEffect } from "react"
 import { useClientApi } from "@/lib/client-api"
 import { useToast } from "@/hooks/use-toast"
+import { getImageUrl } from "@/lib/image-utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -79,6 +81,7 @@ export function AdvancedTiptapEditor({
   const [heroImageUrl, setHeroImageUrl] = useState(heroImage)
   const [showDraftDialog, setShowDraftDialog] = useState(false)
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true)
+  const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageFileInputRef = useRef<HTMLInputElement>(null)
   const api = useClientApi()
@@ -139,6 +142,10 @@ export function AdvancedTiptapEditor({
       Placeholder.configure({
         placeholder,
       }),
+      Dropcursor.configure({
+        color: '#3b82f6', // Blue color for drop cursor
+        width: 2,
+      }),
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -157,36 +164,155 @@ export function AdvancedTiptapEditor({
           "min-h-[500px] p-6 pb-24"
         ),
       },
+      handleDrop: (view, event, slice, moved) => {
+        if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
+          const files = Array.from(event.dataTransfer.files)
+          const imageFiles = files.filter(file => file.type.startsWith('image/'))
+          
+          if (imageFiles.length === 0) {
+            return false // Let the default behavior handle it
+          }
+
+          // Prevent default behavior and handle image uploads
+          event.preventDefault()
+          
+          // Get the drop position
+          const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY })
+          if (!coordinates) return false
+
+          // Upload and insert images sequentially
+          imageFiles.forEach(async (file, index) => {
+            const url = await uploadImage(file)
+            if (url) {
+              // Pre-load the image to ensure it's ready
+              const img = new window.Image()
+              img.onload = () => {
+                // Insert the image using TipTap commands instead of direct ProseMirror manipulation
+                if (editor) {
+                  editor.chain()
+                    .focus()
+                    .setTextSelection(coordinates.pos + index)
+                    .setImage({ src: url, alt: file.name || 'Uploaded image' })
+                    .run()
+                }
+              }
+              img.onerror = () => {
+                toast({
+                  title: 'Error',
+                  description: `Failed to load image: ${file.name}`,
+                  variant: 'destructive',
+                })
+              }
+              img.src = url
+            }
+          })
+
+          return true // Handled the drop
+        }
+        return false // Let default behavior handle it
+      },
     },
   })
 
   // Sync content when prop changes
   useEffect(() => {
     if (editor && content !== undefined && editor.getHTML() !== content) {
-      // Use the correct parameter structure - second parameter is boolean for emitUpdate
-      editor.commands.setContent(content, false)
+      // Use the correct parameter structure - second parameter should be an options object
+      editor.commands.setContent(content, { emitUpdate: false })
     }
   }, [editor, content])
 
   // Sync hero image when prop changes
   useEffect(() => {
     if (heroImage !== undefined && heroImageUrl !== heroImage) {
-      setHeroImageUrl(heroImage)
+      // If heroImage is a key, convert to full URL for display
+      const displayUrl = heroImage.startsWith('http') ? heroImage : getImageUrl(heroImage)
+      setHeroImageUrl(displayUrl)
     }
   }, [heroImage, heroImageUrl])
 
-  const handleHeroImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadImage = async (file: File): Promise<string | null> => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload a valid image file (JPEG, PNG, GIF, WebP).',
+        variant: 'destructive',
+      })
+      return null
+    }
+
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Image must be smaller than 10MB.',
+        variant: 'destructive',
+      })
+      return null
+    }
+
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('image', file)
+      
+      const response = await api.post('/file/upload', formData)
+      
+      console.log('Upload response:', response) // Debug log
+      
+      if (response && response.url) {
+        console.log('Image URL:', response.url) // Debug log
+        return response.url
+      }
+      console.log('No URL in response') // Debug log
+      return null
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      toast({
+        title: 'Upload failed',
+        description: 'Failed to upload image. Please try again.',
+        variant: 'destructive',
+      })
+      return null
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleHeroImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const result = reader.result as string
-        setHeroImageUrl(result)
-        onHeroImageChange?.(result)
+      setIsUploading(true)
+      try {
+        const formData = new FormData()
+        formData.append('image', file)
+        
+        const response = await api.post('/file/upload', formData)
+        
+        if (response && response.url && response.key) {
+          // Use full URL for editor display
+          setHeroImageUrl(response.url)
+          // Pass key to parent for storage
+          onHeroImageChange?.(response.key)
+          toast({
+            title: "Success",
+            description: "Hero image uploaded successfully",
+            variant: "default"
+          })
+        }
+      } catch (error) {
+        console.error('Error uploading hero image:', error)
+        toast({
+          title: 'Upload failed',
+          description: 'Failed to upload hero image. Please try again.',
+          variant: 'destructive',
+        })
+      } finally {
+        setIsUploading(false)
       }
-      reader.readAsDataURL(file)
     }
-  }, [onHeroImageChange])
+  }, [api, onHeroImageChange, toast])
 
   const insertImage = useCallback(() => {
     if (imageUrl && editor) {
@@ -203,31 +329,17 @@ export function AdvancedTiptapEditor({
     }
   }, [editor, linkUrl])
 
-
-
   const handleImageFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      try {
-        const formData = new FormData()
-        formData.append('image', file)
-        
-        const response = await api.post('/file/upload', formData)
-        
-        if (response && response.url) {
-          setImageUrl(response.url)
-          toast({
-            title: "Success",
-            description: "Image uploaded successfully",
-            variant: "default"
-          })
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error)
+      const url = await uploadImage(file)
+      if (url) {
+        setImageUrl(url)
+        setImageAlt(file.name)
         toast({
-          title: 'Error',
-          description: 'Failed to upload image. Please try again.',
-          variant: 'destructive',
+          title: "Success",
+          description: "Image uploaded successfully",
+          variant: "default"
         })
       }
     }
@@ -297,7 +409,7 @@ export function AdvancedTiptapEditor({
       {heroImageUrl && (
         <div className="relative rounded-lg overflow-hidden bg-muted max-w-xs">
           <img 
-            src={heroImageUrl} 
+            src={getImageUrl(heroImageUrl)} 
             alt="Hero preview" 
             className="w-full h-20 object-cover"
           />
@@ -315,9 +427,9 @@ export function AdvancedTiptapEditor({
         <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-b">
           <div className="flex items-center justify-between p-3">
             <div className="flex items-center gap-1">
-              <Badge variant="secondary" className="text-xs">
+              {/* <Badge variant="secondary" className="text-xs">
                 Rich Text Editor
-              </Badge>
+              </Badge> */}
             </div>
             <Button
               variant="ghost"
@@ -614,8 +726,15 @@ export function AdvancedTiptapEditor({
             <span>Italic</span>
             <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">⌘K</kbd>
             <span>Link</span>
+            <span className="text-muted-foreground/70">• Drag & drop images to upload</span>
           </div>
           <div className="flex items-center gap-2">
+            {isUploading && (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                Uploading...
+              </div>
+            )}
             <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
               isOnline 
                 ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
