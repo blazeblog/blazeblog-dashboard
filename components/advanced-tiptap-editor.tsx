@@ -54,7 +54,7 @@ interface AdvancedTiptapEditorProps {
   title?: string
   categoryId?: string
   excerpt?: string
-  status?: 'draft' | 'published' | 'archived'
+  status?: 'draft' | 'published' | 'archived' | 'scheduled'
   enableAutoSave?: boolean
   onDraftRecover?: (draft: any) => void
 }

@@ -11,7 +11,7 @@ interface UseAutoSaveOptions {
   heroImage?: string
   categoryId?: string
   excerpt?: string
-  status?: 'draft' | 'published' | 'archived'
+  status?: 'draft' | 'published' | 'archived' | 'scheduled'
   autoSaveInterval?: number
 }
 

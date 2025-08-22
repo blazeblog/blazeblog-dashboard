@@ -30,8 +30,9 @@ import { RelatedPostsSelector } from "@/components/related-posts-selector"
 import { generateSlug, ensureTagsExist } from "@/lib/auto-create-utils"
 import { useToast } from "@/hooks/use-toast"
 import type { DraftPost } from "@/lib/indexeddb"
+import { TourTriggerButton, TourProvider, useTour } from "@/components/custom-tour"
 
-export default function AddPostPage() {
+function AddPostPage() {
   usePageTitle("Create New Post - BlazeBlog Admin")
   
   const router = useRouter()
@@ -59,6 +60,9 @@ export default function AddPostPage() {
   const [activeTab, setActiveTab] = useState("editor")
   // const { isFocusMode, toggleFocusMode } = useFocusMode(false)
   const [showSEOSidebar, setShowSEOSidebar] = useState(true)
+  
+  // Tour functionality
+  const { hasSeenTour } = useTour()
 
   const {
     lastSaved,
@@ -67,7 +71,6 @@ export default function AddPostPage() {
     autoSaveEnabled,
     setAutoSaveEnabled,
     loadDraft,
-    deleteDraft,
     getAllDrafts
   } = useAutoSave({
     postId: 'new',
@@ -82,7 +85,9 @@ export default function AddPostPage() {
   useEffect(() => {
     fetchCategories()
     checkForDrafts()
-  }, [])
+  }, []) // Only run once on mount
+
+  // Tour auto-start is now handled in TourProvider
 
   const checkForDrafts = async () => {
     const drafts = await getAllDrafts()
@@ -214,6 +219,7 @@ export default function AddPostPage() {
       categoryId: draft.categoryId || '',
       status: draft.status,
       excerpt: draft.excerpt || '',
+      metaDescription: '',
       tags: [] as Tag[],
       featuredImage: draft.heroImage || '',
       publishDate: '',
@@ -223,11 +229,6 @@ export default function AddPostPage() {
     setShowDraftDialog(false)
   }
 
-  const handleDeleteDraft = async (draftId: string) => {
-    await deleteDraft(draftId)
-    const updatedDrafts = await getAllDrafts()
-    setAvailableDrafts(updatedDrafts)
-  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -311,10 +312,12 @@ export default function AddPostPage() {
             onClick={() => setShowSEOSidebar(!showSEOSidebar)}
             className={showSEOSidebar ? "bg-blue-50 text-blue-600 border-blue-200" : ""}
             title="Toggle SEO Suggestions"
+            data-tour="seo-sidebar"
           >
             <Focus className="mr-2 h-4 w-4" />
             SEO
           </Button>
+          {/* <TourTriggerButton /> */}
           {/* {availableDrafts.length > 0 && (
             <Button 
               variant="outline" 
@@ -334,6 +337,7 @@ export default function AddPostPage() {
             onClick={handleSubmit} 
             size="sm" 
             disabled={isLoading || !formData.title.trim() || (formData.status === 'scheduled' && (!formData.publishDate || new Date(formData.publishDate) <= new Date()))}
+            data-tour="save-button"
           >
             <Save className="mr-2 h-4 w-4" />
             {isLoading ? 'Saving...' : 
@@ -355,7 +359,7 @@ export default function AddPostPage() {
         <div className={`flex-1 min-w-0 ${!showSEOSidebar ? 'w-full max-w-none px-0' : ''}`}>
           <div className={`space-y-6 ${!showSEOSidebar ? 'px-0' : ''}`}>
             {/* Title */}
-            <Card>
+            <Card data-tour="post-title">
               <CardContent className={`pt${!showSEOSidebar ? ' px-6' : 'px-2'}`}>
                 <div className="space-y-2">
                   <Label htmlFor="title">Post Title</Label>
@@ -372,7 +376,7 @@ export default function AddPostPage() {
 
             {/* Editor Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-3" data-tour="editor-tabs">
                 <TabsTrigger value="editor" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Editor
@@ -381,27 +385,29 @@ export default function AddPostPage() {
                   <Eye className="h-4 w-4" />
                   Preview
                 </TabsTrigger>
-                <TabsTrigger value="settings" className="flex items-center gap-2">
+                <TabsTrigger value="settings" className="flex items-center gap-2" data-tour="settings-tab">
                   <Settings className="h-4 w-4" />
                   Settings
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="editor" className="mt-4">
-                <AdvancedTiptapEditor
-                  content={formData.content}
-                  onChange={(content) => setFormData(prev => ({ ...prev, content }))}
-                  placeholder="Start writing your amazing post..."
-                  heroImage={formData.featuredImage}
-                  onHeroImageChange={(url) => setFormData(prev => ({ ...prev, featuredImage: url }))}
-                  postId="new"
-                  title={formData.title}
-                  categoryId={formData.categoryId}
-                  excerpt={formData.excerpt}
-                  status={formData.status}
-                  enableAutoSave={autoSaveEnabled}
-                  onDraftRecover={handleDraftRecover}
-                />
+                <div data-tour="rich-editor">
+                  <AdvancedTiptapEditor
+                    content={formData.content}
+                    onChange={(content) => setFormData(prev => ({ ...prev, content }))}
+                    placeholder="Start writing your amazing post..."
+                    heroImage={formData.featuredImage}
+                    onHeroImageChange={(url) => setFormData(prev => ({ ...prev, featuredImage: url }))}
+                    postId="new"
+                    title={formData.title}
+                    categoryId={formData.categoryId}
+                    excerpt={formData.excerpt}
+                    status={formData.status}
+                    enableAutoSave={autoSaveEnabled}
+                    onDraftRecover={handleDraftRecover}
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value="preview" className="mt-4">
@@ -412,7 +418,7 @@ export default function AddPostPage() {
                 <div className="space-y-6 max-w-4xl">
                   <div className="grid gap-6 lg:grid-cols-2">
                     {/* Publishing Settings */}
-                    <Card>
+                    <Card data-tour="publish-settings">
                       <CardHeader>
                         <CardTitle>Publish Settings</CardTitle>
                         <CardDescription>
@@ -532,7 +538,7 @@ export default function AddPostPage() {
                     </Card>
 
                     {/* SEO Settings */}
-                    <Card>
+                    <Card data-tour="seo-settings">
                       <CardHeader>
                         <CardTitle>SEO Settings</CardTitle>
                         <CardDescription>Optimize your post for search engines</CardDescription>
@@ -689,3 +695,14 @@ export default function AddPostPage() {
     </AdminLayout>
   )
 }
+
+// Wrap the component with the tour provider
+function AddPostPageWithTour() {
+  return (
+    <TourProvider>
+      <AddPostPage />
+    </TourProvider>
+  )
+}
+
+export default AddPostPageWithTour
