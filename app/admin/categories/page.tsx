@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { useClientApi, type PaginationParams, type PaginatedResponse, type Category } from "@/lib/client-api"
+import { usePageTitle } from "@/hooks/use-page-title"
 import { AdminLayout } from "@/components/admin-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,11 +16,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Search, FolderOpen } from "lucide-react"
 import { CategoryActions } from "@/components/category-actions"
+import { LoadingState } from "@/components/loading-state"
 
 
 const colors = ["#3B82F6", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#EC4899", "#6366F1", "#14B8A6"]
 
 export default function CategoriesPage() {
+  usePageTitle("Categories - BlazeBlog Admin")
+  
   const { isSignedIn, isLoaded } = useAuth()
   const router = useRouter()
   const api = useClientApi()
@@ -81,12 +85,7 @@ export default function CategoriesPage() {
   if (!isLoaded || isLoading) {
     return (
       <AdminLayout title="Categories">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-            <p>Loading categories...</p>
-          </div>
-        </div>
+        <LoadingState message="Loading Categories" />
       </AdminLayout>
     )
   }
@@ -160,7 +159,12 @@ export default function CategoriesPage() {
                   ) : (
                     categories.map((category) => {
                       return (
-                      <TableRow key={category.id}>
+                      <TableRow 
+                        key={category.id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => router.push(`/admin/categories/edit/${category.id}`)}
+                        title="Click to edit category"
+                      >
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="h-4 w-4 rounded-full bg-blue-500" />
@@ -182,7 +186,7 @@ export default function CategoriesPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{new Date(category.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <CategoryActions categoryId={category.id} />
                         </TableCell>
                       </TableRow>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { usePageTitle } from "@/hooks/use-page-title"
 import { AdminLayout } from "@/components/admin-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,6 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 
 export default function CustomDomainPage() {
+  usePageTitle("Custom Domain - BlazeBlog Admin")
   const [domain, setDomain] = useState("")
   const [isCloudflareConnected, setIsCloudflareConnected] = useState(false)
   const [isLoading, setIsLoading] = useState(false)

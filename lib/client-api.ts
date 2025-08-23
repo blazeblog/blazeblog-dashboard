@@ -1,7 +1,7 @@
 "use client"
 
 import { useAuth } from "@clerk/nextjs"
-import type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment } from "./api"
+import type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment, User } from "./api"
 
 // Form-related types based on Forms API documentation
 export type FieldType = 
@@ -95,6 +95,38 @@ export interface ReorderRelatedPostsRequest {
   relatedPostIds: number[]
 }
 
+// Newsletter types
+export interface Newsletter {
+  id: number
+  customerId: number
+  email: string
+  name?: string
+  company?: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NewsletterStats {
+  totalSubscriptions: number
+  activeSubscriptions: number
+  inactiveSubscriptions: number
+  recentSubscriptions: number
+}
+
+export interface CreateNewsletterRequest {
+  email: string
+  name?: string
+  company?: string
+}
+
+export interface UpdateNewsletterRequest {
+  email?: string
+  name?: string
+  company?: string
+  isActive?: boolean
+}
+
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
   body?: any
@@ -138,6 +170,12 @@ function buildQueryString(params: PaginationParams): string {
   if (params.isApproved !== undefined) searchParams.set('isApproved', params.isApproved.toString())
   if (params.topLevelOnly !== undefined) searchParams.set('topLevelOnly', params.topLevelOnly.toString())
   if (params.parentCommentId !== undefined) searchParams.set('parentCommentId', params.parentCommentId.toString())
+  
+  // User specific filters
+  if (params.username) searchParams.set('username', params.username)
+  if (params.email) searchParams.set('email', params.email)
+  if (params.firstName) searchParams.set('firstName', params.firstName)
+  if (params.lastName) searchParams.set('lastName', params.lastName)
   
   const queryString = searchParams.toString()
   return queryString ? `?${queryString}` : ''
@@ -287,7 +325,34 @@ export function useClientApi() {
       deleteAll: (postId: number) =>
         makeRequest<{ deleted: number }>(`/related-posts/post/${postId}/all`, { method: 'DELETE' }),
     },
+
+    // Newsletter API methods
+    newsletter: {
+      // Create newsletter subscription
+      create: (data: CreateNewsletterRequest) =>
+        makeRequest<Newsletter>('/newsletters', { method: 'POST', body: data }),
+      
+      // Get all newsletters with pagination and filters
+      getAll: (params: PaginationParams = {}) =>
+        makeRequest<PaginatedResponse<Newsletter>>(`/newsletters${buildQueryString(params)}`),
+      
+      // Get newsletter by ID
+      getById: (id: number) =>
+        makeRequest<Newsletter>(`/newsletters/${id}`),
+      
+      // Update newsletter
+      update: (id: number, data: UpdateNewsletterRequest) =>
+        makeRequest<Newsletter>(`/newsletters/${id}`, { method: 'PUT', body: data }),
+      
+      // Delete newsletter
+      delete: (id: number) =>
+        makeRequest<void>(`/newsletters/${id}`, { method: 'DELETE' }),
+      
+      // Get newsletter statistics
+      getStats: () =>
+        makeRequest<{ data: NewsletterStats }>('/newsletters/stats/overview'),
+    },
   }
 }
 
-export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment }
+export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment, User }

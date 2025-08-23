@@ -5,7 +5,7 @@ export interface DraftPost {
   heroImage?: string
   categoryId?: string
   excerpt?: string
-  status: 'draft' | 'published' | 'archived'
+  status: 'draft' | 'published' | 'archived' | 'scheduled'
   lastSaved: number
   userId?: string
 }

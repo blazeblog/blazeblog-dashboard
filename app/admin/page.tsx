@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useClientApi } from "@/lib/client-api"
+import { usePageTitle } from "@/hooks/use-page-title"
 import { AdminLayout } from "@/components/admin-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -59,6 +60,8 @@ interface DashboardData {
 }
 
 export default function AdminDashboard() {
+  usePageTitle("Dashboard - BlazeBlog Admin")
+  
   const router = useRouter()
   const api = useClientApi()
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)

@@ -1,7 +1,13 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
+import type { Metadata } from "next"
 import { AdminLayout } from "@/components/admin-layout"
 import { SiteConfigForm } from "@/components/site-config-form"
+
+export const metadata: Metadata = {
+  title: "Settings - BlazeBlog Admin",
+  description: "Configure your blog settings, site information, and preferences",
+}
 
 export default async function SettingsPage() {
   const { userId } = await auth()

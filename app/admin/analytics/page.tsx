@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { usePageTitle } from "@/hooks/use-page-title"
 import { AdminLayout } from "@/components/admin-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -116,6 +117,7 @@ const conversionFunnelData = [
 ]
 
 export default function AnalyticsPage() {
+  usePageTitle("Analytics - BlazeBlog Admin")
   const [dateRange, setDateRange] = useState("7d")
 
   return (

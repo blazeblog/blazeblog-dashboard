@@ -4,7 +4,8 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useClientApi, type Category, type Tag, type Post } from "@/lib/client-api"
-import { Save, X, FileText, Settings, Eye, ArrowLeft, Focus, BookOpen } from "lucide-react"
+import { usePageTitle } from "@/hooks/use-page-title"
+import { Save, X, FileText, Settings, Eye, ArrowLeft, Focus, BookOpen, Clock, AlertTriangle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { AdminLayout } from "@/components/admin-layout"
 import { AdvancedTiptapEditor } from "@/components/advanced-tiptap-editor"
 import { PostPreview } from "@/components/post-preview"
@@ -28,8 +30,11 @@ import { RelatedPostsSelector } from "@/components/related-posts-selector"
 import { generateSlug, ensureTagsExist } from "@/lib/auto-create-utils"
 import { useToast } from "@/hooks/use-toast"
 import type { DraftPost } from "@/lib/indexeddb"
+import { TourTriggerButton, TourProvider, useTour } from "@/components/custom-tour"
 
-export default function AddPostPage() {
+function AddPostPage() {
+  usePageTitle("Create New Post - BlazeBlog Admin")
+  
   const router = useRouter()
   const api = useClientApi()
   const { toast } = useToast()
@@ -42,7 +47,7 @@ export default function AddPostPage() {
     title: "",
     content: "",
     categoryId: "",
-    status: "draft" as 'draft' | 'published' | 'archived',
+    status: "draft" as 'draft' | 'published' | 'archived' | 'scheduled',
     excerpt: "",
     metaDescription: "", // Added meta description field
     tags: [] as Tag[],
@@ -55,6 +60,9 @@ export default function AddPostPage() {
   const [activeTab, setActiveTab] = useState("editor")
   // const { isFocusMode, toggleFocusMode } = useFocusMode(false)
   const [showSEOSidebar, setShowSEOSidebar] = useState(true)
+  
+  // Tour functionality
+  const { hasSeenTour } = useTour()
 
   const {
     lastSaved,
@@ -63,7 +71,6 @@ export default function AddPostPage() {
     autoSaveEnabled,
     setAutoSaveEnabled,
     loadDraft,
-    deleteDraft,
     getAllDrafts
   } = useAutoSave({
     postId: 'new',
@@ -78,7 +85,9 @@ export default function AddPostPage() {
   useEffect(() => {
     fetchCategories()
     checkForDrafts()
-  }, [])
+  }, []) // Only run once on mount
+
+  // Tour auto-start is now handled in TourProvider
 
   const checkForDrafts = async () => {
     const drafts = await getAllDrafts()
@@ -105,6 +114,20 @@ export default function AddPostPage() {
     setIsLoading(true)
     setError('')
 
+    // Validation for scheduled posts
+    if (formData.status === 'scheduled') {
+      if (!formData.publishDate) {
+        setError('Please select a publish date and time for scheduled posts')
+        setIsLoading(false)
+        return
+      }
+      if (new Date(formData.publishDate) <= new Date()) {
+        setError('Scheduled publish date must be in the future')
+        setIsLoading(false)
+        return
+      }
+    }
+
     try {
       const postData = {
         title: formData.title,
@@ -118,13 +141,27 @@ export default function AddPostPage() {
         userId: 1,
         tagIds: formData.tags.map(tag => tag.id), // Optimized: Send only tag IDs instead of full objects
         relatedPostIds: formData.relatedPosts.map(post => post.id), // Optimized: Send only post IDs instead of full objects
+        publishDate: formData.status === 'scheduled' ? formData.publishDate : undefined
       }
 
       await api.post('/posts', postData)
 
+      const getSuccessMessage = () => {
+        switch (formData.status) {
+          case 'published':
+            return 'published successfully'
+          case 'scheduled':
+            return `scheduled for ${new Date(formData.publishDate).toLocaleDateString()} at ${new Date(formData.publishDate).toLocaleTimeString()}`
+          case 'draft':
+            return 'saved as draft'
+          default:
+            return 'saved successfully'
+        }
+      }
+
       toast({
         title: "Success!",
-        description: `Post "${formData.title}" has been ${formData.status === 'published' ? 'published' : 'saved as draft'} successfully.`,
+        description: `Post "${formData.title}" has been ${getSuccessMessage()}.`,
         variant: "default"
       })
 
@@ -182,6 +219,7 @@ export default function AddPostPage() {
       categoryId: draft.categoryId || '',
       status: draft.status,
       excerpt: draft.excerpt || '',
+      metaDescription: '',
       tags: [] as Tag[],
       featuredImage: draft.heroImage || '',
       publishDate: '',
@@ -191,11 +229,6 @@ export default function AddPostPage() {
     setShowDraftDialog(false)
   }
 
-  const handleDeleteDraft = async (draftId: string) => {
-    await deleteDraft(draftId)
-    const updatedDrafts = await getAllDrafts()
-    setAvailableDrafts(updatedDrafts)
-  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -203,6 +236,8 @@ export default function AddPostPage() {
         return "bg-green-500 text-white"
       case "draft":
         return "bg-yellow-500 text-white"
+      case "scheduled":
+        return "bg-blue-500 text-white"
       case "archived":
         return "bg-gray-500 text-white"
       default:
@@ -277,10 +312,12 @@ export default function AddPostPage() {
             onClick={() => setShowSEOSidebar(!showSEOSidebar)}
             className={showSEOSidebar ? "bg-blue-50 text-blue-600 border-blue-200" : ""}
             title="Toggle SEO Suggestions"
+            data-tour="seo-sidebar"
           >
             <Focus className="mr-2 h-4 w-4" />
             SEO
           </Button>
+          {/* <TourTriggerButton /> */}
           {/* {availableDrafts.length > 0 && (
             <Button 
               variant="outline" 
@@ -296,9 +333,17 @@ export default function AddPostPage() {
               Cancel
             </a>
           </Button>
-          <Button onClick={handleSubmit} size="sm" disabled={isLoading || !formData.title.trim()}>
+          <Button 
+            onClick={handleSubmit} 
+            size="sm" 
+            disabled={isLoading || !formData.title.trim() || (formData.status === 'scheduled' && (!formData.publishDate || new Date(formData.publishDate) <= new Date()))}
+            data-tour="save-button"
+          >
             <Save className="mr-2 h-4 w-4" />
-            {isLoading ? 'Saving...' : 'Save Post'}
+            {isLoading ? 'Saving...' : 
+             formData.status === 'published' ? 'Publish Now' :
+             formData.status === 'scheduled' ? 'Schedule Post' :
+             'Save Draft'}
           </Button>
         </div>
       </div>
@@ -314,7 +359,7 @@ export default function AddPostPage() {
         <div className={`flex-1 min-w-0 ${!showSEOSidebar ? 'w-full max-w-none px-0' : ''}`}>
           <div className={`space-y-6 ${!showSEOSidebar ? 'px-0' : ''}`}>
             {/* Title */}
-            <Card>
+            <Card data-tour="post-title">
               <CardContent className={`pt${!showSEOSidebar ? ' px-6' : 'px-2'}`}>
                 <div className="space-y-2">
                   <Label htmlFor="title">Post Title</Label>
@@ -331,7 +376,7 @@ export default function AddPostPage() {
 
             {/* Editor Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-3" data-tour="editor-tabs">
                 <TabsTrigger value="editor" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Editor
@@ -340,27 +385,29 @@ export default function AddPostPage() {
                   <Eye className="h-4 w-4" />
                   Preview
                 </TabsTrigger>
-                <TabsTrigger value="settings" className="flex items-center gap-2">
+                <TabsTrigger value="settings" className="flex items-center gap-2" data-tour="settings-tab">
                   <Settings className="h-4 w-4" />
                   Settings
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="editor" className="mt-4">
-                <AdvancedTiptapEditor
-                  content={formData.content}
-                  onChange={(content) => setFormData(prev => ({ ...prev, content }))}
-                  placeholder="Start writing your amazing post..."
-                  heroImage={formData.featuredImage}
-                  onHeroImageChange={(url) => setFormData(prev => ({ ...prev, featuredImage: url }))}
-                  postId="new"
-                  title={formData.title}
-                  categoryId={formData.categoryId}
-                  excerpt={formData.excerpt}
-                  status={formData.status}
-                  enableAutoSave={autoSaveEnabled}
-                  onDraftRecover={handleDraftRecover}
-                />
+                <div data-tour="rich-editor">
+                  <AdvancedTiptapEditor
+                    content={formData.content}
+                    onChange={(content) => setFormData(prev => ({ ...prev, content }))}
+                    placeholder="Start writing your amazing post..."
+                    heroImage={formData.featuredImage}
+                    onHeroImageChange={(url) => setFormData(prev => ({ ...prev, featuredImage: url }))}
+                    postId="new"
+                    title={formData.title}
+                    categoryId={formData.categoryId}
+                    excerpt={formData.excerpt}
+                    status={formData.status}
+                    enableAutoSave={autoSaveEnabled}
+                    onDraftRecover={handleDraftRecover}
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value="preview" className="mt-4">
@@ -371,24 +418,30 @@ export default function AddPostPage() {
                 <div className="space-y-6 max-w-4xl">
                   <div className="grid gap-6 lg:grid-cols-2">
                     {/* Publishing Settings */}
-                    <Card>
+                    <Card data-tour="publish-settings">
                       <CardHeader>
                         <CardTitle>Publish Settings</CardTitle>
-                        <CardDescription>Configure how and when to publish</CardDescription>
+                        <CardDescription>
+                          {formData.status === 'draft' && 'Save as draft to work on later'}
+                          {formData.status === 'published' && 'Publish immediately when saved'}
+                          {formData.status === 'scheduled' && 'Schedule for automatic publishing'}
+                          {formData.status === 'archived' && 'Archive this post'}
+                        </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="status">Status</Label>
                           <Select
                             value={formData.status}
-                            onValueChange={(value: 'draft' | 'published' | 'archived') => setFormData(prev => ({ ...prev, status: value }))}
+                            onValueChange={(value: 'draft' | 'published' | 'archived' | 'scheduled') => setFormData(prev => ({ ...prev, status: value }))}
                           >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="draft">Draft</SelectItem>
-                              <SelectItem value="published">Published</SelectItem>
+                              <SelectItem value="published">Publish Now</SelectItem>
+                              <SelectItem value="scheduled">Schedule for Later</SelectItem>
                               <SelectItem value="archived">Archived</SelectItem>
                             </SelectContent>
                           </Select>
@@ -411,34 +464,112 @@ export default function AddPostPage() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="publishDate">Publish Date</Label>
-                          <Input
-                            id="publishDate"
-                            type="datetime-local"
-                            value={formData.publishDate}
-                            onChange={(e) => setFormData(prev => ({ ...prev, publishDate: e.target.value }))}
-                          />
-                        </div>
+                        {formData.status === 'scheduled' && (
+                          <div className="space-y-2">
+                            <Label htmlFor="publishDate" className="flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              <span>Schedule Date & Time</span>
+                              <Badge variant="outline" className="text-xs">Required</Badge>
+                            </Label>
+                            <Input
+                              id="publishDate"
+                              type="datetime-local"
+                              value={formData.publishDate}
+                              onChange={(e) => setFormData(prev => ({ ...prev, publishDate: e.target.value }))}
+                              min={new Date().toISOString().slice(0, 16)}
+                              className={!formData.publishDate ? 'border-red-300 focus:border-red-500' : ''}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {formData.publishDate ? (
+                                `Post will be published on ${new Date(formData.publishDate).toLocaleDateString()} at ${new Date(formData.publishDate).toLocaleTimeString()}`
+                              ) : (
+                                'Select when you want this post to be automatically published'
+                              )}
+                            </p>
+                            {formData.publishDate && new Date(formData.publishDate) <= new Date() && (
+                              <p className="text-xs text-red-500">⚠️ Selected date must be in the future</p>
+                            )}
+                            <div className="flex flex-wrap gap-2 mt-3">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const tomorrow = new Date()
+                                  tomorrow.setDate(tomorrow.getDate() + 1)
+                                  tomorrow.setHours(9, 0, 0, 0)
+                                  setFormData(prev => ({ ...prev, publishDate: tomorrow.toISOString().slice(0, 16) }))
+                                }}
+                                className="text-xs hover:bg-gray-100"
+                              >
+                                Tomorrow
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const sixHours = new Date()
+                                  sixHours.setHours(sixHours.getHours() + 6)
+                                  setFormData(prev => ({ ...prev, publishDate: sixHours.toISOString().slice(0, 16) }))
+                                }}
+                                className="text-xs hover:bg-gray-100"
+                              >
+                                6 Hours
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const twoDays = new Date()
+                                  twoDays.setDate(twoDays.getDate() + 2)
+                                  twoDays.setHours(9, 0, 0, 0)
+                                  setFormData(prev => ({ ...prev, publishDate: twoDays.toISOString().slice(0, 16) }))
+                                }}
+                                className="text-xs hover:bg-gray-100"
+                              >
+                                2 Days
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
 
                     {/* SEO Settings */}
-                    <Card>
+                    <Card data-tour="seo-settings">
                       <CardHeader>
                         <CardTitle>SEO Settings</CardTitle>
                         <CardDescription>Optimize your post for search engines</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="slug">URL Slug</Label>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Label htmlFor="slug">URL Slug</Label>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <AlertTriangle className="h-4 w-4 text-amber-500 cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p className="font-semibold text-amber-600">⚠️ URL Impact Warning</p>
+                                  <p className="text-sm mt-1">
+                                    Changing the slug affects the post URL (/posts/your-slug). 
+                                    This may break existing bookmarks, social media shares, 
+                                    and SEO rankings if the post is already published.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                           <Input
                             id="slug"
                             placeholder="url-friendly-slug"
                             value={formData.slug}
                             onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
                           />
-                          <p className="text-xs text-muted-foreground">URL: /posts/{formData.slug}</p>
+                          <p className="text-xs text-muted-foreground">URL: /posts/{formData.slug || 'your-slug'}</p>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="metaDescription">Meta Description</Label>
@@ -564,3 +695,14 @@ export default function AddPostPage() {
     </AdminLayout>
   )
 }
+
+// Wrap the component with the tour provider
+function AddPostPageWithTour() {
+  return (
+    <TourProvider>
+      <AddPostPage />
+    </TourProvider>
+  )
+}
+
+export default AddPostPageWithTour

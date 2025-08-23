@@ -22,7 +22,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Save, X, Trash2 } from "lucide-react"
+import { ArrowLeft, Save, X, Trash2, AlertTriangle } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export default function EditCategoryPage() {
   const router = useRouter()
@@ -259,7 +260,24 @@ export default function EditCategoryPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
+              <div className="flex items-center gap-2 mb-2">
+                <Label htmlFor="slug">Slug</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <AlertTriangle className="h-4 w-4 text-amber-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-semibold text-amber-600">⚠️ URL Impact Warning</p>
+                      <p className="text-sm mt-1">
+                        Changing the slug affects the category URL (/categories/your-slug). 
+                        This may break existing bookmarks, social media shares, 
+                        and SEO rankings if already published.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="slug"
                 value={formData.slug}
@@ -267,7 +285,7 @@ export default function EditCategoryPage() {
                 placeholder="URL-friendly identifier"
               />
               <p className="text-xs text-muted-foreground">
-                This is used in URLs. Be careful when changing as it may break existing links.
+                URL: /categories/{formData.slug}
               </p>
             </div>
             

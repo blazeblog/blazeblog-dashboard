@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { usePageTitle } from "@/hooks/use-page-title"
 import { AdminLayout } from "@/components/admin-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -57,6 +58,7 @@ const fieldTypes = [
 ] as const
 
 export default function FormsPage() {
+  usePageTitle("Forms - BlazeBlog Admin")
   const [forms, setForms] = useState<Form[]>([])
   const [isCreating, setIsCreating] = useState(false)
   const [editingForm, setEditingForm] = useState<Form | null>(null)

@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Save, Settings, Flag, Upload, X, BarChart } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useClientApi } from "@/lib/client-api"
+import { getImageUrl } from "@/lib/image-utils"
 
 interface FeatureFlags {
   enableTagsPage: boolean
@@ -305,7 +306,7 @@ export function SiteConfigForm() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-4 p-3 border rounded-lg">
                       <img 
-                        src={config.siteConfig.logoPath} 
+                        src={getImageUrl(config.siteConfig.logoPath)} 
                         alt="Logo preview" 
                         className="h-12 w-12 object-contain rounded"
                       />
@@ -438,7 +439,7 @@ export function SiteConfigForm() {
                       onCheckedChange={(checked) => updateFeatureFlag('autoApproveComments', checked)}
                     />
                   </div>
-                  <Separator />
+                  {/* <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>Enable Comments Reply</Label>
@@ -448,7 +449,7 @@ export function SiteConfigForm() {
                       checked={config.featureFlags.enableCommentsReply}
                       onCheckedChange={(checked) => updateFeatureFlag('enableCommentsReply', checked)}
                     />
-                  </div>
+                  </div> */}
                 </>
               )}
               <Separator />

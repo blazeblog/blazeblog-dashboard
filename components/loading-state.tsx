@@ -6,14 +6,23 @@ interface LoadingStateProps {
 
 export function LoadingState({ message = "Loading..." }: LoadingStateProps) {
   return (
-    <Card>
-      <CardContent className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{message}</p>
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="text-center space-y-6">
+        <div className="relative">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-muted border-t-primary mx-auto"></div>
+          <div className="absolute inset-0 animate-pulse rounded-full h-16 w-16 border-4 border-transparent border-t-primary/20 mx-auto"></div>
         </div>
-      </CardContent>
-    </Card>
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold text-foreground">{message}</h3>
+          <p className="text-muted-foreground">Fetching your latest data...</p>
+        </div>
+        <div className="flex items-center justify-center space-x-1">
+          <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+        </div>
+      </div>
+    </div>
   )
 }
 

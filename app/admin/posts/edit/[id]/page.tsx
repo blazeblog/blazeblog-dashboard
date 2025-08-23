@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useClientApi, type Category, type Post, type PostRevision, type Tag, type RelatedPost } from "@/lib/client-api"
 import { useToast } from "@/hooks/use-toast"
-import { Save, X, FileText, Settings, Eye, ArrowLeft, Trash2, Activity, Info, Focus, BookOpen } from "lucide-react"
+import { Save, X, FileText, Settings, Eye, ArrowLeft, Trash2, Activity, Info, Focus, BookOpen, AlertTriangle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -414,7 +414,7 @@ export default function EditPostPage() {
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TooltipProvider>
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="editor" className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
                     Editor
@@ -427,7 +427,7 @@ export default function EditPostPage() {
                     <Settings className="h-4 w-4" />
                     Settings
                   </TabsTrigger>
-                  <Tooltip>
+                  {/* <Tooltip>
                     <TooltipTrigger asChild>
                       <TabsTrigger value="revisions" className="flex items-center gap-2">
                         <Activity className="h-4 w-4" />
@@ -443,7 +443,7 @@ export default function EditPostPage() {
                     <TooltipContent>
                       <p>View revision history, compare versions, and restore previous versions</p>
                     </TooltipContent>
-                  </Tooltip>
+                  </Tooltip> */}
                 </TabsList>
               </TooltipProvider>
 
@@ -513,7 +513,24 @@ export default function EditPostPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="slug">URL Slug</Label>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Label htmlFor="slug">URL Slug</Label>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <AlertTriangle className="h-4 w-4 text-amber-500 cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="font-semibold text-amber-600">⚠️ URL Impact Warning</p>
+                                <p className="text-sm mt-1">
+                                  Changing the slug affects the post URL (/posts/your-slug). 
+                                  This may break existing bookmarks, social media shares, 
+                                  and SEO rankings if already published.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
                         <Input
                           id="slug"
                           placeholder="url-friendly-slug"
