@@ -1,93 +1,94 @@
-import { SignInButton, SignUpButton } from "@clerk/nextjs"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, Users, BarChart3, Settings, Sparkles } from "lucide-react"
+import { SignIn } from "@clerk/nextjs"
 import { OnboardingRedirect } from "@/components/onboarding-redirect"
+import { PenTool, BarChart3, Sparkles, Globe, Palette } from "lucide-react"
 
 export default function HomePage() {
-
   return (
     <OnboardingRedirect>
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-indigo-900/20">
-        <div className="container mx-auto px-4 py-16">
-          <div className="text-center mb-16">
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl flex items-center justify-center">
-                <Sparkles className="h-8 w-8 text-white" />
+      <div className="h-screen overflow-hidden bg-gradient-to-br from-background via-muted/20 to-background">
+        <div className="container mx-auto px-4 py-8 h-full">
+          <div className="grid lg:grid-cols-2 gap-16 items-center h-full">
+            {/* Left Column - Branding */}
+            <div className="space-y-8">
+              <div className="text-left space-y-6">
+                <div className="flex items-center space-x-4 mb-6">
+                  <div className="w-14 h-14 bg-primary/10 border-2 border-primary/20 rounded-2xl flex items-center justify-center">
+                    <PenTool className="h-7 w-7 text-primary" />
+                  </div>
+                  <div>
+                    <h1 className="text-5xl font-bold tracking-tight text-foreground">
+                      BlazeBlog
+                    </h1>
+                    <div className="w-28 h-1 bg-gradient-to-r from-primary to-primary/60 rounded-full mt-2"></div>
+                  </div>
+                </div>
+                <p className="text-xl text-muted-foreground leading-relaxed">
+                  Professional blog management made simple. Create, manage, and grow your content with powerful tools.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center space-x-3 p-4 rounded-xl border bg-gradient-to-br from-card/80 to-card/40 hover:from-card to-card/60 transition-all shadow-lg">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm">Analytics</h3>
+                    <p className="text-xs text-muted-foreground">Track performance</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 p-4 rounded-xl border bg-gradient-to-br from-card/80 to-card/40 hover:from-card to-card/60 transition-all shadow-lg">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <Palette className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm">Themes</h3>
+                    <p className="text-xs text-muted-foreground">Beautiful designs</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 p-4 rounded-xl border bg-gradient-to-br from-card/80 to-card/40 hover:from-card to-card/60 transition-all shadow-lg">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <Globe className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm">Publishing</h3>
+                    <p className="text-xs text-muted-foreground">Share worldwide</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 p-4 rounded-xl border bg-gradient-to-br from-card/80 to-card/40 hover:from-card to-card/60 transition-all shadow-lg">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm">AI Features</h3>
+                    <p className="text-xs text-muted-foreground">Smart assistance</p>
+                  </div>
+                </div>
               </div>
             </div>
-            <h1 className="text-5xl font-bold tracking-tight mb-4">
-              Welcome to <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">BlazeBlog</span>
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-              Create stunning blogs in minutes. Beautiful themes, powerful features, and seamless hosting - everything you need to start blogging today.
-            </p>
-            <div className="flex gap-4 justify-center">
-              <SignUpButton mode="modal">
-                <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg">
-                  Get Started Free
-                </Button>
-              </SignUpButton>
-              <SignInButton mode="modal">
-                <Button variant="outline" size="lg" className="border-purple-200 hover:border-purple-300">
-                  Sign In
-                </Button>
-              </SignInButton>
+
+            {/* Right Column - Login Form */}
+            <div className="flex items-center justify-center">
+              <div className="w-full max-w-md">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold mb-2">Admin Dashboard</h2>
+                  <p className="text-muted-foreground">Sign in to manage your blog</p>
+                </div>
+                <SignIn
+                  appearance={{
+                    elements: {
+                      rootBox: "mx-auto",
+                      card: "shadow-xl border bg-card",
+                      headerTitle: "text-2xl font-bold",
+                      headerSubtitle: "text-muted-foreground",
+                      socialButtonsBlockButton: "border hover:bg-accent",
+                      formButtonPrimary: "bg-primary hover:bg-primary/90 text-primary-foreground",
+                      footerActionLink: "text-primary hover:text-primary/80",
+                    },
+                  }}
+                />
+              </div>
             </div>
-        </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <Card className="border-purple-100 hover:border-purple-200 transition-colors">
-              <CardHeader>
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-3">
-                  <Sparkles className="h-6 w-6 text-white" />
-                </div>
-                <CardTitle>Beautiful Themes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>Choose from dozens of professionally designed themes</CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="border-purple-100 hover:border-purple-200 transition-colors">
-              <CardHeader>
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-3">
-                  <BarChart3 className="h-6 w-6 text-white" />
-                </div>
-                <CardTitle>Analytics & Insights</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>Track your blog's performance with detailed analytics</CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="border-purple-100 hover:border-purple-200 transition-colors">
-              <CardHeader>
-                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-3">
-                  <Users className="h-6 w-6 text-white" />
-                </div>
-                <CardTitle>Lead Generation</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>Built-in forms to capture leads and grow your audience</CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="border-purple-100 hover:border-purple-200 transition-colors">
-              <CardHeader>
-                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mb-3">
-                  <Settings className="h-6 w-6 text-white" />
-                </div>
-                <CardTitle>Easy Setup</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>Get your blog online in minutes with our guided setup</CardDescription>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="text-center">
-            <p className="text-muted-foreground">Join thousands of creators who trust BlazeBlog for their online presence</p>
           </div>
         </div>
       </div>
