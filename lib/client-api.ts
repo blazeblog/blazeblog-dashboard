@@ -87,6 +87,38 @@ export interface BulkCreateRelatedPostsRequest {
   relatedPostIds: number[]
 }
 
+// Notion Integration Types
+export interface NotionConnection {
+  id: string
+  token: string
+  workspaceName?: string | null
+  databaseId?: string | null
+  fieldMappings?: NotionFieldMapping[] | null
+  syncSettings?: NotionSyncSettings | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface NotionDatabaseLegacy {
+  id: string
+  title: string
+  url: string
+  properties: Record<string, any>
+}
+
+export interface NotionFieldMappingLegacy {
+  notionProperty: string
+  notionPropertyType: string
+  blazeblogField: string
+  isIdentifier: boolean
+}
+
+export interface NotionSyncSettingsLegacy {
+  syncFrequency: 'manual' | 'hourly' | 'daily'
+  syncOnStart: boolean
+  lastSyncAt?: Date | null
+}
+
 export interface UpdateRelatedPostRequest {
   sortOrder: number
 }
@@ -352,6 +384,311 @@ export function useClientApi() {
       getStats: () =>
         makeRequest<{ data: NewsletterStats }>('/newsletters/stats/overview'),
     },
+
+    // Notion Integration API methods (matching backend documentation)
+    notion: {
+      // Test Notion API token
+      testToken: (notionToken: string) =>
+        makeRequest<{ success: boolean; integrationName?: string; workspaceName?: string }>('/notion/test-token', {
+          method: 'POST',
+          body: { notion_token: notionToken }
+        }),
+      
+      // Get user's accessible databases
+      getDatabases: (notionToken: string) =>
+        makeRequest<NotionDatabase[]>('/notion/databases', {
+          method: 'POST',
+          body: { notion_token: notionToken }
+        }),
+      
+      // Get database properties for field mapping
+      getDatabaseProperties: (databaseId: string, notionToken: string) =>
+        makeRequest<Record<string, NotionProperty>>(`/notion/databases/${databaseId}/properties?token=${encodeURIComponent(notionToken)}`),
+      
+      // Create new integration (token is handled by backend from temp storage)
+      createIntegration: (data: {
+        database_id: string
+        database_title: string
+        field_mappings: Record<string, string>
+        sync_config: {
+          enabled: boolean
+          interval_minutes: number
+          auto_publish: boolean
+          draft_status_property?: string
+          draft_status_value?: string
+          published_status_value?: string
+        }
+      }) =>
+        makeRequest<NotionIntegrationResponse>('/notion', {
+          method: 'POST',
+          body: data
+        }),
+      
+      // Get all integrations
+      getIntegrations: () =>
+        makeRequest<NotionIntegrationResponse[]>('/notion'),
+      
+      // Get specific integration
+      getIntegration: (id: number) =>
+        makeRequest<NotionIntegrationDetailResponse>(`/notion/${id}`),
+      
+      // Update integration settings
+      updateIntegration: (id: number, updates: Partial<{
+        database_title: string
+        field_mappings: Record<string, string>
+        sync_config: {
+          enabled: boolean
+          interval_minutes: number
+          auto_publish: boolean
+          draft_status_property?: string
+          draft_status_value?: string
+          published_status_value?: string
+        }
+        status: 'setup' | 'active' | 'paused' | 'error'
+      }>) =>
+        makeRequest<NotionIntegrationResponse>(`/notion/${id}`, {
+          method: 'PUT',
+          body: updates
+        }),
+      
+      // Delete integration
+      deleteIntegration: (id: number) =>
+        makeRequest<{ message: string }>(`/notion/${id}`, {
+          method: 'DELETE'
+        }),
+      
+      // Trigger manual sync
+      triggerSync: (id: number, options?: { force_full_sync?: boolean }) =>
+        makeRequest<{ message: string; jobId: string }>(`/notion/${id}/sync`, {
+          method: 'POST',
+          body: options || {}
+        }),
+      
+      // Get synced pages
+      getSyncedPages: (id: number) =>
+        makeRequest<SyncedPage[]>(`/notion/${id}/synced-pages`),
+      
+      // Get sync history
+      getSyncLogs: (id: number, params: { limit?: number } = {}) =>
+        makeRequest<NotionSyncLogResponse[]>(`/notion/${id}/sync-logs?limit=${params.limit || 10}`),
+      
+      // Get synced pages
+      getSyncedPages: (id: number, params: { limit?: number } = {}) =>
+        makeRequest<NotionSyncedPageResponse[]>(`/notion/${id}/synced-pages?limit=${params.limit || 10}`),
+    },
+  }
+}
+
+// Notion Integration types (matching backend API documentation)
+export interface NotionDatabase {
+  id: string
+  title: string
+  url?: string
+  properties: Record<string, NotionProperty>
+}
+
+export interface NotionProperty {
+  id: string
+  type: 'title' | 'rich_text' | 'number' | 'select' | 'multi_select' | 'date' | 'checkbox' | 'status' | 'relation' | 'people'
+  title?: {}
+  rich_text?: {}
+  select?: {
+    options: Array<{ id: string; name: string; color: string }>
+  }
+  multi_select?: {
+    options: Array<{ id: string; name: string; color: string }>
+  }
+  date?: {}
+}
+
+// API Response types (matching actual backend structure)
+export interface NotionIntegrationResponse {
+  id: number
+  customer_id: number
+  notion_token_encrypted: string
+  database_id: string
+  database_title: string
+  field_mappings: Record<string, string>
+  sync_config: {
+    enabled: boolean
+    interval_minutes: number
+    auto_publish: boolean
+    draft_status_property?: string
+    draft_status_value?: string
+    published_status_value?: string
+  }
+  status: 'setup' | 'active' | 'paused' | 'error'
+  last_sync_at: string | null
+  last_sync_cursor?: string | null
+  error_message?: string | null
+  created_at: string
+  updated_at: string
+  // These are included directly in the integration response
+  synced_pages: NotionSyncedPageResponse[]
+  sync_logs: NotionSyncLogResponse[]
+  // Partial integration fields
+  integration_partial?: boolean
+  workspace_info?: {
+    id?: string
+    name?: string
+    type?: string
+    owner?: any
+    avatar?: string | null
+  }
+  expires_at?: string
+}
+
+export interface NotionIntegrationDetailResponse extends NotionIntegrationResponse {
+  synced_pages: NotionSyncedPageResponse[]
+  sync_logs: NotionSyncLogResponse[]
+}
+
+export interface NotionSyncedPageResponse {
+  id: number
+  integration_id: number
+  notion_page_id: string
+  post_id: number | null
+  notion_last_edited_time: string
+  last_synced_at: string
+  sync_status: 'failed' | 'success' | 'pending' | 'skipped'
+  sync_error?: string | null
+  content_hash?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface NotionSyncLogResponse {
+  id: number
+  integration_id: number
+  sync_type: 'manual' | 'scheduled' | 'webhook'
+  status: 'completed' | 'partial' | 'failed'
+  pages_processed: number
+  pages_created: number
+  pages_updated: number
+  pages_skipped: number
+  pages_failed: number
+  error_message?: string | null
+  started_at: string
+  completed_at: string | null
+  created_at: string
+}
+
+export interface SyncedPage {
+  id: string
+  notion_page_id: string
+  integration_id: number
+  post_id?: number
+  notion_title: string
+  notion_url: string
+  blazeblog_title?: string
+  blazeblog_slug?: string
+  sync_status: 'synced' | 'pending' | 'error'
+  last_synced_at?: string
+  error_message?: string
+  created_at: string
+  updated_at: string
+}
+
+// Legacy types for component compatibility
+export interface NotionConnection {
+  id: string
+  token: string
+  workspaceName?: string | null
+  databaseId?: string | null
+  databaseTitle?: string
+  fieldMappings?: NotionFieldMapping[] | null
+  syncSettings?: NotionSyncSettings | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface NotionFieldMapping {
+  id?: string
+  connectionId?: string
+  notionPropertyId: string
+  notionPropertyName: string
+  blazeblogField: string
+  blazeblogFieldLabel: string
+  createdAt: string
+}
+
+export interface NotionSyncSettings {
+  id: string
+  connectionId: string
+  autoSync: boolean
+  syncInterval: number
+  lastSyncAt?: string
+  nextSyncAt?: string
+  isRunning: boolean
+}
+
+export interface NotionIntegration {
+  id: string
+  name: string
+  databaseId: string
+  databaseTitle: string
+  isActive: boolean
+  lastSyncAt?: string
+  notionToken: string
+  customerId: number
+  createdAt: string
+  updatedAt: string
+  fieldMappings: Record<string, string>
+  syncConfig: {
+    enabled: boolean
+    intervalMinutes: number
+    autoPublish: boolean
+    draftStatusProperty?: string
+    draftStatusValue?: string
+    publishedStatusValue?: string
+  }
+  // Partial integration fields
+  isPartial?: boolean
+  workspaceInfo?: {
+    id?: string
+    name?: string
+    type?: string
+    owner?: any
+    avatar?: string | null
+  }
+  expiresAt?: string
+  // Full integration data to avoid extra API calls
+  fullIntegrationData?: NotionIntegrationResponse
+}
+
+export interface NotionSyncedPage {
+  id: string
+  integrationId: string
+  notionPageId: string
+  postId: number
+  title: string
+  lastSyncedAt: string
+  contentHash: string
+  status: 'synced' | 'error' | 'pending'
+  errorMessage?: string
+}
+
+export interface NotionSyncLog {
+  id: string
+  integrationId: string
+  status: 'success' | 'error' | 'partial'
+  pagesProcessed: number
+  pagesCreated: number
+  pagesUpdated: number
+  errors?: string[]
+  startedAt: string
+  completedAt?: string
+}
+
+export type UserPlan = 'free' | 'bronze' | 'silver' | 'gold' | 'platinum'
+
+export interface UserSubscription {
+  plan: UserPlan
+  isActive: boolean
+  expiresAt?: string
+  features: string[]
+  integrationLimits: {
+    notion: number // 0 for free/bronze, 1 for silver, 3 for gold, 10 for platinum
   }
 }
 

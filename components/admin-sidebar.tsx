@@ -18,6 +18,7 @@ import {
   MessageCircle,
   Palette,
   Mail,
+  Zap,
 } from "lucide-react"
 
 import {
@@ -144,6 +145,17 @@ const navigation: NavigationSection[] = [
       //   url: "/admin/roles",
       //   icon: Shield,
       // },
+    ],
+  },
+  {
+    title: "Integrations",
+    items: [
+      {
+        title: "Notion",
+        url: "/admin/notion",
+        icon: Zap,
+        badge: "Silver+",
+      },
     ],
   },
   {
