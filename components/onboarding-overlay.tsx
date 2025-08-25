@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,9 +17,13 @@ import {
   ArrowLeft,
   Sparkles,
   Rocket,
-  Users,
   Heart,
   X,
+  Star,
+  Zap,
+  Crown,
+  Wand2,
+  Sparkle
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useOnboarding, useSlugCheck } from "@/hooks/use-onboarding"
@@ -95,7 +98,6 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
   const [currentStep, setCurrentStep] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [isHidden, setIsHidden] = useState(false)
-  const router = useRouter()
   const { toast } = useToast()
   const { hasCompletedOnboarding, isOnboarded } = useOnboarding()
   const { checkSlug, result: slugResult, clearResult } = useSlugCheck()
@@ -119,30 +121,53 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
     {
       id: "company",
       title: "Company Information",
-      description: "Tell us about your company",
+      description: "Tell us about your company and what makes it unique. This helps us personalize your blog experience.",
       icon: Building2,
-      fields: ["companyName", "website", "description"]
+      fields: ["companyName", "website", "description"],
+      tips: [
+        "Your company name will appear in your blog header",
+        "Website is optional but helps with branding",
+        "Description helps visitors understand your business"
+      ]
     },
     {
       id: "blog",
-      title: "Your Blog Address",
-      description: "Choose your unique blog URL",
+      title: "Choose Your Blog Address",
+      description: "Pick a unique URL for your blog. This will be your blog's permanent address on the web.",
       icon: Globe,
-      fields: ["blogSlug"]
+      fields: ["blogSlug"],
+      tips: [
+        "This cannot be changed later, so choose carefully",
+        "Use lowercase letters, numbers, and hyphens only",
+        "Keep it short and memorable",
+        "You can connect a custom domain later"
+      ]
     },
     {
       id: "theme",
-      title: "Choose Your Theme",
-      description: "Select a beautiful theme for your blog",
+      title: "Select Your Theme",
+      description: "Choose a beautiful theme that matches your brand and style. You can always change this later.",
       icon: Palette,
-      fields: ["selectedTheme"]
+      fields: ["selectedTheme"],
+      tips: [
+        "Each theme is fully customizable",
+        "You can change themes anytime",
+        "All themes are mobile-responsive",
+        "Custom CSS options available"
+      ]
     },
     {
       id: "complete",
-      title: "You're All Set!",
-      description: "Welcome to BlazeBlog",
+      title: "Ready to Launch!",
+      description: "Your blog is ready to be created. We'll set everything up for you in just a moment.",
       icon: Rocket,
-      fields: []
+      fields: [],
+      tips: [
+        "Your blog will be live immediately",
+        "You can start writing posts right away",
+        "Invite team members later",
+        "Analytics and SEO tools included"
+      ]
     }
   ]
 
@@ -188,7 +213,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
       await hasCompletedOnboarding({
         companyName: onboardingData.companyName,
         blogUrl: `${onboardingData.blogSlug}.blazeblog.xyz`,
-        themeId: parseInt(onboardingData.selectedTheme)
+        themeId: onboardingData.selectedTheme
       })
       
       toast({
@@ -257,17 +282,17 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
   if (isHidden && isRequired) {
     return (
       <div className="fixed bottom-6 right-6 z-50">
-        <Card className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-purple-200 shadow-xl">
+        <Card className="bg-black/80 backdrop-blur-xl border-purple-400/30 shadow-2xl">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                <p className="text-sm font-medium text-white">
                   Complete your setup
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-white/60">
                   We'll be back in a moment
                 </p>
               </div>
@@ -286,370 +311,421 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Liquid Glass Backdrop */}
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-md" />
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-blue-500/10" />
-      
-      {/* Floating particles effect */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-purple-400/30 rounded-full animate-pulse" />
-        <div className="absolute top-1/3 right-1/4 w-1 h-1 bg-pink-400/40 rounded-full animate-bounce" style={{ animationDelay: '1s' }} />
-        <div className="absolute bottom-1/4 left-1/3 w-3 h-3 bg-blue-400/20 rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
-        <div className="absolute bottom-1/3 right-1/3 w-1.5 h-1.5 bg-purple-300/30 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }} />
-      </div>
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
+        {/* Epic Animated Background - Darker */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-slate-900 to-black" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/30 via-blue-900/20 to-pink-900/30" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.08),transparent_60%)]" />
+        
+        {/* Animated Gradient Orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animation: 'float 6s ease-in-out infinite' }} />
+          <div className="absolute -top-20 right-1/4 w-80 h-80 bg-blue-500/15 rounded-full blur-3xl" style={{ animation: 'float 8s ease-in-out infinite reverse' }} />
+          <div className="absolute bottom-1/4 -right-20 w-72 h-72 bg-pink-500/15 rounded-full blur-3xl" style={{ animation: 'float 10s ease-in-out infinite' }} />
+          <div className="absolute -bottom-10 left-1/3 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl" style={{ animation: 'float 12s ease-in-out infinite reverse' }} />
+        </div>
+        
+        {/* Floating Sparkles */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 bg-white/30 rounded-full"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animation: `sparkle ${3 + Math.random() * 4}s ease-in-out infinite`,
+                animationDelay: `${Math.random() * 5}s`
+              }}
+            />
+          ))}
+        </div>
 
-      {/* Onboarding Modal */}
-      <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <Card className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-white/20 shadow-2xl">
-          {/* Close Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClose}
-            className="absolute top-4 right-4 z-10 hover:bg-black/5 dark:hover:bg-white/5"
-            title={isRequired ? "Hide temporarily (will return in 5 seconds)" : "Close onboarding"}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+        {/* Onboarding Modal - 2 Column Layout */}
+        <div className="relative w-full h-screen flex items-center justify-center p-4 md:p-6">
+          <div className="relative w-full max-w-7xl mx-auto max-h-[95vh] overflow-hidden">
+            <Card className="bg-black/60 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/60 overflow-hidden h-full" style={{
+              background: 'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%)',
+              backdropFilter: 'blur(20px)',
+              animation: 'slideInFromBottom 0.8s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}>
+              {/* Close Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClose}
+                className="absolute top-6 right-6 z-10 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300"
+                title={isRequired ? "Hide temporarily (will return in 5 seconds)" : "Close onboarding"}
+              >
+                <X className="h-5 w-5" />
+              </Button>
 
-          {/* Header with Progress */}
-          <CardHeader className="text-center pb-6 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-t-lg">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
-                <Sparkles className="h-6 w-6 text-white" />
+              {/* Progress Header */}
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg" style={{ animation: 'glow 3s ease-in-out infinite alternate' }}>
+                    <Crown className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-white">Welcome to BlazeBlog!</h1>
+                    <p className="text-white/60">Let's set up your blog in minutes</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {steps.map((step, index) => {
+                    const isActive = index === currentStep
+                    const isCompleted = index < currentStep
+                    return (
+                      <div key={step.id} className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                        isCompleted ? "bg-green-400" : isActive ? "bg-purple-400 animate-pulse" : "bg-white/20"
+                      }`} />
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Welcome to BlazeBlog!
-            </CardTitle>
-            <CardDescription className="text-base">
-              Let's set up your blog in just a few steps
-            </CardDescription>
 
-            {/* Progress Indicator */}
-            <div className="mt-6">
-              <div className="flex items-center justify-center space-x-2 mb-3">
-                {steps.map((step, index) => {
-                  const Icon = step.icon
-                  const isActive = index === currentStep
-                  const isCompleted = index < currentStep
-                  
-                  return (
-                    <div key={step.id} className="flex items-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-                        isCompleted 
-                          ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg" 
-                          : isActive 
-                          ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-110" 
-                          : "bg-gray-200 dark:bg-gray-700 text-gray-500"
-                      }`}>
-                        {isCompleted ? (
-                          <CheckCircle className="h-5 w-5" />
-                        ) : (
-                          <Icon className="h-5 w-5" />
-                        )}
+              {/* 2-Column Layout */}
+              <div className="flex h-[calc(100%-120px)] overflow-hidden">
+                {/* Left Column - Information & Description */}
+                <div className="w-1/2 p-8 bg-black/30 border-r border-white/10 overflow-y-auto scrollbar-thin">
+                  <div className="space-y-6">
+                    {/* Step Icon & Title */}
+                    <div className="text-center">
+                      <div className={`w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center shadow-2xl ${
+                        currentStep === 0 ? "bg-gradient-to-r from-blue-500 to-purple-600 shadow-blue-500/50" :
+                        currentStep === 1 ? "bg-gradient-to-r from-cyan-500 to-blue-600 shadow-cyan-500/50" :
+                        currentStep === 2 ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-pink-500/50" :
+                        "bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 shadow-green-500/50"
+                      }`} style={{ animation: 'float 3s ease-in-out infinite' }}>
+                        <currentStepData.icon className="h-12 w-12 text-white" />
                       </div>
-                      {index < steps.length - 1 && (
-                        <div className={`w-8 h-0.5 mx-2 transition-all duration-500 ${
-                          index < currentStep ? "bg-gradient-to-r from-green-500 to-emerald-500" : "bg-gray-300 dark:bg-gray-600"
-                        }`} />
+                      <h2 className="text-3xl font-bold text-white mb-4 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+                        {currentStepData.title}
+                      </h2>
+                      <p className="text-lg text-white/70 leading-relaxed mb-8">
+                        {currentStepData.description}
+                      </p>
+                    </div>
+
+                    {/* Tips & Information */}
+                    <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Sparkle className="h-5 w-5 text-yellow-400" />
+                        <h3 className="text-lg font-semibold text-white">Pro Tips</h3>
+                      </div>
+                      <ul className="space-y-3">
+                        {currentStepData.tips?.map((tip, index) => (
+                          <li key={index} className="flex items-start gap-3 text-white/70">
+                            <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mt-2 flex-shrink-0" />
+                            <span>{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Step Progress */}
+                    <div className="text-center">
+                      <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2">
+                        <span className="text-white/90 font-medium">Step {currentStep + 1} of {steps.length}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Forms & Actions */}
+                <div className="w-1/2 p-8 overflow-y-auto scrollbar-thin">
+                  <div className="max-w-md mx-auto space-y-6">
+                    
+                    {/* Step 1: Company Information */}
+                    {currentStep === 0 && (
+                      <div className="space-y-6" style={{ animation: 'slideInFromRight 0.6s ease-out' }}>
+                        <div className="space-y-4">
+                          <Label htmlFor="companyName" className="text-lg font-semibold text-white flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-yellow-400" />
+                            Company Name *
+                          </Label>
+                          <Input
+                            id="companyName"
+                            placeholder="Enter your company name"
+                            value={onboardingData.companyName}
+                            onChange={(e) => setOnboardingData(prev => ({ ...prev, companyName: e.target.value }))}
+                            className="h-12 text-lg bg-black/20 border-white/20 backdrop-blur-xl text-white placeholder:text-white/40 focus:bg-black/30 focus:border-purple-400 transition-all duration-300"
+                          />
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <Label htmlFor="website" className="text-lg font-semibold text-white flex items-center gap-2">
+                            <Globe className="h-5 w-5 text-green-400" />
+                            Website (Optional)
+                          </Label>
+                          <Input
+                            id="website"
+                            placeholder="https://yourcompany.com"
+                            value={onboardingData.website}
+                            onChange={(e) => setOnboardingData(prev => ({ ...prev, website: e.target.value }))}
+                            className="h-12 text-lg bg-black/20 border-white/20 backdrop-blur-xl text-white placeholder:text-white/40 focus:bg-black/30 focus:border-green-400 transition-all duration-300"
+                          />
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <Label htmlFor="description" className="text-lg font-semibold text-white flex items-center gap-2">
+                            <Heart className="h-5 w-5 text-pink-400" />
+                            Description (Optional)
+                          </Label>
+                          <Textarea
+                            id="description"
+                            placeholder="Tell us about your company..."
+                            value={onboardingData.description}
+                            onChange={(e) => setOnboardingData(prev => ({ ...prev, description: e.target.value }))}
+                            rows={4}
+                            className="text-lg bg-black/20 border-white/20 backdrop-blur-xl text-white placeholder:text-white/40 focus:bg-black/30 focus:border-pink-400 transition-all duration-300 resize-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 2: Blog URL */}
+                    {currentStep === 1 && (
+                      <div className="space-y-6" style={{ animation: 'slideInFromRight 0.6s ease-out' }}>
+                        <div className="space-y-4">
+                          <Label htmlFor="blogSlug" className="text-lg font-semibold text-white flex items-center gap-2">
+                            <Link className="h-5 w-5 text-cyan-400" />
+                            Blog URL *
+                          </Label>
+                          
+                          <div className="relative group">
+                            <Input
+                              id="blogSlug"
+                              placeholder="your-blog-name"
+                              value={onboardingData.blogSlug}
+                              onChange={(e) => handleSlugChange(e.target.value)}
+                              className={`h-12 text-lg pr-40 bg-black/20 border-white/20 backdrop-blur-xl text-white placeholder:text-white/40 focus:bg-black/30 transition-all duration-500 ${
+                                onboardingData.blogSlug.length >= 3 && slugResult.exists
+                                  ? "border-red-400 focus:border-red-500" 
+                                  : onboardingData.blogSlug.length >= 3 && !slugResult.exists && !slugResult.isChecking
+                                  ? "border-green-400 focus:border-green-500"
+                                  : "focus:border-purple-400"
+                              }`}
+                            />
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-medium text-white/70 bg-black/20 backdrop-blur-xl px-3 py-1 rounded-lg border border-white/10">
+                              .blazeblog.xyz
+                            </div>
+                          </div>
+
+                          {/* URL Status */}
+                          {onboardingData.blogSlug.length >= 3 && (
+                            <div className="mt-3">
+                              {slugResult.isChecking ? (
+                                <div className="flex items-center space-x-2 text-blue-400">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-400 border-t-transparent" />
+                                  <span className="text-sm">Checking availability...</span>
+                                </div>
+                              ) : slugResult.exists ? (
+                                <div className="flex items-center space-x-2 text-red-400">
+                                  <X className="h-4 w-4" />
+                                  <span className="text-sm">URL already taken</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-2 text-green-400">
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span className="text-sm">Available!</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {onboardingData.blogSlug && (
+                            <div className="p-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-xl rounded-xl border border-white/10">
+                              <p className="text-sm text-white/70 mb-2">Your blog will be live at:</p>
+                              <p className="text-lg font-bold font-mono text-white">
+                                {onboardingData.blogSlug}.blazeblog.xyz
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 3: Theme Selection */}
+                    {currentStep === 2 && (
+                      <div className="space-y-6" style={{ animation: 'slideInFromRight 0.6s ease-out' }}>
+                        <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto scrollbar-thin">
+                          {mockThemes.map((theme, index) => (
+                            <div
+                              key={theme.id}
+                              onClick={() => setOnboardingData(prev => ({ ...prev, selectedTheme: theme.id }))}
+                              className={`relative cursor-pointer rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                                onboardingData.selectedTheme === theme.id
+                                  ? "border-purple-400 shadow-lg shadow-purple-500/30"
+                                  : "border-white/20 hover:border-white/40"
+                              }`}
+                            >
+                              {/* Theme Preview */}
+                              <div className={`h-16 rounded-t-xl ${theme.preview} relative overflow-hidden`}>
+                                <div className={`absolute top-2 left-2 w-2 h-2 rounded-full ${theme.accent}`} />
+                                <div className={`absolute top-2 right-2 w-8 h-1 rounded ${theme.accent} opacity-70`} />
+                              </div>
+                              
+                              {/* Theme Info */}
+                              <div className="p-4 bg-black/20 backdrop-blur-xl rounded-b-xl">
+                                <div className="flex items-center justify-between mb-2">
+                                  <h4 className="font-semibold text-white">{theme.name}</h4>
+                                  <Badge className="bg-white/10 text-white/80 text-xs">
+                                    {theme.category}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-white/60">
+                                  {theme.description}
+                                </p>
+                              </div>
+                              
+                              {/* Selection Indicator */}
+                              {onboardingData.selectedTheme === theme.id && (
+                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                                  <CheckCircle className="h-4 w-4 text-white" />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 4: Summary */}
+                    {currentStep === 3 && (
+                      <div className="space-y-6 text-center" style={{ animation: 'slideInFromRight 0.6s ease-out' }}>
+                        <div className="w-24 h-24 mx-auto bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/50" style={{ animation: 'float 3s ease-in-out infinite' }}>
+                          <Rocket className="h-12 w-12 text-white" />
+                        </div>
+                        
+                        <div>
+                          <h3 className="text-2xl font-bold text-white mb-4">🎉 Ready to Launch!</h3>
+                          <p className="text-white/70 mb-6">Your blog setup is complete and ready to go live.</p>
+                        </div>
+
+                        {/* Summary */}
+                        <div className="space-y-3 text-left">
+                          <div className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
+                            <span className="text-white/70">Company:</span>
+                            <span className="text-white font-medium">{onboardingData.companyName}</span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
+                            <span className="text-white/70">Blog URL:</span>
+                            <span className="text-white font-mono text-sm">{onboardingData.blogSlug}.blazeblog.xyz</span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
+                            <span className="text-white/70">Theme:</span>
+                            <span className="text-white font-medium">
+                              {mockThemes.find(t => t.id === onboardingData.selectedTheme)?.name}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Navigation Buttons */}
+                    <div className="flex items-center justify-between pt-6 border-t border-white/10">
+                      <Button
+                        variant="outline"
+                        onClick={handlePrev}
+                        disabled={isFirstStep}
+                        className="px-6 py-2 bg-black/20 border-white/20 text-white hover:bg-black/40 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Previous
+                      </Button>
+
+                      {isLastStep ? (
+                        <Button
+                          onClick={handleComplete}
+                          disabled={isLoading}
+                          className="px-8 py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600 text-white font-semibold shadow-lg"
+                          style={{ animation: isLoading ? 'none' : 'glow 2s ease-in-out infinite alternate' }}
+                        >
+                          {isLoading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                              Creating...
+                            </>
+                          ) : (
+                            <>
+                              <Rocket className="h-4 w-4 mr-2" />
+                              Launch Blog!
+                            </>
+                          )}
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={handleNext}
+                          className="px-8 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+                        >
+                          Continue
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </Button>
                       )}
                     </div>
-                  )
-                })}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Step {currentStep + 1} of {steps.length}: {currentStepData.title}
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-8">
-            <div className="space-y-8">
-              {/* Step Content */}
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  {currentStepData.title}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {currentStepData.description}
-                </p>
-              </div>
-
-              {/* Step 1: Company Information */}
-              {currentStep === 0 && (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName" className="text-sm font-medium">
-                      Company Name *
-                    </Label>
-                    <Input
-                      id="companyName"
-                      placeholder="Enter your company name"
-                      value={onboardingData.companyName}
-                      onChange={(e) => setOnboardingData(prev => ({ ...prev, companyName: e.target.value }))}
-                      className="h-12 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="website" className="text-sm font-medium">
-                      Website (Optional)
-                    </Label>
-                    <Input
-                      id="website"
-                      placeholder="https://yourcompany.com"
-                      value={onboardingData.website}
-                      onChange={(e) => setOnboardingData(prev => ({ ...prev, website: e.target.value }))}
-                      className="h-12 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="description" className="text-sm font-medium">
-                      Company Description (Optional)
-                    </Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Tell us about your company..."
-                      value={onboardingData.description}
-                      onChange={(e) => setOnboardingData(prev => ({ ...prev, description: e.target.value }))}
-                      rows={4}
-                      className="resize-none bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
-                    />
                   </div>
                 </div>
-              )}
-
-              {/* Step 2: Blog URL */}
-              {currentStep === 1 && (
-                <div className="space-y-6">
-                  <div className="space-y-4">
-                    <Label htmlFor="blogSlug" className="text-sm font-medium">
-                      Choose Your Blog URL *
-                    </Label>
-                    
-                    <div className="relative">
-                      <Input
-                        id="blogSlug"
-                        placeholder="your-blog-name"
-                        value={onboardingData.blogSlug}
-                        onChange={(e) => handleSlugChange(e.target.value)}
-                        className={`h-12 pr-40 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm ${
-                          onboardingData.blogSlug.length >= 3 && slugResult.exists
-                            ? "border-red-300 focus:border-red-500" 
-                            : onboardingData.blogSlug.length >= 3 && !slugResult.exists && !slugResult.isChecking
-                            ? "border-green-300 focus:border-green-500"
-                            : ""
-                        }`}
-                      />
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500 bg-gray-100/80 dark:bg-gray-700/80 backdrop-blur-sm px-2 py-1 rounded">
-                        .blazeblog.xyz
-                      </div>
-                    </div>
-                    
-                    {/* Slug status indicator */}
-                    {onboardingData.blogSlug.length >= 3 && (
-                      <div className="mt-2">
-                        {slugResult.isChecking ? (
-                          <div className="flex items-center space-x-2 text-blue-600">
-                            <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600" />
-                            <span className="text-sm">Checking availability...</span>
-                          </div>
-                        ) : slugResult.error ? (
-                          <div className="flex items-center space-x-2 text-red-600">
-                            <X className="h-3 w-3" />
-                            <span className="text-sm">Error checking availability</span>
-                          </div>
-                        ) : slugResult.exists ? (
-                          <div className="flex items-center space-x-2 text-red-600">
-                            <X className="h-3 w-3" />
-                            <span className="text-sm">This URL is already taken</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-2 text-green-600">
-                            <CheckCircle className="h-3 w-3" />
-                            <span className="text-sm">Available!</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {onboardingData.blogSlug && (
-                      <div className="p-4 bg-blue-50/80 dark:bg-blue-950/50 backdrop-blur-sm rounded-lg border border-blue-200/50 dark:border-blue-800/50">
-                        <div className="flex items-center space-x-2">
-                          <Link className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                            Your blog will be available at:
-                          </span>
-                        </div>
-                        <p className="text-lg font-mono text-blue-900 dark:text-blue-100 mt-1">
-                          {onboardingData.blogSlug}.blazeblog.xyz
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="bg-amber-50/80 dark:bg-amber-950/50 backdrop-blur-sm border border-amber-200/50 dark:border-amber-800/50 rounded-lg p-4">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        <div className="w-5 h-5 bg-amber-100/80 dark:bg-amber-900/80 rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-amber-600 rounded-full" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                          Important Notes:
-                        </p>
-                        <ul className="mt-1 text-sm text-amber-700 dark:text-amber-300 space-y-1">
-                          <li>• This name cannot be changed later</li>
-                          <li>• You can connect a custom domain later</li>
-                          <li>• Use only lowercase letters, numbers, and hyphens</li>
-                          <li>• Minimum 3 characters required</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Theme Selection */}
-              {currentStep === 2 && (
-                <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <p className="text-gray-600 dark:text-gray-400">
-                      Choose a beautiful theme that represents your brand
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto pr-2">
-                    {mockThemes.map((theme) => (
-                      <div
-                        key={theme.id}
-                        onClick={() => setOnboardingData(prev => ({ ...prev, selectedTheme: theme.id }))}
-                        className={`relative cursor-pointer rounded-xl border-2 transition-all duration-200 ${
-                          onboardingData.selectedTheme === theme.id
-                            ? "border-purple-500 shadow-xl scale-105"
-                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                        }`}
-                      >
-                        {/* Theme Preview */}
-                        <div className={`h-20 rounded-t-xl ${theme.preview} relative overflow-hidden`}>
-                          <div className={`absolute top-2 left-2 w-2 h-2 rounded-full ${theme.accent}`} />
-                          <div className={`absolute top-2 right-2 w-12 h-1.5 rounded ${theme.accent} opacity-60`} />
-                          <div className={`absolute bottom-2 left-2 w-16 h-1 rounded ${theme.accent} opacity-40`} />
-                          <div className={`absolute bottom-4 left-2 w-10 h-1 rounded ${theme.accent} opacity-40`} />
-                        </div>
-                        
-                        {/* Theme Info */}
-                        <div className="p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-b-xl">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-gray-900 dark:text-white">{theme.name}</h4>
-                            <Badge variant="secondary" className="text-xs">
-                              {theme.category}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {theme.description}
-                          </p>
-                        </div>
-                        
-                        {/* Selection Indicator */}
-                        {onboardingData.selectedTheme === theme.id && (
-                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                            <CheckCircle className="h-4 w-4 text-white" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 4: Completion */}
-              {currentStep === 3 && (
-                <div className="text-center space-y-6">
-                  <div className="mx-auto w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                    <Heart className="h-10 w-10 text-white" />
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                      🎉 Everything looks perfect!
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-                      Your blog is ready to be created. This will only take a moment...
-                    </p>
-                  </div>
-                  
-                  {/* Setup Summary */}
-                  <div className="bg-gray-50/80 dark:bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 text-left max-w-md mx-auto">
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Setup Summary:</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Company:</span>
-                        <span className="font-medium">{onboardingData.companyName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Blog URL:</span>
-                        <span className="font-medium font-mono text-xs">{onboardingData.blogSlug}.blazeblog.xyz</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Theme:</span>
-                        <span className="font-medium">
-                          {mockThemes.find(t => t.id === onboardingData.selectedTheme)?.name}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Navigation Buttons */}
-              <div className="flex items-center justify-between pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
-                <Button
-                  variant="outline"
-                  onClick={handlePrev}
-                  disabled={isFirstStep}
-                  className="px-6 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Previous
-                </Button>
-
-                {isLastStep ? (
-                  <Button
-                    onClick={handleComplete}
-                    disabled={isLoading}
-                    className="px-8 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <Rocket className="h-4 w-4 mr-2" />
-                        Launch My Blog!
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleNext}
-                    className="px-8 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                  >
-                    Next Step
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </Card>
+          </div>
+        </div>
       </div>
-    </div>
+      
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes sparkle {
+          0%, 100% { opacity: 0; transform: scale(0); }
+          50% { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes glow {
+          0% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); }
+          100% { box-shadow: 0 0 40px rgba(168, 85, 247, 0.8), 0 0 60px rgba(236, 72, 153, 0.4); }
+        }
+        
+        @keyframes slideInFromBottom {
+          0% { opacity: 0; transform: translateY(50px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideInFromRight {
+          0% { opacity: 0; transform: translateX(30px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Custom scrollbar styles */
+        .scrollbar-thin {
+          scrollbar-width: thin;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 3px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Smooth scrolling */
+        * {
+          scroll-behavior: smooth;
+        }
+      `}</style>
+    </>
   )
 }

@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Save, Settings, Flag, Upload, X, BarChart } from "lucide-react"
+import { Save, Settings, Flag, Upload, X, BarChart, DollarSign } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useClientApi } from "@/lib/client-api"
 import { getImageUrl } from "@/lib/image-utils"
@@ -21,6 +21,7 @@ interface FeatureFlags {
   enableCommentsReply: boolean
   enableCategoriesPage: boolean
   enableComments: boolean
+  enableNewsletters: boolean
   maintenanceMode: boolean
 }
 
@@ -49,10 +50,32 @@ interface Analytics {
   adobe: AnalyticsProvider
 }
 
+interface AdProvider {
+  enabled: boolean
+  siteId?: string
+  clientId?: string
+  networkId?: string
+  zoneId?: string
+  script?: string
+}
+
+interface Ads {
+  enabled: boolean
+  googleAds: AdProvider
+  adThrive: AdProvider
+  mediavine: AdProvider
+  ezoic: AdProvider
+  carbonAds: AdProvider
+  buysellads: AdProvider
+  custom: any[]
+}
+
 interface ConfigData {
   featureFlags: FeatureFlags
   siteConfig: SiteConfig
   analytics: Analytics
+  ads: Ads
+  siteAds?: Ads
 }
 
 export function SiteConfigForm() {
@@ -63,8 +86,9 @@ export function SiteConfigForm() {
       autoApproveComments: false,
       enableCommentsReply: false,
       enableCategoriesPage: false,
-      maintenanceMode: false,
-      enableComments: true
+      enableComments: true,
+      enableNewsletters: false,
+      maintenanceMode: false
     },
     siteConfig: {
       h1: '',
@@ -82,6 +106,16 @@ export function SiteConfigForm() {
       plausible: { enabled: false, trackingId: '', script: '' },
       fathom: { enabled: false, trackingId: '', script: '' },
       adobe: { enabled: false, trackingId: '', script: '' }
+    },
+    ads: {
+      enabled: false,
+      googleAds: { enabled: false, clientId: '', script: '' },
+      adThrive: { enabled: false, siteId: '', script: '' },
+      mediavine: { enabled: false, siteId: '', script: '' },
+      ezoic: { enabled: false, siteId: '', script: '' },
+      carbonAds: { enabled: false, zoneId: '', script: '' },
+      buysellads: { enabled: false, networkId: '', script: '' },
+      custom: []
     }
   })
   const [loading, setLoading] = useState(true)
@@ -108,6 +142,7 @@ export function SiteConfigForm() {
         enableCommentsReply: false,
         enableCategoriesPage: false,
         enableComments: true,
+        enableNewsletters: false,
         maintenanceMode: false
       }
       
@@ -129,11 +164,23 @@ export function SiteConfigForm() {
         fathom: { enabled: false, trackingId: '', script: '' },
         adobe: { enabled: false, trackingId: '', script: '' }
       }
+
+      const defaultAds = {
+        enabled: false,
+        googleAds: { enabled: false, clientId: '', script: '' },
+        adThrive: { enabled: false, siteId: '', script: '' },
+        mediavine: { enabled: false, siteId: '', script: '' },
+        ezoic: { enabled: false, siteId: '', script: '' },
+        carbonAds: { enabled: false, zoneId: '', script: '' },
+        buysellads: { enabled: false, networkId: '', script: '' },
+        custom: []
+      }
       
       setConfig({
         featureFlags: { ...defaultFeatureFlags, ...data.featureFlags },
         siteConfig: { ...defaultSiteConfig, ...data.siteConfig },
-        analytics: { ...defaultAnalytics, ...data.analytics }
+        analytics: { ...defaultAnalytics, ...data.analytics },
+        ads: { ...defaultAds, ...(data.ads || data.siteAds) }
       })
     } catch (error) {
       console.error('Error fetching config:', error)
@@ -202,6 +249,29 @@ export function SiteConfigForm() {
     }))
   }
 
+  const updateAds = (provider: keyof Ads, field: keyof AdProvider, value: boolean | string) => {
+    setConfig(prev => ({
+      ...prev,
+      ads: {
+        ...prev.ads,
+        [provider]: {
+          ...prev.ads[provider],
+          [field]: value
+        }
+      }
+    }))
+  }
+
+  const updateAdsEnabled = (enabled: boolean) => {
+    setConfig(prev => ({
+      ...prev,
+      ads: {
+        ...prev.ads,
+        enabled
+      }
+    }))
+  }
+
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -259,7 +329,7 @@ export function SiteConfigForm() {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="site-config" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="site-config" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Site Configuration
@@ -271,6 +341,10 @@ export function SiteConfigForm() {
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart className="h-4 w-4" />
             Analytics
+          </TabsTrigger>
+          <TabsTrigger value="ads" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Ads
           </TabsTrigger>
         </TabsList>
 
@@ -461,6 +535,17 @@ export function SiteConfigForm() {
                 <Switch
                   checked={config.featureFlags.enableCategoriesPage}
                   onCheckedChange={(checked) => updateFeatureFlag('enableCategoriesPage', checked)}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable Newsletters</Label>
+                  <p className="text-sm text-muted-foreground">Allow users to subscribe to newsletters</p>
+                </div>
+                <Switch
+                  checked={config.featureFlags.enableNewsletters}
+                  onCheckedChange={(checked) => updateFeatureFlag('enableNewsletters', checked)}
                 />
               </div>
               <Separator />
@@ -709,6 +794,204 @@ export function SiteConfigForm() {
               <Button onClick={saveConfig} disabled={saving} className="w-full mt-6">
                 <Save className="mr-2 h-4 w-4" />
                 {saving ? 'Saving...' : 'Save Analytics Configuration'}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ads" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Advertisement Networks
+              </CardTitle>
+              <CardDescription>Configure ad networks and monetization providers for your site</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Global Ads Enable/Disable */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Enable Advertisements</Label>
+                    <p className="text-sm text-muted-foreground">Enable or disable all advertisements on your site</p>
+                  </div>
+                  <Switch
+                    checked={config.ads.enabled}
+                    onCheckedChange={updateAdsEnabled}
+                  />
+                </div>
+              </div>
+
+              {config.ads.enabled && (
+                <>
+                  <Separator />
+                  
+                  {/* Google Ads */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Google Ads</Label>
+                        <p className="text-sm text-muted-foreground">Google AdSense and Ad Manager integration</p>
+                      </div>
+                      <Switch
+                        checked={config.ads.googleAds.enabled}
+                        onCheckedChange={(checked) => updateAds('googleAds', 'enabled', checked)}
+                      />
+                    </div>
+                    {config.ads.googleAds.enabled && (
+                      <div className="space-y-2 pl-4 border-l-2 border-muted">
+                        <Label htmlFor="google-ads-client-id">Client ID</Label>
+                        <Input
+                          id="google-ads-client-id"
+                          value={config.ads.googleAds.clientId || ''}
+                          onChange={(e) => updateAds('googleAds', 'clientId', e.target.value)}
+                          placeholder="ca-pub-xxxxxxxxxxxxxxxx"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* AdThrive */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>AdThrive</Label>
+                        <p className="text-sm text-muted-foreground">Premium ad management platform</p>
+                      </div>
+                      <Switch
+                        checked={config.ads.adThrive.enabled}
+                        onCheckedChange={(checked) => updateAds('adThrive', 'enabled', checked)}
+                      />
+                    </div>
+                    {config.ads.adThrive.enabled && (
+                      <div className="space-y-2 pl-4 border-l-2 border-muted">
+                        <Label htmlFor="adthrive-site-id">Site ID</Label>
+                        <Input
+                          id="adthrive-site-id"
+                          value={config.ads.adThrive.siteId || ''}
+                          onChange={(e) => updateAds('adThrive', 'siteId', e.target.value)}
+                          placeholder="Enter AdThrive site ID"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* Mediavine */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Mediavine</Label>
+                        <p className="text-sm text-muted-foreground">Full-service ad management network</p>
+                      </div>
+                      <Switch
+                        checked={config.ads.mediavine.enabled}
+                        onCheckedChange={(checked) => updateAds('mediavine', 'enabled', checked)}
+                      />
+                    </div>
+                    {config.ads.mediavine.enabled && (
+                      <div className="space-y-2 pl-4 border-l-2 border-muted">
+                        <Label htmlFor="mediavine-site-id">Site ID</Label>
+                        <Input
+                          id="mediavine-site-id"
+                          value={config.ads.mediavine.siteId || ''}
+                          onChange={(e) => updateAds('mediavine', 'siteId', e.target.value)}
+                          placeholder="Enter Mediavine site ID"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* Ezoic */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Ezoic</Label>
+                        <p className="text-sm text-muted-foreground">AI-powered ad optimization platform</p>
+                      </div>
+                      <Switch
+                        checked={config.ads.ezoic.enabled}
+                        onCheckedChange={(checked) => updateAds('ezoic', 'enabled', checked)}
+                      />
+                    </div>
+                    {config.ads.ezoic.enabled && (
+                      <div className="space-y-2 pl-4 border-l-2 border-muted">
+                        <Label htmlFor="ezoic-site-id">Site ID</Label>
+                        <Input
+                          id="ezoic-site-id"
+                          value={config.ads.ezoic.siteId || ''}
+                          onChange={(e) => updateAds('ezoic', 'siteId', e.target.value)}
+                          placeholder="Enter Ezoic site ID"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* Carbon Ads */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Carbon Ads</Label>
+                        <p className="text-sm text-muted-foreground">Developer-focused ad network</p>
+                      </div>
+                      <Switch
+                        checked={config.ads.carbonAds.enabled}
+                        onCheckedChange={(checked) => updateAds('carbonAds', 'enabled', checked)}
+                      />
+                    </div>
+                    {config.ads.carbonAds.enabled && (
+                      <div className="space-y-2 pl-4 border-l-2 border-muted">
+                        <Label htmlFor="carbon-zone-id">Zone ID</Label>
+                        <Input
+                          id="carbon-zone-id"
+                          value={config.ads.carbonAds.zoneId || ''}
+                          onChange={(e) => updateAds('carbonAds', 'zoneId', e.target.value)}
+                          placeholder="Enter Carbon Ads zone ID"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* BuySellAds */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>BuySellAds</Label>
+                        <p className="text-sm text-muted-foreground">Premium advertising marketplace</p>
+                      </div>
+                      <Switch
+                        checked={config.ads.buysellads.enabled}
+                        onCheckedChange={(checked) => updateAds('buysellads', 'enabled', checked)}
+                      />
+                    </div>
+                    {config.ads.buysellads.enabled && (
+                      <div className="space-y-2 pl-4 border-l-2 border-muted">
+                        <Label htmlFor="buysellads-network-id">Network ID</Label>
+                        <Input
+                          id="buysellads-network-id"
+                          value={config.ads.buysellads.networkId || ''}
+                          onChange={(e) => updateAds('buysellads', 'networkId', e.target.value)}
+                          placeholder="Enter BuySellAds network ID"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+              
+              <Button onClick={saveConfig} disabled={saving} className="w-full mt-6">
+                <Save className="mr-2 h-4 w-4" />
+                {saving ? 'Saving...' : 'Save Ad Configuration'}
               </Button>
             </CardContent>
           </Card>
