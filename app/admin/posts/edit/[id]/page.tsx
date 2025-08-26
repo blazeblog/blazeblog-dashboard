@@ -448,7 +448,7 @@ export default function EditPostPage() {
                       title: title || prev.title // Keep existing title if first line is empty
                     }))
                   }}
-                  placeholder="Start with your title..."
+                  placeholder="Title..."
                   heroImage={formData.featuredImage}
                   onHeroImageChange={(url) => setFormData({ ...formData, featuredImage: url })}
                 />

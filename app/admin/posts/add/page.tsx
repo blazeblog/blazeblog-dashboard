@@ -355,7 +355,7 @@ function AddPostPage() {
                         title: title || prev.title // Keep existing title if first line is empty
                       }))
                     }}
-                    placeholder="Start with your title..."
+                    placeholder="Title..."
                     heroImage={formData.featuredImage}
                     onHeroImageChange={(url) => setFormData(prev => ({ ...prev, featuredImage: url }))}
                     postId="new"

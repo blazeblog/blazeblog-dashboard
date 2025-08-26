@@ -1,8 +1,8 @@
 "use client"
 
 import { useEditor, EditorContent } from "@tiptap/react"
+import { NodeSelection } from "@tiptap/pm/state"
 import StarterKit from "@tiptap/starter-kit"
-import Image from "@tiptap/extension-image"
 import Link from "@tiptap/extension-link"
 import TextAlign from "@tiptap/extension-text-align"
 import Underline from "@tiptap/extension-underline"
@@ -16,6 +16,7 @@ import Dropcursor from "@tiptap/extension-dropcursor"
 import BulletList from "@tiptap/extension-bullet-list"
 import OrderedList from "@tiptap/extension-ordered-list"
 import ListItem from "@tiptap/extension-list-item"
+import ImageResize from "tiptap-extension-resize-image"
 // Helper function to convert formatted text to HTML
 const convertFormattedTextToHTML = (text: string): string => {
   const lines = text.split('\n')
@@ -109,11 +110,14 @@ import { useToast } from "@/hooks/use-toast"
 import { getImageUrl } from "@/lib/image-utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { useDropzone } from "react-dropzone"
+import ReactCrop, { type Crop, centerCrop } from "react-image-crop"
+import "react-image-crop/dist/ReactCrop.css"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -127,7 +131,8 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Image as ImageIcon, Link as LinkIcon, Type,
   Undo, Redo, Eye, EyeOff,
-  Upload, Trash2, Wifi, Save
+  Upload, Trash2, Save, Crop as CropIcon, Move3D, 
+  Scissors, Maximize2
 } from "lucide-react"
 
 
@@ -150,7 +155,7 @@ interface AdvancedTiptapEditorProps {
 export function AdvancedTiptapEditor({
   content = "",
   onChange,
-  placeholder = "Start with your title...",
+  placeholder = "Title...",
   className = "",
   heroImage = "",
   onHeroImageChange,
@@ -167,13 +172,82 @@ export function AdvancedTiptapEditor({
   const [imageUrl, setImageUrl] = useState("")
   const [imageAlt, setImageAlt] = useState("")
   const [heroImageUrl, setHeroImageUrl] = useState(heroImage)
-  const [showDraftDialog, setShowDraftDialog] = useState(false)
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true)
   const [isUploading, setIsUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showCropDialog, setShowCropDialog] = useState(false)
+  const [showEditorImageCrop, setShowEditorImageCrop] = useState(false)
+  const [showHeroPreview, setShowHeroPreview] = useState(true)
+  const [imageToCrop, setImageToCrop] = useState<string>("")
+  const [editorImageToCrop, setEditorImageToCrop] = useState<string>("")
+  const [crop, setCrop] = useState<Crop>()
+  const [editorCrop, setEditorCrop] = useState<Crop>()
+  const [completedCrop, setCompletedCrop] = useState<Crop>()
+  const [completedEditorCrop, setCompletedEditorCrop] = useState<Crop>()
   const imageFileInputRef = useRef<HTMLInputElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
+  const editorImgRef = useRef<HTMLImageElement>(null)
   const api = useClientApi()
   const { toast } = useToast()
+
+  // Helper function to create a cropped image
+  const getCroppedImg = useCallback((image: HTMLImageElement, crop: Crop): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      const scaleX = image.naturalWidth / image.width
+      const scaleY = image.naturalHeight / image.height
+      canvas.width = crop.width * scaleX
+      canvas.height = crop.height * scaleY
+
+      ctx.drawImage(
+        image,
+        crop.x * scaleX,
+        crop.y * scaleY,
+        crop.width * scaleX,
+        crop.height * scaleY,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      )
+
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob)
+      }, 'image/jpeg', 0.9)
+    })
+  }, [])
+
+  // Initialize crop when image loads
+  const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = e.currentTarget
+    const crop = centerCrop(
+      {
+        unit: '%',
+        width: 80,
+        height: 60,
+      },
+      width,
+      height,
+    )
+    setCrop(crop)
+  }, [])
+
+  // Initialize crop for editor images (no fixed aspect ratio)
+  const onEditorImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = e.currentTarget
+    const crop = centerCrop(
+      {
+        unit: '%',
+        width: 80,
+        height: 80,
+      },
+      width,
+      height,
+    )
+    setEditorCrop(crop)
+  }, [])
 
   // Connectivity detection
   useEffect(() => {
@@ -197,10 +271,6 @@ export function AdvancedTiptapEditor({
         orderedList: false, // Disable StarterKit's orderedList
         listItem: false, // Disable StarterKit's listItem
         codeBlock: false, // Disable default code block
-        history: {
-          depth: 100,
-          newGroupDelay: 1000, // Group edits within 1000ms as single undo step
-        },
       }),
       // Add individual list extensions for better control
       BulletList.configure({
@@ -222,11 +292,11 @@ export function AdvancedTiptapEditor({
           class: 'tiptap-list-item',
         },
       }),
-      Image.configure({
+      ImageResize.configure({
         inline: false,
         allowBase64: true,
         HTMLAttributes: {
-          class: 'rounded-lg max-w-full h-auto shadow-md my-4',
+          class: 'tiptap-image rounded-lg max-w-full h-auto shadow-md my-4 cursor-pointer transition-all',
         },
       }),
       Link.configure({
@@ -247,7 +317,7 @@ export function AdvancedTiptapEditor({
         multicolor: true,
       }),
       Placeholder.configure({
-        placeholder: 'Start with your title...',
+        placeholder: 'Title...',
       }),
       Dropcursor.configure({
         color: '#3b82f6', 
@@ -322,6 +392,72 @@ export function AdvancedTiptapEditor({
           return true
         }
         
+        // Handle Delete key on selected images
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+          const { state } = view
+          const { selection } = state
+          
+          // Check if we have a node selection (like an image)
+          if (selection instanceof NodeSelection) {
+            const node = selection.node
+            if (node.type.name === 'image') {
+              event.preventDefault()
+              const { dispatch } = view
+              const tr = state.tr.deleteSelection()
+              dispatch(tr)
+              return true
+            }
+          }
+        }
+        
+        return false
+      },
+      handleClick: (view, pos, event) => {
+        const target = event.target as HTMLElement
+        
+        // Check if we clicked on an image
+        if (target.tagName === 'IMG') {
+          const { state, dispatch } = view
+          
+          // Find the image node at the clicked position
+          const $pos = state.doc.resolve(pos)
+          let imageNode = null
+          let imagePos = -1
+          
+          // Look for image node around the clicked position
+          for (let i = $pos.depth; i >= 0; i--) {
+            const node = $pos.node(i)
+            if (node.type.name === 'image') {
+              imageNode = node
+              imagePos = $pos.before(i)
+              break
+            }
+          }
+          
+          // If we didn't find it in the current position, search around it
+          if (!imageNode) {
+            state.doc.nodesBetween(
+              Math.max(0, pos - 10), 
+              Math.min(state.doc.content.size, pos + 10), 
+              (node, nodePos) => {
+                if (node.type.name === 'image') {
+                  imageNode = node
+                  imagePos = nodePos
+                  return false // Stop searching
+                }
+              }
+            )
+          }
+          
+          if (imageNode && imagePos >= 0) {
+            // Create a node selection for the image
+            const selection = NodeSelection.create(state.doc, imagePos)
+            dispatch(state.tr.setSelection(selection))
+            event.preventDefault()
+            return true
+          }
+        }
+        
         return false
       },
       handlePaste: (_view, event) => {
@@ -352,7 +488,7 @@ export function AdvancedTiptapEditor({
         
         return false
       },
-      handleDrop: (view, event, _slice, moved) => {
+      handleDrop: (_view, event, _slice, moved) => {
         if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
           const files = Array.from(event.dataTransfer.files)
           const imageFiles = files.filter(file => file.type.startsWith('image/'))
@@ -361,39 +497,12 @@ export function AdvancedTiptapEditor({
             return false // Let the default behavior handle it
           }
 
-          // Prevent default behavior and handle image uploads
+          // Prevent default behavior and handle image uploads with cropping
           event.preventDefault()
           
-          // Get the drop position
-          const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY })
-          if (!coordinates) return false
-
-          // Upload and insert images sequentially
-          imageFiles.forEach(async (file, index) => {
-            const url = await uploadImage(file)
-            if (url) {
-              // Pre-load the image to ensure it's ready
-              const img = new window.Image()
-              img.onload = () => {
-                // Insert the image using TipTap commands instead of direct ProseMirror manipulation
-                if (editor) {
-                  editor.chain()
-                    .focus()
-                    .setTextSelection(coordinates.pos + index)
-                    .setImage({ src: url, alt: file.name || 'Uploaded image' })
-                    .run()
-                }
-              }
-              img.onerror = () => {
-                toast({
-                  title: 'Error',
-                  description: `Failed to load image: ${file.name}`,
-                  variant: 'destructive',
-                })
-              }
-              img.src = url
-            }
-          })
+          // Handle the first image file through the cropping dialog
+          const firstImageFile = imageFiles[0]
+          handleEditorImageWithCrop(firstImageFile)
 
           return true // Handled the drop
         }
@@ -419,88 +528,190 @@ export function AdvancedTiptapEditor({
     }
   }, [heroImage, heroImageUrl])
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    // Validate file type
+  // Add image selection helper after editor content changes
+  useEffect(() => {
+    if (!editor) return
+
+    // Add click handlers for images after a delay to ensure they're rendered
+    const timeoutId = setTimeout(() => {
+      const images = editor.view.dom.querySelectorAll('img')
+      console.log('Found images in editor:', images.length) // Debug log
+      
+      images.forEach((img, index) => {
+        img.onclick = (e) => {
+          console.log('Image clicked:', index) // Debug log
+          e.preventDefault()
+          
+          // Try to find the position and select the image
+          try {
+            const pos = editor.view.posAtDOM(img, 0)
+            console.log('Image position:', pos) // Debug log
+            
+            if (pos >= 0) {
+              const selection = NodeSelection.create(editor.state.doc, pos)
+              editor.view.dispatch(editor.state.tr.setSelection(selection))
+              editor.view.focus()
+            }
+          } catch (error) {
+            console.error('Error selecting image:', error)
+          }
+        }
+      })
+    }, 200)
+
+    return () => clearTimeout(timeoutId)
+  }, [editor, content])
+
+
+
+
+  // Enhanced hero image upload with cropping
+  const handleHeroImageWithCrop = useCallback(async (file: File) => {
+    // Validate file
     if (!file.type.startsWith('image/')) {
       toast({
         title: 'Invalid file type',
-        description: 'Please upload a valid image file (JPEG, PNG, GIF, WebP).',
+        description: 'Please upload a valid image file.',
         variant: 'destructive',
       })
-      return null
+      return
     }
 
-    // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       toast({
         title: 'File too large',
         description: 'Image must be smaller than 10MB.',
         variant: 'destructive',
       })
-      return null
+      return
     }
+
+    // Create object URL for cropping
+    const objectUrl = URL.createObjectURL(file)
+    setImageToCrop(objectUrl)
+    setShowCropDialog(true)
+  }, [toast])
+
+  // Setup dropzone for hero image
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: (acceptedFiles) => {
+      if (acceptedFiles.length > 0) {
+        handleHeroImageWithCrop(acceptedFiles[0])
+      }
+    },
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
+    },
+    multiple: false,
+    maxSize: 10 * 1024 * 1024, // 10MB
+  })
+
+  // Apply crop and upload
+  const applyCropAndUpload = useCallback(async () => {
+    if (!imgRef.current || !completedCrop) return
 
     setIsUploading(true)
     try {
+      const croppedBlob = await getCroppedImg(imgRef.current, completedCrop)
+      const croppedFile = new File([croppedBlob], 'hero-image.jpg', { type: 'image/jpeg' })
+      
       const formData = new FormData()
-      formData.append('image', file)
+      formData.append('image', croppedFile)
       
       const response = await api.post('/file/upload', formData)
       
-      console.log('Upload response:', response) // Debug log
-      
-      if (response && response.url) {
-        console.log('Image URL:', response.url) // Debug log
-        return response.url
+      if (response && response.url && response.key) {
+        setHeroImageUrl(response.url)
+        onHeroImageChange?.(response.key)
+        setShowCropDialog(false)
+        setImageToCrop("")
+        toast({
+          title: "Success",
+          description: "Hero image cropped and uploaded successfully",
+        })
       }
-      console.log('No URL in response') // Debug log
-      return null
     } catch (error) {
-      console.error('Error uploading image:', error)
+      console.error('Error uploading cropped image:', error)
       toast({
         title: 'Upload failed',
-        description: 'Failed to upload image. Please try again.',
+        description: 'Failed to upload cropped image. Please try again.',
         variant: 'destructive',
       })
-      return null
     } finally {
       setIsUploading(false)
     }
-  }
+  }, [completedCrop, getCroppedImg, api, onHeroImageChange, toast])
 
-  const handleHeroImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setIsUploading(true)
-      try {
-        const formData = new FormData()
-        formData.append('image', file)
-        
-        const response = await api.post('/file/upload', formData)
-        
-        if (response && response.url && response.key) {
-          // Use full URL for editor display
-          setHeroImageUrl(response.url)
-          // Pass key to parent for storage
-          onHeroImageChange?.(response.key)
-          toast({
-            title: "Success",
-            description: "Hero image uploaded successfully",
-            variant: "default"
-          })
-        }
-      } catch (error) {
-        console.error('Error uploading hero image:', error)
-        toast({
-          title: 'Upload failed',
-          description: 'Failed to upload hero image. Please try again.',
-          variant: 'destructive',
-        })
-      } finally {
-        setIsUploading(false)
-      }
+
+  // Handle editor image upload with cropping
+  const handleEditorImageWithCrop = useCallback(async (file: File) => {
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload a valid image file.',
+        variant: 'destructive',
+      })
+      return
     }
-  }, [api, onHeroImageChange, toast])
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Image must be smaller than 10MB.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Create object URL for cropping
+    const objectUrl = URL.createObjectURL(file)
+    setEditorImageToCrop(objectUrl)
+    setShowEditorImageCrop(true)
+  }, [toast])
+
+  // Apply crop and insert into editor
+  const applyEditorCropAndInsert = useCallback(async () => {
+    if (!editorImgRef.current || !completedEditorCrop) return
+
+    setIsUploading(true)
+    try {
+      const croppedBlob = await getCroppedImg(editorImgRef.current, completedEditorCrop)
+      const croppedFile = new File([croppedBlob], 'editor-image.jpg', { type: 'image/jpeg' })
+      
+      const formData = new FormData()
+      formData.append('image', croppedFile)
+      
+      const response = await api.post('/file/upload', formData)
+      
+      if (response && response.url) {
+        // Insert the cropped image into the editor
+        if (editor) {
+          console.log('Inserting image with URL:', response.url) // Debug log
+          editor.chain().focus().setImage({ 
+            src: response.url, 
+            alt: 'Cropped image'
+          }).run()
+        }
+        setShowEditorImageCrop(false)
+        setEditorImageToCrop("")
+        toast({
+          title: "Success",
+          description: "Image cropped and inserted successfully",
+        })
+      }
+    } catch (error) {
+      console.error('Error uploading cropped editor image:', error)
+      toast({
+        title: 'Upload failed',
+        description: 'Failed to upload cropped image. Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsUploading(false)
+    }
+  }, [completedEditorCrop, getCroppedImg, api, editor, toast])
+
 
   const insertImage = useCallback(() => {
     if (imageUrl && editor) {
@@ -520,16 +731,7 @@ export function AdvancedTiptapEditor({
   const handleImageFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      const url = await uploadImage(file)
-      if (url) {
-        setImageUrl(url)
-        setImageAlt(file.name)
-        toast({
-          title: "Success",
-          description: "Image uploaded successfully",
-          variant: "default"
-        })
-      }
+      handleEditorImageWithCrop(file)
     }
   }
 
@@ -548,66 +750,298 @@ export function AdvancedTiptapEditor({
 
   return (
     <div className="space-y-3">
-        {/* Hero Image Section - Compact */}
-      <div className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-lg border">
-        <div className="flex items-center gap-2">
-          <ImageIcon className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Hero Image</span>
-          {heroImageUrl && (
-            <Badge variant="secondary" className="text-xs">
-              Added
-            </Badge>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleHeroImageUpload}
-            className="hidden"
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            className="h-7 px-2 text-xs"
-          >
-            <Upload className="h-3 w-3 mr-1" />
-            {heroImageUrl ? 'Change' : 'Add'}
-          </Button>
-          {heroImageUrl && (
+      {/* Minimalist Hero Image Section */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Hero Image</span>
+            {heroImageUrl && <Badge variant="secondary" className="text-xs">✓</Badge>}
+          </div>
+          <div className="flex gap-1">
+            {heroImageUrl && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowHeroPreview(!showHeroPreview)}
+                className="h-7 px-2 text-xs"
+              >
+                {showHeroPreview ? (
+                  <EyeOff className="h-3 w-3 mr-1" />
+                ) : (
+                  <Eye className="h-3 w-3 mr-1" />
+                )}
+                {showHeroPreview ? 'Hide' : 'Show'}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
-                setHeroImageUrl("")
-                onHeroImageChange?.("")
+                const input = document.createElement('input')
+                input.type = 'file'
+                input.accept = 'image/*'
+                input.onchange = (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0]
+                  if (file) handleHeroImageWithCrop(file)
+                }
+                input.click()
               }}
-              className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+              className="h-7 px-2 text-xs"
             >
-              <Trash2 className="h-3 w-3 mr-1" />
-              Remove
+              <Upload className="h-3 w-3 mr-1" />
+              {heroImageUrl ? 'Change' : 'Add'}
             </Button>
-          )}
-        </div>
-      </div>
-      
-      {/* Hero Image Preview - Only shows when image exists */}
-      {heroImageUrl && (
-        <div className="relative rounded-lg overflow-hidden bg-muted max-w-xs">
-          <img 
-            src={getImageUrl(heroImageUrl)} 
-            alt="Hero preview" 
-            className="w-full h-20 object-cover"
-          />
-          <div className="absolute top-1 right-1">
-            <Badge variant="secondary" className="text-xs px-1 py-0">
-              Preview
-            </Badge>
+            {heroImageUrl && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setHeroImageUrl("")
+                  onHeroImageChange?.("")
+                }}
+                className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Drag & Drop Zone or Preview */}
+        {!heroImageUrl ? (
+          <div
+            {...getRootProps()}
+            className={cn(
+              "border border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
+              isDragActive 
+                ? "border-primary bg-primary/5" 
+                : "border-muted-foreground/25 hover:border-primary/50"
+            )}
+          >
+            <input {...getInputProps()} />
+            <div className="space-y-1">
+              <div className="mx-auto w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                {isDragActive ? (
+                  <Move3D className="h-4 w-4 text-primary" />
+                ) : (
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-medium">
+                  {isDragActive ? "Drop image here" : "Drag image or click to browse"}
+                </p>
+                <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
+              </div>
+            </div>
+          </div>
+        ) : showHeroPreview ? (
+          <div className="relative group rounded-lg overflow-hidden border">
+            <img 
+              src={getImageUrl(heroImageUrl)} 
+              alt="Hero preview" 
+              className="w-full h-32 sm:h-40 object-cover transition-transform group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-7 text-xs backdrop-blur-sm bg-white/90 hover:bg-white px-3"
+                onClick={() => {
+                  const input = document.createElement('input')
+                  input.type = 'file'
+                  input.accept = 'image/*'
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0]
+                    if (file) handleHeroImageWithCrop(file)
+                  }
+                  input.click()
+                }}
+              >
+                <CropIcon className="h-3 w-3 mr-1" />
+                Edit
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Image Cropping Dialog */}
+      <Dialog open={showCropDialog} onOpenChange={setShowCropDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CropIcon className="h-5 w-5" />
+              Crop Hero Image
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {imageToCrop && (
+              <div className="space-y-3">
+                <ReactCrop
+                  crop={crop}
+                  onChange={(crop) => setCrop(crop)}
+                  onComplete={(crop) => setCompletedCrop(crop)}
+                  className="max-h-96"
+                >
+                  <img
+                    ref={imgRef}
+                    src={imageToCrop}
+                    alt="Crop preview"
+                    onLoad={onImageLoad}
+                    className="max-w-full"
+                  />
+                </ReactCrop>
+                
+                <div className="space-y-3">
+                  <div className="text-sm text-muted-foreground">
+                    Drag to adjust the crop area • Free aspect ratio for flexible sizing
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const img = imgRef.current
+                        if (img) {
+                          const crop = {
+                            unit: 'px' as const,
+                            x: 0,
+                            y: 0,
+                            width: img.width,
+                            height: img.height
+                          }
+                          setCrop(crop)
+                          setCompletedCrop(crop)
+                        }
+                      }}
+                    >
+                      <Maximize2 className="h-3 w-3 mr-2" />
+                      Fill
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowCropDialog(false)
+                          setImageToCrop("")
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={applyCropAndUpload}
+                        disabled={!completedCrop || isUploading}
+                      >
+                        {isUploading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent mr-2" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Scissors className="h-3 w-3 mr-2" />
+                            Crop & Upload
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Editor Image Cropping Dialog */}
+      <Dialog open={showEditorImageCrop} onOpenChange={setShowEditorImageCrop}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CropIcon className="h-5 w-5" />
+              Crop Image for Editor
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {editorImageToCrop && (
+              <div className="space-y-3">
+                <ReactCrop
+                  crop={editorCrop}
+                  onChange={(crop) => setEditorCrop(crop)}
+                  onComplete={(crop) => setCompletedEditorCrop(crop)}
+                  className="max-h-96"
+                >
+                  <img
+                    ref={editorImgRef}
+                    src={editorImageToCrop}
+                    alt="Crop preview"
+                    onLoad={onEditorImageLoad}
+                    className="max-w-full"
+                  />
+                </ReactCrop>
+                
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const img = editorImgRef.current
+                      if (img) {
+                        const crop = {
+                          unit: 'px' as const,
+                          x: 0,
+                          y: 0,
+                          width: img.width,
+                          height: img.height
+                        }
+                        setEditorCrop(crop)
+                        setCompletedEditorCrop(crop)
+                      }
+                    }}
+                  >
+                    <Maximize2 className="h-3 w-3 mr-2" />
+                    Fill
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowEditorImageCrop(false)
+                        setEditorImageToCrop("")
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={applyEditorCropAndInsert}
+                      disabled={!completedEditorCrop || isUploading}
+                    >
+                      {isUploading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent mr-2" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Scissors className="h-3 w-3 mr-2" />
+                          Crop & Insert
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Editor */}
       <Card className="relative overflow-hidden">
@@ -787,11 +1221,14 @@ export function AdvancedTiptapEditor({
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Insert Image</DialogTitle>
+                      <DialogTitle className="flex items-center gap-2">
+                        <ImageIcon className="h-5 w-5" />
+                        Insert Image
+                      </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                      <div>
-                        <Label>Upload Image</Label>
+                      <div className="space-y-3">
+                        <Label>Upload & Crop Image</Label>
                         <input
                           ref={imageFileInputRef}
                           type="file"
@@ -803,36 +1240,41 @@ export function AdvancedTiptapEditor({
                           type="button"
                           variant="outline"
                           onClick={() => imageFileInputRef.current?.click()}
-                          className="w-full"
+                          className="w-full h-12 border-dashed"
                         >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Choose Image File
+                          <div className="flex items-center gap-2">
+                            <CropIcon className="h-4 w-4" />
+                            <div>
+                              <div className="font-medium">Choose Image File</div>
+                              <div className="text-xs text-muted-foreground">Upload & crop before inserting</div>
+                            </div>
+                          </div>
                         </Button>
                       </div>
-                      <div className="text-center text-muted-foreground text-sm">
-                        or
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 h-px bg-border"></div>
+                        <span className="text-xs text-muted-foreground">or</span>
+                        <div className="flex-1 h-px bg-border"></div>
                       </div>
-                      <div>
-                        <Label htmlFor="image-url">Image URL</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="image-url">Direct Image URL</Label>
                         <Input
                           id="image-url"
                           value={imageUrl}
                           onChange={(e) => setImageUrl(e.target.value)}
                           placeholder="https://example.com/image.jpg"
                         />
-                      </div>
-                      <div>
-                        <Label htmlFor="image-alt">Alt Text</Label>
                         <Input
                           id="image-alt"
                           value={imageAlt}
                           onChange={(e) => setImageAlt(e.target.value)}
-                          placeholder="Describe the image"
+                          placeholder="Alt text (describe the image)"
                         />
+                        <Button onClick={insertImage} className="w-full" disabled={!imageUrl}>
+                          <ImageIcon className="h-4 w-4 mr-2" />
+                          Insert from URL
+                        </Button>
                       </div>
-                      <Button onClick={insertImage} className="w-full" disabled={!imageUrl}>
-                        Insert Image
-                      </Button>
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -908,15 +1350,17 @@ export function AdvancedTiptapEditor({
         {/* Footer */}
         <div className="flex items-center justify-between p-3 border-t bg-slate-50/50 dark:bg-slate-900/50">
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">⌘B</kbd>
+            {/* <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">⌘B</kbd>
             <span>Bold</span>
             <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">⌘I</kbd>
             <span>Italic</span>
             <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">⌘K</kbd>
-            <span>Link</span>
+            <span>Link</span> */}
             <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">Tab</kbd>
             <span>5 spaces</span>
-            <span className="text-muted-foreground/70">• Drag & drop images to upload</span>
+            <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">Del</kbd>
+            <span>Delete image</span>
+            <span className="text-muted-foreground/70">• Drag & drop images • Click image to select</span>
           </div>
           <div className="flex items-center gap-2">
             {isUploading && (

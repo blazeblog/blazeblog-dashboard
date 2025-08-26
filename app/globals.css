@@ -149,7 +149,7 @@
 
 /* Show custom placeholder only for first paragraph when empty */
 .ProseMirror > p:first-child.is-empty::before {
-  content: 'Start with your title...' !important;
+  content: 'Title...' !important;
   display: block !important;
   color: #9ca3af !important;
   opacity: 0.6 !important;
@@ -298,4 +298,81 @@
   padding-inline-start: 1.5rem !important;
   margin-block-start: 1rem !important;
   margin-block-end: 1rem !important;
+}
+
+/* Enhanced image styling with hover controls */
+.ProseMirror img {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.ProseMirror img:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* Enhanced TipTap image styling with resize support */
+.ProseMirror .tiptap-image {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ProseMirror .tiptap-image:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* Selected image styling - works with resize extension */
+.ProseMirror .ProseMirror-selectednode {
+  position: relative;
+}
+
+.ProseMirror .ProseMirror-selectednode .tiptap-image {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+/* Override the resize extension styles to match our theme */
+.ProseMirror .resize-cursor {
+  cursor: se-resize !important;
+}
+
+/* Custom styling for the resize handles from the extension */
+.ProseMirror [data-type="resizeImage"] .resize-handle,
+.ProseMirror .resize-handle {
+  background: #3b82f6 !important;
+  border: 2px solid white !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.ProseMirror [data-type="resizeImage"] .resize-handle:hover,
+.ProseMirror .resize-handle:hover {
+  background: #2563eb !important;
+  transform: scale(1.2) !important;
+}
+
+/* Make sure images are selectable and have proper styling */
+.ProseMirror img {
+  cursor: pointer;
+  user-select: none;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Selection styling for images */
+.ProseMirror .ProseMirror-selectednode img {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+/* Resize cursor when hovering over resizable images */
+.ProseMirror .resize-cursor {
+  cursor: nw-resize !important;
 }
