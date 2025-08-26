@@ -13,6 +13,9 @@ import { TextStyle } from "@tiptap/extension-text-style"
 import { Color } from "@tiptap/extension-color"
 import Placeholder from "@tiptap/extension-placeholder"
 import Dropcursor from "@tiptap/extension-dropcursor"
+import BulletList from "@tiptap/extension-bullet-list"
+import OrderedList from "@tiptap/extension-ordered-list"
+import ListItem from "@tiptap/extension-list-item"
 // Helper function to convert formatted text to HTML
 const convertFormattedTextToHTML = (text: string): string => {
   const lines = text.split('\n')
@@ -190,15 +193,30 @@ export function AdvancedTiptapEditor({
     immediatelyRender: false, // Fix SSR error
     extensions: [
       StarterKit.configure({
-        bulletList: {
-          keepMarks: true,
-          keepAttributes: false,
-        },
-        orderedList: {
-          keepMarks: true,
-          keepAttributes: false,
-        },
+        bulletList: false, // Disable StarterKit's bulletList
+        orderedList: false, // Disable StarterKit's orderedList
+        listItem: false, // Disable StarterKit's listItem
         codeBlock: false, // Disable default code block
+      }),
+      // Add individual list extensions for better control
+      BulletList.configure({
+        keepMarks: true,
+        keepAttributes: false,
+        HTMLAttributes: {
+          class: 'tiptap-bullet-list',
+        },
+      }),
+      OrderedList.configure({
+        keepMarks: true,
+        keepAttributes: false,
+        HTMLAttributes: {
+          class: 'tiptap-ordered-list',
+        },
+      }),
+      ListItem.configure({
+        HTMLAttributes: {
+          class: 'tiptap-list-item',
+        },
       }),
       Image.configure({
         inline: false,

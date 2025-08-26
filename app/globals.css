@@ -181,3 +181,121 @@
 .ProseMirror:focus {
   outline: none;
 }
+
+/* Fix TipTap list styles - ensure bullets and numbers show properly */
+.ProseMirror ul,
+.ProseMirror ul.tiptap-bullet-list {
+  list-style-type: disc !important;
+  margin-left: 1.5rem !important;
+  padding-left: 0 !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+  list-style-position: outside !important;
+}
+
+.ProseMirror ul li,
+.ProseMirror ul.tiptap-bullet-list li,
+.ProseMirror li.tiptap-list-item {
+  display: list-item !important;
+  list-style-type: disc !important;
+  margin-left: 0 !important;
+  padding-left: 0.25rem !important;
+  position: relative;
+}
+
+.ProseMirror ol,
+.ProseMirror ol.tiptap-ordered-list {
+  list-style-type: decimal !important;
+  margin-left: 1.5rem !important;
+  padding-left: 0 !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+  list-style-position: outside !important;
+}
+
+.ProseMirror ol li,
+.ProseMirror ol.tiptap-ordered-list li {
+  display: list-item !important;
+  list-style-type: decimal !important;
+  margin-left: 0 !important;
+  padding-left: 0.25rem !important;
+  position: relative;
+}
+
+/* Nested lists */
+.ProseMirror ul ul,
+.ProseMirror ol ol,
+.ProseMirror ul ol,
+.ProseMirror ol ul {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.ProseMirror ul ul li {
+  list-style-type: circle !important;
+}
+
+.ProseMirror ul ul ul li {
+  list-style-type: square !important;
+}
+
+/* Override any prose plugin interference */
+.prose .ProseMirror ul,
+.prose .ProseMirror ol,
+.prose .ProseMirror ul.tiptap-bullet-list,
+.prose .ProseMirror ol.tiptap-ordered-list {
+  list-style-position: outside !important;
+  margin-left: 1.5rem !important;
+  padding-left: 0 !important;
+}
+
+.prose .ProseMirror ul li,
+.prose .ProseMirror ol li,
+.prose .ProseMirror ul.tiptap-bullet-list li,
+.prose .ProseMirror ol.tiptap-ordered-list li,
+.prose .ProseMirror li.tiptap-list-item {
+  margin-left: 0 !important;
+  padding-left: 0.25rem !important;
+  display: list-item !important;
+}
+
+.prose .ProseMirror ul li::before,
+.prose .ProseMirror ol li::before,
+.prose .ProseMirror ul.tiptap-bullet-list li::before,
+.prose .ProseMirror ol.tiptap-ordered-list li::before,
+.prose .ProseMirror li.tiptap-list-item::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* Make sure list items have proper line height and spacing */
+.ProseMirror li {
+  line-height: 1.6 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.ProseMirror li p {
+  margin: 0 !important;
+  display: inline !important;
+}
+
+/* Force list display - nuclear option to ensure bullets/numbers always show */
+.ProseMirror ul li {
+  list-style: disc !important;
+  display: list-item !important;
+  margin-left: 0 !important;
+}
+
+.ProseMirror ol li {
+  list-style: decimal !important;
+  display: list-item !important;
+  margin-left: 0 !important;
+}
+
+/* Ensure the list container is properly styled */
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-inline-start: 1.5rem !important;
+  margin-block-start: 1rem !important;
+  margin-block-end: 1rem !important;
+}
