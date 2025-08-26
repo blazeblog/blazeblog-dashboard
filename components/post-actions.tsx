@@ -24,9 +24,10 @@ import { MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react"
 
 interface PostActionsProps {
   postId: number
+  onDelete?: (postId: number) => void
 }
 
-export function PostActions({ postId }: PostActionsProps) {
+export function PostActions({ postId, onDelete }: PostActionsProps) {
   const router = useRouter()
   const api = useClientApi()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -36,9 +37,11 @@ export function PostActions({ postId }: PostActionsProps) {
     setIsDeleting(true)
     try {
       await api.delete(`/posts/${postId}`)
-      router.refresh() // Refresh the page to show updated data
+      // Call the onDelete callback to update the parent state immediately
+      onDelete?.(postId)
     } catch (error) {
       console.error('Error deleting post:', error)
+      // TODO: Show error toast/notification to user
     } finally {
       setIsDeleting(false)
       setShowDeleteDialog(false)

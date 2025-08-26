@@ -8,9 +8,10 @@ import { type Post } from "@/lib/api"
 
 interface PostsTableProps {
   posts: Post[]
+  onDeletePost?: (postId: number) => void
 }
 
-export function PostsTable({ posts }: PostsTableProps) {
+export function PostsTable({ posts, onDeletePost }: PostsTableProps) {
   const router = useRouter()
 
   const handleRowClick = (postId: number) => {
@@ -56,7 +57,7 @@ export function PostsTable({ posts }: PostsTableProps) {
             <TableCell>-</TableCell>
             <TableCell>{new Date(post.createdAt).toLocaleDateString()}</TableCell>
             <TableCell onClick={(e) => e.stopPropagation()}>
-              <PostActions postId={post.id} />
+              <PostActions postId={post.id} onDelete={onDeletePost} />
             </TableCell>
           </TableRow>
         ))

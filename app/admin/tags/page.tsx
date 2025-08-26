@@ -1,8 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAuth } from "@clerk/nextjs"
-import { usePageTitle } from "@/hooks/use-page-title"
 import { useRouter } from "next/navigation"
 import { useClientApi, type PaginationParams, type PaginatedResponse, type Tag } from "@/lib/client-api"
 import { AdminLayout } from "@/components/admin-layout"
@@ -30,11 +28,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
-import { LoadingState } from "@/components/loading-state"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ClientPagination } from "@/components/ui/client-pagination"
 
 export default function TagsPage() {
-  usePageTitle("Tags - BlazeBlog Admin")
-  const { isSignedIn, isLoaded } = useAuth()
   const router = useRouter()
   const api = useClientApi()
   const { toast } = useToast()
@@ -48,8 +45,11 @@ export default function TagsPage() {
     hasNextPage: false,
     hasPreviousPage: false
   })
+  const [filters, setFilters] = useState({
+    search: '',
+    page: 1
+  })
   const [currentView, setCurrentView] = useState<'table'>('table')
-  const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [newTagName, setNewTagName] = useState('')
@@ -59,19 +59,19 @@ export default function TagsPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
 
-  const fetchTags = async (page = 1, search = '') => {
+  const fetchTags = async () => {
     try {
       setIsLoading(true)
-      const tagsResponse = await api.getPaginated<Tag>('/tags', {
-        page,
+      const response = await api.getPaginated<Tag>('/tags', {
+        page: filters.page,
         limit: 12,
-        search,
+        search: filters.search,
         sortBy: 'name',
         sortOrder: 'ASC',
       })
       
-      setTags(tagsResponse.data)
-      setPagination(tagsResponse.pagination)
+      setTags(response.data)
+      setPagination(response.pagination)
     } catch (error) {
       console.error('Error fetching tags:', error)
       setError('Failed to load tags')
@@ -82,8 +82,17 @@ export default function TagsPage() {
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    fetchTags(1, searchQuery)
+    const formData = new FormData(e.currentTarget)
+    setFilters(prev => ({
+      ...prev,
+      search: formData.get('search') as string || '',
+      page: 1
+    }))
   }
+
+  useEffect(() => {
+    fetchTags()
+  }, [filters])
 
   const handleCreateTag = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -105,7 +114,7 @@ export default function TagsPage() {
       })
 
       setNewTagName('')
-      fetchTags(pagination.page, searchQuery) // Refresh current page
+      fetchTags() // Refresh current page
     } catch (error) {
       console.error('Error creating tag:', error)
       toast({
@@ -136,7 +145,7 @@ export default function TagsPage() {
         variant: "default"
       })
 
-      fetchTags(pagination.page, searchQuery) // Refresh current page
+      fetchTags() // Refresh current page
     } catch (error) {
       console.error('Error deleting tag:', error)
       toast({
@@ -151,28 +160,6 @@ export default function TagsPage() {
     }
   }
 
-  useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      router.push('/sign-in')
-      return
-    }
-    
-    if (isSignedIn) {
-      fetchTags()
-    }
-  }, [isLoaded, isSignedIn, router])
-
-  if (!isLoaded || isLoading) {
-    return (
-      <AdminLayout title="Tags">
-        <LoadingState message="Loading Tags" />
-      </AdminLayout>
-    )
-  }
-
-  if (!isSignedIn) {
-    return null
-  }
 
   return (
     <AdminLayout>
@@ -224,8 +211,8 @@ export default function TagsPage() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search tags..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  name="search"
+                  defaultValue={filters.search}
                   className="pl-10 w-80"
                 />
               </div>
@@ -236,9 +223,28 @@ export default function TagsPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
-            <Card>
-              <Table>
+        <Card>
+          <CardContent>
+            {isLoading && tags.length === 0 ? (
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-4 w-4 rounded-full" />
+                      <div>
+                        <Skeleton className="h-4 w-32 mb-1" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-6 w-12" />
+                    <Skeleton className="h-6 w-20" />
+                    <Skeleton className="h-8 w-8" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Tag</TableHead>
@@ -311,36 +317,19 @@ export default function TagsPage() {
                     })
                   )}
                 </TableBody>
-              </Table>
-            </Card>
-            {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-muted-foreground">
-                  Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
-                  {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-                  {pagination.total} results
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={!pagination.hasPreviousPage}
-                    onClick={() => fetchTags(pagination.page - 1, searchQuery)}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={!pagination.hasNextPage}
-                    onClick={() => fetchTags(pagination.page + 1, searchQuery)}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
+                </Table>
+
+                {pagination.totalPages > 1 && (
+                  <ClientPagination
+                    pagination={pagination}
+                    onPageChange={(page) => setFilters(prev => ({ ...prev, page }))}
+                    loading={isLoading}
+                  />
+                )}
+              </>
             )}
-        </div>
+          </CardContent>
+        </Card>
 
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogContent>
