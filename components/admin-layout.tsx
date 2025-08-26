@@ -2,9 +2,8 @@
 
 import { useUser, UserButton } from "@clerk/nextjs"
 import type React from "react"
-import { Bell, Search } from "lucide-react"
+import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AdminSidebar } from "./admin-sidebar"
 import { ThemeToggle } from "./theme-toggle"
@@ -101,12 +100,11 @@ export function AdminLayout({ children, title = "Dashboard" }: AdminLayoutProps)
             </div>
           </header>
           <main className="flex-1 space-y-4 p-4 md:p-6">
-            {user && (
+            {user && title === "Dashboard" && (
               <div className="mb-6">
                 <h2 className="text-2xl font-bold tracking-tight">
                   {getTimeBasedGreeting()}, {user.firstName || user.emailAddresses[0]?.emailAddress}!
                 </h2>
-                <p className="text-muted-foreground">Here's what's happening with your admin panel today.</p>
               </div>
             )}
             {children}

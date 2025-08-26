@@ -13,7 +13,92 @@ import { TextStyle } from "@tiptap/extension-text-style"
 import { Color } from "@tiptap/extension-color"
 import Placeholder from "@tiptap/extension-placeholder"
 import Dropcursor from "@tiptap/extension-dropcursor"
-
+// Helper function to convert formatted text to HTML
+const convertFormattedTextToHTML = (text: string): string => {
+  const lines = text.split('\n')
+  const processedLines: string[] = []
+  let inList = false
+  let listType = ''
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+    
+    if (!line) {
+      // Empty line - close any open list and add paragraph break
+      if (inList) {
+        processedLines.push(listType === 'bullet' ? '</ul>' : '</ol>')
+        inList = false
+        listType = ''
+      }
+      processedLines.push('')
+      continue
+    }
+    
+    // Check for headings
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/)
+    if (headingMatch) {
+      // Close any open list
+      if (inList) {
+        processedLines.push(listType === 'bullet' ? '</ul>' : '</ol>')
+        inList = false
+        listType = ''
+      }
+      
+      const level = Math.min(headingMatch[1].length, 6)
+      const text = headingMatch[2]
+      processedLines.push(`<h${level}>${text}</h${level}>`)
+      continue
+    }
+    
+    // Check for bullet lists
+    const bulletMatch = line.match(/^[-*]\s+(.+)$/)
+    if (bulletMatch) {
+      const text = bulletMatch[1]
+      
+      if (!inList || listType !== 'bullet') {
+        if (inList) processedLines.push(listType === 'bullet' ? '</ul>' : '</ol>')
+        processedLines.push('<ul>')
+        inList = true
+        listType = 'bullet'
+      }
+      
+      processedLines.push(`<li>${text}</li>`)
+      continue
+    }
+    
+    // Check for numbered lists
+    const numberedMatch = line.match(/^\d+[.)]\s+(.+)$/)
+    if (numberedMatch) {
+      const text = numberedMatch[1]
+      
+      if (!inList || listType !== 'numbered') {
+        if (inList) processedLines.push(listType === 'bullet' ? '</ul>' : '</ol>')
+        processedLines.push('<ol>')
+        inList = true
+        listType = 'numbered'
+      }
+      
+      processedLines.push(`<li>${text}</li>`)
+      continue
+    }
+    
+    // Regular paragraph
+    if (inList) {
+      processedLines.push(listType === 'bullet' ? '</ul>' : '</ol>')
+      inList = false
+      listType = ''
+    }
+    
+    processedLines.push(`<p>${line}</p>`)
+  }
+  
+  // Close any remaining list
+  if (inList) {
+    processedLines.push(listType === 'bullet' ? '</ul>' : '</ol>')
+  }
+  
+  return processedLines.join('\n')
+}
 
 import { useState, useCallback, useRef, useEffect } from "react"
 import { useClientApi } from "@/lib/client-api"
@@ -62,7 +147,7 @@ interface AdvancedTiptapEditorProps {
 export function AdvancedTiptapEditor({
   content = "",
   onChange,
-  placeholder = "Start writing something amazing...",
+  placeholder = "Start with your title...",
   className = "",
   heroImage = "",
   onHeroImageChange,
@@ -140,10 +225,10 @@ export function AdvancedTiptapEditor({
         multicolor: true,
       }),
       Placeholder.configure({
-        placeholder,
+        placeholder: 'Start with your title...',
       }),
       Dropcursor.configure({
-        color: '#3b82f6', // Blue color for drop cursor
+        color: '#3b82f6', 
         width: 2,
       }),
     ],
@@ -164,7 +249,35 @@ export function AdvancedTiptapEditor({
           "min-h-[500px] p-6 pb-24"
         ),
       },
-      handleDrop: (view, event, slice, moved) => {
+      handlePaste: (_view, event) => {
+        const clipboardData = event.clipboardData
+        if (!clipboardData) return false
+        
+        const plainText = clipboardData.getData('text/plain')
+        if (!plainText) return false
+        
+        // Check if we have markdown-like content
+        const hasMarkdownPatterns = plainText.split('\n').some(line => 
+          /^#{1,6}\s/.test(line) || // headings
+          /^[-*]\s/.test(line) || // bullet lists
+          /^\d+[.)]\s/.test(line) // numbered lists
+        )
+        
+        if (!hasMarkdownPatterns) return false
+        
+        // Prevent default paste behavior
+        event.preventDefault()
+        
+        // Convert formatted text to HTML and insert
+        const htmlContent = convertFormattedTextToHTML(plainText)
+        if (htmlContent && editor) {
+          editor.commands.insertContent(htmlContent)
+          return true
+        }
+        
+        return false
+      },
+      handleDrop: (view, event, _slice, moved) => {
         if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
           const files = Array.from(event.dataTransfer.files)
           const imageFiles = files.filter(file => file.type.startsWith('image/'))
@@ -360,7 +473,7 @@ export function AdvancedTiptapEditor({
 
   return (
     <div className="space-y-3">
-      {/* Hero Image Section - Compact */}
+        {/* Hero Image Section - Compact */}
       <div className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-lg border">
         <div className="flex items-center gap-2">
           <ImageIcon className="h-4 w-4 text-muted-foreground" />

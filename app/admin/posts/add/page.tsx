@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useClientApi, type Category, type Tag, type Post } from "@/lib/client-api"
 import { usePageTitle } from "@/hooks/use-page-title"
-import { Save, X, FileText, Settings, Eye, ArrowLeft, Focus, BookOpen, Clock, AlertTriangle } from "lucide-react"
+import { Save, X, FileText, Settings, Eye, Focus, BookOpen, Clock, AlertTriangle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,7 +20,6 @@ import { AdminLayout } from "@/components/admin-layout"
 import { AdvancedTiptapEditor } from "@/components/advanced-tiptap-editor"
 import { PostPreview } from "@/components/post-preview"
 import { useAutoSave } from "@/hooks/use-auto-save"
-import { DraftRecoveryDialog } from "@/components/draft-recovery-dialog"
 import { AutoSaveIndicator } from "@/components/auto-save-indicator"
 import { ConnectivityIndicator } from "@/components/connectivity-indicator"
 import { TagsInput } from "@/components/tags-input"
@@ -29,20 +28,16 @@ import { RelatedPostsSelector } from "@/components/related-posts-selector"
 // import { FocusModeToggle, FocusModeContext, useFocusMode } from "@/components/focus-mode-toggle"
 import { generateSlug, ensureTagsExist } from "@/lib/auto-create-utils"
 import { useToast } from "@/hooks/use-toast"
-import type { DraftPost } from "@/lib/indexeddb"
-import { TourTriggerButton, TourProvider, useTour } from "@/components/custom-tour"
+import { TourProvider } from "@/components/custom-tour"
 
 function AddPostPage() {
   usePageTitle("Create New Post - BlazeBlog Admin")
   
-  const router = useRouter()
   const api = useClientApi()
   const { toast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [availableDrafts, setAvailableDrafts] = useState<DraftPost[]>([])
-  const [showDraftDialog, setShowDraftDialog] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -60,18 +55,12 @@ function AddPostPage() {
   const [activeTab, setActiveTab] = useState("editor")
   // const { isFocusMode, toggleFocusMode } = useFocusMode(false)
   const [showSEOSidebar, setShowSEOSidebar] = useState(true)
-  
-  // Tour functionality
-  const { hasSeenTour } = useTour()
 
   const {
     lastSaved,
     isSaving,
     isOnline,
-    autoSaveEnabled,
-    setAutoSaveEnabled,
-    loadDraft,
-    getAllDrafts
+    autoSaveEnabled
   } = useAutoSave({
     postId: 'new',
     title: formData.title,
@@ -84,18 +73,7 @@ function AddPostPage() {
 
   useEffect(() => {
     fetchCategories()
-    checkForDrafts()
   }, []) // Only run once on mount
-
-  // Tour auto-start is now handled in TourProvider
-
-  const checkForDrafts = async () => {
-    const drafts = await getAllDrafts()
-    if (drafts.length > 0) {
-      setAvailableDrafts(drafts)
-      setShowDraftDialog(true)
-    }
-  }
 
   const fetchCategories = async () => {
     try {
@@ -212,22 +190,6 @@ function AddPostPage() {
     }
   }
 
-  const handleDraftRecover = (draft: DraftPost) => {
-    setFormData({
-      title: draft.title,
-      content: draft.content,
-      categoryId: draft.categoryId || '',
-      status: draft.status,
-      excerpt: draft.excerpt || '',
-      metaDescription: '',
-      tags: [] as Tag[],
-      featuredImage: draft.heroImage || '',
-      publishDate: '',
-      slug: generateSlug(draft.title),
-      relatedPosts: [] as Post[],
-    })
-    setShowDraftDialog(false)
-  }
 
 
   const getStatusColor = (status: string) => {
@@ -358,21 +320,6 @@ function AddPostPage() {
         {/* Main Content */}
         <div className={`flex-1 min-w-0 ${!showSEOSidebar ? 'w-full max-w-none px-0' : ''}`}>
           <div className={`space-y-6 ${!showSEOSidebar ? 'px-0' : ''}`}>
-            {/* Title */}
-            <Card data-tour="post-title">
-              <CardContent className={`pt${!showSEOSidebar ? ' px-6' : 'px-2'}`}>
-                <div className="space-y-2">
-                  <Label htmlFor="title">Post Title</Label>
-                  <Input
-                    id="title"
-                    placeholder="Enter an engaging title..."
-                    value={formData.title}
-                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="text-lg font-medium"
-                  />
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Editor Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -387,7 +334,7 @@ function AddPostPage() {
                 </TabsTrigger>
                 <TabsTrigger value="settings" className="flex items-center gap-2" data-tour="settings-tab">
                   <Settings className="h-4 w-4" />
-                  Settings
+                  Metadata
                 </TabsTrigger>
               </TabsList>
 
@@ -395,8 +342,20 @@ function AddPostPage() {
                 <div data-tour="rich-editor">
                   <AdvancedTiptapEditor
                     content={formData.content}
-                    onChange={(content) => setFormData(prev => ({ ...prev, content }))}
-                    placeholder="Start writing your amazing post..."
+                    onChange={(content) => {
+                      // Extract title from first paragraph
+                      const tempDiv = document.createElement('div')
+                      tempDiv.innerHTML = content
+                      const firstP = tempDiv.querySelector('p')
+                      const title = firstP?.textContent?.trim() || ''
+                      
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        content,
+                        title: title || prev.title // Keep existing title if first line is empty
+                      }))
+                    }}
+                    placeholder="Start with your title..."
                     heroImage={formData.featuredImage}
                     onHeroImageChange={(url) => setFormData(prev => ({ ...prev, featuredImage: url }))}
                     postId="new"
@@ -405,7 +364,6 @@ function AddPostPage() {
                     excerpt={formData.excerpt}
                     status={formData.status}
                     enableAutoSave={autoSaveEnabled}
-                    onDraftRecover={handleDraftRecover}
                   />
                 </div>
               </TabsContent>

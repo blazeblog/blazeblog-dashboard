@@ -396,21 +396,6 @@ export default function EditPostPage() {
         {/* Main Content */}
         <div className={`flex-1 min-w-0 ${!showSEOSidebar ? 'w-full max-w-none px-0' : ''}`}>
           <div className={`space-y-6 ${!showSEOSidebar ? 'px-0' : ''}`}>
-            {/* Title */}
-            <Card>
-             <CardContent className={`pt${!showSEOSidebar ? ' px-6' : 'px-2'}`}>
-                <div className="space-y-2">
-                  <Label htmlFor="title">Post Title</Label>
-                  <Input
-                    id="title"
-                    placeholder="Enter an engaging title..."
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="text-lg font-medium"
-                  />
-                </div>
-              </CardContent>
-            </Card>
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TooltipProvider>
@@ -450,8 +435,20 @@ export default function EditPostPage() {
               <TabsContent value="editor" className="mt-4">
                 <AdvancedTiptapEditor
                   content={formData.content}
-                  onChange={(content) => setFormData({ ...formData, content })}
-                  placeholder="Start writing your amazing post..."
+                  onChange={(content) => {
+                    // Extract title from first paragraph
+                    const tempDiv = document.createElement('div')
+                    tempDiv.innerHTML = content
+                    const firstP = tempDiv.querySelector('p')
+                    const title = firstP?.textContent?.trim() || ''
+                    
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      content,
+                      title: title || prev.title // Keep existing title if first line is empty
+                    }))
+                  }}
+                  placeholder="Start with your title..."
                   heroImage={formData.featuredImage}
                   onHeroImageChange={(url) => setFormData({ ...formData, featuredImage: url })}
                 />

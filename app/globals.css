@@ -130,3 +130,54 @@
 
 /* Import diff viewer styles */
 @import "../styles/diff-viewer.css";
+
+/* TipTap Editor - Notion-like first line title styling */
+.ProseMirror > p:first-child {
+  font-size: 2.5rem !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+  margin-top: 0 !important;
+  margin-bottom: 1.5rem !important;
+  color: oklch(var(--foreground)) !important;
+  letter-spacing: -0.025em !important;
+}
+
+/* Hide default TipTap placeholder for all paragraphs */
+.ProseMirror p.is-empty::before {
+  display: none !important;
+}
+
+/* Show custom placeholder only for first paragraph when empty */
+.ProseMirror > p:first-child.is-empty::before {
+  content: 'Start with your title...' !important;
+  display: block !important;
+  color: #9ca3af !important;
+  opacity: 0.6 !important;
+  font-weight: 400 !important;
+  pointer-events: none !important;
+  float: left;
+  height: 0;
+}
+
+/* Dark mode placeholder */
+.dark .ProseMirror > p:first-child.is-empty::before {
+  color: #6b7280 !important;
+  opacity: 0.7 !important;
+}
+
+/* Make sure the first paragraph doesn't get prose styling */
+.prose .ProseMirror > p:first-child {
+  margin-top: 0 !important;
+  margin-bottom: 1.5rem !important;
+}
+
+/* Better spacing for the rest of the content */
+.ProseMirror > p:not(:first-child) {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Ensure proper focus styles */
+.ProseMirror:focus {
+  outline: none;
+}
