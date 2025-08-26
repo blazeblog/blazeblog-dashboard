@@ -197,6 +197,10 @@ export function AdvancedTiptapEditor({
         orderedList: false, // Disable StarterKit's orderedList
         listItem: false, // Disable StarterKit's listItem
         codeBlock: false, // Disable default code block
+        history: {
+          depth: 100,
+          newGroupDelay: 1000, // Group edits within 1000ms as single undo step
+        },
       }),
       // Add individual list extensions for better control
       BulletList.configure({
@@ -266,6 +270,59 @@ export function AdvancedTiptapEditor({
           "dark:prose-code:bg-slate-800 dark:prose-code:text-slate-200",
           "min-h-[500px] p-6 pb-24"
         ),
+      },
+      handleKeyDown: (view, event) => {
+        // Handle Tab key to insert 5 spaces
+        if (event.key === 'Tab' && !event.shiftKey) {
+          event.preventDefault()
+          const { state, dispatch } = view
+          const { selection } = state
+          const { $from } = selection
+          
+          // Check if we're in a list - if so, use default list behavior
+          if ($from.node(-1)?.type.name === 'listItem') {
+            return false // Let TipTap handle list indentation
+          }
+          
+          // Otherwise, insert 5 spaces
+          const tr = state.tr.insertText('     ', selection.from, selection.to)
+          dispatch(tr)
+          return true
+        }
+        
+        // Handle Shift+Tab for outdenting (remove up to 5 spaces)
+        if (event.key === 'Tab' && event.shiftKey) {
+          event.preventDefault()
+          const { state, dispatch } = view
+          const { selection } = state
+          const { $from } = selection
+          
+          // Check if we're in a list - if so, use default list behavior
+          if ($from.node(-1)?.type.name === 'listItem') {
+            return false // Let TipTap handle list outdentation
+          }
+          
+          // Get text before cursor
+          const textBefore = $from.parent.textBetween(
+            Math.max(0, $from.parentOffset - 5), 
+            $from.parentOffset
+          )
+          
+          // Count spaces to remove (up to 5)
+          let spacesToRemove = 0
+          for (let i = textBefore.length - 1; i >= 0 && textBefore[i] === ' '; i--) {
+            spacesToRemove++
+          }
+          
+          if (spacesToRemove > 0) {
+            const from = selection.from - spacesToRemove
+            const tr = state.tr.delete(from, selection.from)
+            dispatch(tr)
+          }
+          return true
+        }
+        
+        return false
       },
       handlePaste: (_view, event) => {
         const clipboardData = event.clipboardData
@@ -857,6 +914,8 @@ export function AdvancedTiptapEditor({
             <span>Italic</span>
             <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">⌘K</kbd>
             <span>Link</span>
+            <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">Tab</kbd>
+            <span>5 spaces</span>
             <span className="text-muted-foreground/70">• Drag & drop images to upload</span>
           </div>
           <div className="flex items-center gap-2">
