@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Users, FileText, Eye, Plus, BarChart3, MessageSquare, TrendingUp, Clock, Hash, Tag } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 
 // Types for the dashboard API response
@@ -88,21 +89,82 @@ export default function AdminDashboard() {
   if (isLoading) {
     return (
       <AdminLayout title="Dashboard">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center space-y-6">
-            <div className="relative">
-              <div className="animate-spin rounded-full h-16 w-16 border-4 border-muted border-t-primary mx-auto"></div>
-              <div className="absolute inset-0 animate-pulse rounded-full h-16 w-16 border-4 border-transparent border-t-primary/20 mx-auto"></div>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">Loading Dashboard</h3>
-              <p className="text-muted-foreground">Fetching your latest data...</p>
-            </div>
-            <div className="flex items-center justify-center space-x-1">
-              <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-            </div>
+        <div className="space-y-6">
+          {/* Stats Cards Skeleton */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-4" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-16 mb-2" />
+                  <Skeleton className="h-3 w-32" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Quick Actions Skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32 mb-2" />
+              <Skeleton className="h-4 w-48" />
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-20" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Recent Posts Skeleton */}
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-4 w-48" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="space-y-2 flex-1">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Monthly Stats Skeleton */}
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-4 w-48" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="space-y-2 flex-1">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-3 w-40" />
+                      </div>
+                      <div className="text-right space-y-1">
+                        <Skeleton className="h-4 w-8" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </AdminLayout>
