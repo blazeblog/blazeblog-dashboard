@@ -21,17 +21,11 @@ function CheckoutContent() {
         
         const checkoutElement = document.createElement("a")
 
-        console.log("Checkout ID:", checkoutId)
-
-        console.log(process.env.NEXT_PUBLIC_NODE_ENV)
-
         if(process.env.NEXT_PUBLIC_NODE_ENV === "development") {
           polarLink = `${polarLink}/${checkoutId}/redirect`
         }else{
           polarLink = `${polarLink}/${checkoutId}`
         }
-
-        console.log("Polar Link:", polarLink)
 
         checkoutElement.href = `${polarLink}`
         checkoutElement.setAttribute("data-polar-checkout", "")

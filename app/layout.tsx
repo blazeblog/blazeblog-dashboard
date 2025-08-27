@@ -9,9 +9,9 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Admin Panel",
-  description: "Modern admin panel with Clerk authentication",
-  generator: "v0.dev",
+  title: "Dashboard | BlazeBlog",
+  description: "BlazeBlog Admin Dashboard",
+  generator: "Next.js",
 }
 
 export default function RootLayout({
