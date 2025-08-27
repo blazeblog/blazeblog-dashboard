@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 import { AdminLayout } from "@/components/admin-layout"
 import { SiteConfigForm } from "@/components/site-config-form"
+import { UpgradePlanToggle } from "@/components/upgrade-plan-toggle"
 
 export const metadata: Metadata = {
   title: "Settings - BlazeBlog Admin",
@@ -24,6 +25,8 @@ export default async function SettingsPage() {
           <p className="text-muted-foreground">Manage your application settings and preferences</p>
         </div>
 
+        <UpgradePlanToggle />
+        
         <SiteConfigForm />
       </div>
     </AdminLayout>

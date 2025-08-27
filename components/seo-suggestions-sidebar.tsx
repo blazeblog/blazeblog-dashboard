@@ -399,176 +399,211 @@ export function SEOSuggestionsSidebar({
   const wordCount = content.replace(/<[^>]*>/g, "").split(/\s+/).filter(word => word.length > 0).length
 
   return (
-    <div className={cn("space-y-3", className)}>
-      {/* Overall SEO Score */}
-      <Card className="border-2">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            SEO Score
-          </CardTitle>
-          <CardDescription>Overall content optimization</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4 mb-3">
-            <div className="flex-1">
-              <Progress value={overallScore} className="h-2" />
+    <div className={cn("space-y-1.5", className)}>
+      {/* Overall SEO Score - Circular Design */}
+      <Card className="border border-muted">
+        <CardContent className="pt-2 pb-2">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h3 className="font-medium text-sm">SEO Score</h3>
+              <p className="text-xs text-muted-foreground">Overall optimization</p>
+              <Badge 
+                variant={overallScore >= 80 ? "default" : overallScore >= 60 ? "secondary" : "destructive"}
+                className="text-xs px-1.5 py-0"
+              >
+                {overallScore >= 80 ? "Excellent" : overallScore >= 60 ? "Good" : "Needs Work"}
+              </Badge>
             </div>
-            <div className={cn("text-2xl font-bold", getScoreColor(overallScore))}>
-              {overallScore}%
+            <div className="relative flex items-center justify-center w-14 h-14">
+              <svg className="w-14 h-14 transform -rotate-90">
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="24"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  fill="transparent"
+                  className="text-muted/20"
+                />
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="24"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  fill="transparent"
+                  strokeDasharray={`${2 * Math.PI * 24}`}
+                  strokeDashoffset={`${2 * Math.PI * 24 * (1 - overallScore / 100)}`}
+                  className={cn(
+                    overallScore >= 80 
+                      ? "text-green-500" 
+                      : overallScore >= 60 
+                        ? "text-yellow-500" 
+                        : "text-red-500"
+                  )}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className={cn("absolute text-sm font-bold", getScoreColor(overallScore))}>
+                {overallScore}
+              </div>
             </div>
           </div>
-          <Badge 
-            variant={overallScore >= 80 ? "default" : overallScore >= 60 ? "secondary" : "destructive"}
-            className="text-xs"
-          >
-            {overallScore >= 80 ? "Excellent" : overallScore >= 60 ? "Good" : "Needs Improvement"}
-          </Badge>
         </CardContent>
       </Card>
 
       {/* AI Metadata Generation */}
-      <Card className="border-2 border-dashed border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50/50 to-indigo-50/50 dark:from-purple-950/20 dark:to-indigo-950/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-            AI Metadata Generator
-          </CardTitle>
-          <CardDescription>
-            Generate optimized metadata using AI
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <Card className="border border-muted bg-accent/30">
+        <CardContent className="pt-1.5 pb-1.5 space-y-1">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h3 className="font-medium text-sm">AI Assistant</h3>
+          </div>
+          
           <Button 
             onClick={handleAIGeneration}
             disabled={isGenerating || (rateLimitInfo && rateLimitInfo.availableRequests <= 0) || !content.trim()}
-            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+            variant="default"
             size="sm"
+            className="w-full h-7"
           >
             {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
                 Generating...
               </>
             ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate Metadata
-              </>
+              "Generate SEO Metadata"
             )}
           </Button>
           
-          {/* Rate limit info with color coding */}
-          {rateLimitInfo && (
-            <div className="mt-2 text-center">
-              {rateLimitInfo.availableRequests <= 0 ? (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {rateLimitInfo.usedRequests} of {rateLimitInfo.totalRequests} requests used for the day
-                </p>
-              ) : (
-                <p className={`text-xs ${
-                  rateLimitInfo.availableRequests / rateLimitInfo.totalRequests <= 0.2 
-                    ? 'text-red-600 dark:text-red-400' 
-                    : 'text-green-600 dark:text-green-400'
-                }`}>
-                  {rateLimitInfo.availableRequests}/{rateLimitInfo.totalRequests} requests remaining
-                </p>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Quick Stats */}
-      <Card className="border">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Eye className="h-5 w-5" />
-            Content Stats
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Word Count</span>
-            <span className={wordCount >= 300 ? "text-green-600" : "text-yellow-600"}>
-              {wordCount} words
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Reading Time</span>
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {readingTime} min
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Character Count</span>
-            <span>{content.replace(/<[^>]*>/g, "").length}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* SEO Suggestions */}
-      {seoAnalysis.map((item, index) => (
-        <Card key={index} className="border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              {item.icon}
-              {item.category}
-              {item.status === "good" && <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />}
-              {item.status === "warning" && <AlertCircle className="h-4 w-4 text-yellow-600 ml-auto" />}
-              {item.status === "error" && <XCircle className="h-4 w-4 text-red-600 ml-auto" />}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Progress value={(item.score / item.maxScore) * 100} className="flex-1 h-1.5" />
-              <span className="text-xs text-muted-foreground">
-                {item.score}/{item.maxScore}
-              </span>
-            </div>
-            
-            <div className="space-y-1.5">
-              {item.suggestions.map((suggestion, idx) => (
-                <p key={idx} className="text-xs text-muted-foreground leading-relaxed">
-                  {suggestion}
-                </p>
-              ))}
-            </div>
-
-            {/* Action buttons for specific categories */}
-            {item.category === "URL Structure" && suggestedSlug && (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={handleSlugSuggestion}
-                className="w-full text-xs h-8"
-              >
-                Use: "{suggestedSlug.length > 30 ? suggestedSlug.substring(0, 30) + "..." : suggestedSlug}"
-              </Button>
+          {/* Rate limit info */}
+          <p className="text-xs text-center text-muted-foreground h-4 flex items-center justify-center">
+            {rateLimitInfo ? (
+              rateLimitInfo.availableRequests > 0 
+                ? `${rateLimitInfo.availableRequests} uses left today`
+                : "Daily limit reached"
+            ) : (
+              <div className="w-20 h-3 bg-muted/30 rounded animate-pulse" />
             )}
-{/* 
-            {item.category === "Tags & Keywords" && content && (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={handleTagSuggestions}
-                className="w-full text-xs h-8"
-              >
-                Suggest Tags from Content
-              </Button>
-            )} */}
+          </p>
+        </CardContent>
+      </Card>
 
-            {/* {item.category === "Meta Description" && content && !excerpt && (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={handleExcerptSuggestion}
-                className="w-full text-xs h-8"
-              >
-                Generate from Content
-              </Button>
-            )} */}
+      {/* Content Stats */}
+      <Card className="border border-muted">
+        <CardContent className="pt-1.5 pb-1.5">
+          <h3 className="font-medium text-sm mb-1">Content Stats</h3>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="text-center">
+              <div className={cn("font-medium", wordCount >= 300 ? "text-green-600" : "text-yellow-600")}>
+                {wordCount}
+              </div>
+              <div className="text-muted-foreground">Words</div>
+            </div>
+            <div className="text-center">
+              <div className="font-medium">{readingTime}</div>
+              <div className="text-muted-foreground">Min read</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Headings Structure */}
+      <Card className="border border-muted">
+        <CardContent className="pt-1.5 pb-1.5">
+          <div className="space-y-1">
+            <h3 className="font-medium text-sm">Heading Structure</h3>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="text-xs text-muted-foreground">Current headings</div>
+                <div className={cn("font-medium text-sm", 
+                  (content.match(/<h[1-6][^>]*>/g) || []).length >= 2 && (content.match(/<h[1-6][^>]*>/g) || []).length <= 6 
+                    ? "text-green-600" 
+                    : (content.match(/<h[1-6][^>]*>/g) || []).length >= 1 
+                      ? "text-yellow-600" 
+                      : "text-red-500"
+                )}>
+                  {(content.match(/<h[1-6][^>]*>/g) || []).length}
+                </div>
+              </div>
+              <div className="relative flex items-center justify-center w-12 h-12">
+                <svg className="w-12 h-12 transform -rotate-90">
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="20"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    fill="transparent"
+                    className="text-muted/20"
+                  />
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="20"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    fill="transparent"
+                    strokeDasharray={`${2 * Math.PI * 20}`}
+                    strokeDashoffset={`${2 * Math.PI * 20 * (1 - Math.min((content.match(/<h[1-6][^>]*>/g) || []).length / 4, 1))}`}
+                    className={cn(
+                      (content.match(/<h[1-6][^>]*>/g) || []).length >= 2 && (content.match(/<h[1-6][^>]*>/g) || []).length <= 6
+                        ? "text-green-500" 
+                        : (content.match(/<h[1-6][^>]*>/g) || []).length >= 1 
+                          ? "text-yellow-500" 
+                          : "text-red-500"
+                    )}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute text-xs font-medium">
+                  {Math.min(Math.round(((content.match(/<h[1-6][^>]*>/g) || []).length / 4) * 100), 100)}
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {(content.match(/<h[1-6][^>]*>/g) || []).length === 0 
+                ? "Add headings to structure your content"
+                : (content.match(/<h[1-6][^>]*>/g) || []).length === 1 
+                  ? "Add 1-3 more headings for better structure"
+                  : (content.match(/<h[1-6][^>]*>/g) || []).length >= 2 && (content.match(/<h[1-6][^>]*>/g) || []).length <= 6
+                    ? "Good heading structure for SEO"
+                    : "Consider fewer headings for better readability"
+              }
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SEO Suggestions - Only show most important ones */}
+      {seoAnalysis.filter(item => item.status !== "good").slice(0, 3).map((item, index) => (
+        <Card key={index} className="border border-muted">
+          <CardContent className="pt-1.5 pb-1.5">
+            <div className="flex items-start gap-2">
+              <div className="flex-shrink-0 mt-0.5">
+                {item.status === "warning" && <AlertCircle className="h-4 w-4 text-yellow-500" />}
+                {item.status === "error" && <XCircle className="h-4 w-4 text-red-500" />}
+              </div>
+              <div className="flex-1 space-y-2">
+                <h4 className="text-sm font-medium">{item.category}</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {item.suggestions[0]}
+                </p>
+                
+                {/* Action button for URL Structure */}
+                {item.category === "URL Structure" && suggestedSlug && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={handleSlugSuggestion}
+                    className="w-full text-xs h-7 mt-2"
+                  >
+                    Use: {suggestedSlug.length > 25 ? suggestedSlug.substring(0, 25) + "..." : suggestedSlug}
+                  </Button>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
       ))}

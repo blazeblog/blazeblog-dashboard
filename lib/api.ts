@@ -59,8 +59,11 @@ interface Post {
   title: string
   content: string
   excerpt?: string
-  status: 'draft' | 'published' | 'archived'
+  status: 'draft' | 'published' | 'archived' | 'scheduled'
   featuredImage?: string
+  slug?: string
+  metaDescription?: string
+  publishDate?: string
   userId: number
   categoryId?: number
   createdAt: string
