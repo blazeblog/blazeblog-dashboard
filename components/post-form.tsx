@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Save, X, FileText, Settings, Eye, Focus } from "lucide-react"
 import { useClientApi, type Category, type Post, type Tag } from "@/lib/client-api"
@@ -71,6 +71,8 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [titleExtracted, setTitleExtracted] = useState(false)
+  const typingTimer = useRef<NodeJS.Timeout | null>(null)
   
   // Auto-save functionality
   const {
@@ -148,6 +150,8 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
       // Ensure tags exist
       const tagsWithIds = await ensureTagsExist(formData.tags.map(t => t.name), { api, toast })
 
+      // Content is saved as-is since title is separate
+
       const postData = {
         title: formData.title,
         content: formData.content,
@@ -155,7 +159,7 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
         metaDescription: formData.metaDescription || undefined,
         status: formData.status,
         featuredImage: formData.featuredImage || undefined,
-        categoryId: formData.categoryId && formData.categoryId !== "" ? formData.categoryId : undefined,
+        categoryId: formData.categoryId && formData.categoryId !== "" ? Number(formData.categoryId) : undefined,
         slug: formData.slug,
         userId: 1, // TODO: Get from auth context
         tagIds: tagsWithIds.map(tag => tag.id),
@@ -190,51 +194,13 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
     }
   }
 
-  // Extract title from content and auto-generate slug
+  // Auto-generate slug from title
   useEffect(() => {
-    let extractedTitle = ''
-    let updatedContent = formData.content
-    
-    if (formData.content) {
-      // First try to get h1 tag and remove it from content
-      const h1Match = formData.content.match(/<h1[^>]*>(.*?)<\/h1>/i)
-      if (h1Match) {
-        extractedTitle = h1Match[1].replace(/<[^>]*>/g, '').trim()
-        // Remove the h1 tag from content
-        updatedContent = formData.content.replace(/<h1[^>]*>.*?<\/h1>\s*/i, '').trim()
-      } else {
-        // Get the very first paragraph as title and remove it from content
-        const firstParagraphMatch = formData.content.match(/<p[^>]*>(.*?)<\/p>/)
-        if (firstParagraphMatch) {
-          const firstParagraphText = firstParagraphMatch[1].replace(/<[^>]*>/g, '').trim()
-          // Use first paragraph if it looks like a title (not too long, not empty)
-          if (firstParagraphText.length > 0 && firstParagraphText.length <= 150) {
-            extractedTitle = firstParagraphText
-            // Remove the first paragraph from content
-            updatedContent = formData.content.replace(/<p[^>]*>.*?<\/p>\s*/i, '').trim()
-          }
-        }
-      }
-    }
-    
-    console.log('Content start:', formData.content.substring(0, 200))
-    console.log('Extracted title:', extractedTitle)
-    console.log('Updated content start:', updatedContent.substring(0, 200))
-    
-    if (extractedTitle && extractedTitle !== formData.title) {
-      setFormData(prev => ({ 
-        ...prev, 
-        title: extractedTitle,
-        content: updatedContent
-      }))
-    }
-    
-    // Auto-generate slug from title
-    if (extractedTitle && (!formData.slug || mode === "add")) {
-      const newSlug = generateSlug(extractedTitle)
+    if (formData.title && (!formData.slug || mode === "add")) {
+      const newSlug = generateSlug(formData.title)
       setFormData(prev => ({ ...prev, slug: newSlug }))
     }
-  }, [formData.content, formData.title, formData.slug, mode])
+  }, [formData.title, formData.slug, mode])
 
   // SEO suggestion handlers
   const handleTitleSuggestion = (title: string) => {
@@ -375,13 +341,39 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
               </TabsList>
 
               <TabsContent value="editor" className="mt-4">
-                <AdvancedTiptapEditor
-                  content={formData.content}
-                  onChange={(content) => setFormData(prev => ({ ...prev, content }))}
-                  heroImage={formData.featuredImage}
-                  onHeroImageChange={(url) => setFormData(prev => ({ ...prev, featuredImage: url }))}
-                  enableAutoSave={autoSaveEnabled}
-                />
+                <div className="space-y-4">
+                  {/* Title Input */}
+                  <div>
+                    <Textarea
+                      placeholder="Untitled Post"
+                      value={formData.title}
+                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                      className="text-xl font-semibold border-0 px-0 py-1 text-foreground placeholder:text-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent resize-none min-h-0 overflow-hidden"
+                      style={{ 
+                        fontSize: '1.25rem', 
+                        lineHeight: '1.4',
+                        fontWeight: '600',
+                        height: '1.8rem',
+                        minHeight: '1.8rem'
+                      }}
+                      rows={1}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement
+                        target.style.height = '1.8rem'
+                        target.style.height = Math.max(28, target.scrollHeight) + 'px'
+                      }}
+                    />
+                    <div className="w-full h-px bg-border mt-4 mb-6"></div>
+                  </div>
+                  
+                  <AdvancedTiptapEditor
+                    content={formData.content}
+                    onChange={(content) => setFormData(prev => ({ ...prev, content }))}
+                    heroImage={formData.featuredImage}
+                    onHeroImageChange={(url) => setFormData(prev => ({ ...prev, featuredImage: url }))}
+                    enableAutoSave={autoSaveEnabled}
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value="preview" className="mt-4">
