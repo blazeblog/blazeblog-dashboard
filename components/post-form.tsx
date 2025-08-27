@@ -190,13 +190,51 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
     }
   }
 
-  // Auto-generate slug from title
+  // Extract title from content and auto-generate slug
   useEffect(() => {
-    if (formData.title && (!formData.slug || mode === "add")) {
-      const newSlug = generateSlug(formData.title)
+    let extractedTitle = ''
+    let updatedContent = formData.content
+    
+    if (formData.content) {
+      // First try to get h1 tag and remove it from content
+      const h1Match = formData.content.match(/<h1[^>]*>(.*?)<\/h1>/i)
+      if (h1Match) {
+        extractedTitle = h1Match[1].replace(/<[^>]*>/g, '').trim()
+        // Remove the h1 tag from content
+        updatedContent = formData.content.replace(/<h1[^>]*>.*?<\/h1>\s*/i, '').trim()
+      } else {
+        // Get the very first paragraph as title and remove it from content
+        const firstParagraphMatch = formData.content.match(/<p[^>]*>(.*?)<\/p>/)
+        if (firstParagraphMatch) {
+          const firstParagraphText = firstParagraphMatch[1].replace(/<[^>]*>/g, '').trim()
+          // Use first paragraph if it looks like a title (not too long, not empty)
+          if (firstParagraphText.length > 0 && firstParagraphText.length <= 150) {
+            extractedTitle = firstParagraphText
+            // Remove the first paragraph from content
+            updatedContent = formData.content.replace(/<p[^>]*>.*?<\/p>\s*/i, '').trim()
+          }
+        }
+      }
+    }
+    
+    console.log('Content start:', formData.content.substring(0, 200))
+    console.log('Extracted title:', extractedTitle)
+    console.log('Updated content start:', updatedContent.substring(0, 200))
+    
+    if (extractedTitle && extractedTitle !== formData.title) {
+      setFormData(prev => ({ 
+        ...prev, 
+        title: extractedTitle,
+        content: updatedContent
+      }))
+    }
+    
+    // Auto-generate slug from title
+    if (extractedTitle && (!formData.slug || mode === "add")) {
+      const newSlug = generateSlug(extractedTitle)
       setFormData(prev => ({ ...prev, slug: newSlug }))
     }
-  }, [formData.title, mode])
+  }, [formData.content, formData.title, formData.slug, mode])
 
   // SEO suggestion handlers
   const handleTitleSuggestion = (title: string) => {
