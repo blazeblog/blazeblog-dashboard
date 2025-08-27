@@ -10,7 +10,6 @@ import {
   FolderOpen,
   Hash,
   Settings,
-  BarChart3,
   MessageSquare,
   Shield,
   ChevronRight,

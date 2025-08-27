@@ -29,6 +29,7 @@ import { RelatedPostsSelector } from "@/components/related-posts-selector"
 import { generateSlug, ensureTagsExist } from "@/lib/auto-create-utils"
 import { useToast } from "@/hooks/use-toast"
 import { TourProvider } from "@/components/custom-tour"
+import { cn } from "@/lib/utils"
 
 function AddPostPage() {
   usePageTitle("Create New Post - BlazeBlog Admin")
@@ -244,69 +245,66 @@ function AddPostPage() {
 
   return (
     <AdminLayout title="Create New Post">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          {/* <Button variant="ghost" asChild>
-            <a href="/admin/posts">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Posts
-            </a>
-          </Button> */}
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Create New Post</h2>
-            <p className="text-muted-foreground">Write and publish your content</p>
-          </div>
-          <Badge className={getStatusColor(formData.status)}>
-            {formData.status.charAt(0).toUpperCase() + formData.status.slice(1)}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          <ConnectivityIndicator isOnline={isOnline} />
-          <AutoSaveIndicator
-            lastSaved={lastSaved}
-            isSaving={isSaving}
-            autoSaveEnabled={autoSaveEnabled}
-          />
-          {/* Focus mode temporarily disabled */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowSEOSidebar(!showSEOSidebar)}
-            className={showSEOSidebar ? "bg-blue-50 text-blue-600 border-blue-200" : ""}
-            title="Toggle SEO Suggestions"
-            data-tour="seo-sidebar"
-          >
-            <Focus className="mr-2 h-4 w-4" />
-            SEO
-          </Button>
-          {/* <TourTriggerButton /> */}
-          {/* {availableDrafts.length > 0 && (
-            <Button 
+      {/* Clean, professional header */}
+      <div className="flex items-center justify-between pb-6 mb-8 border-b">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Create New Post</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-sm text-muted-foreground">Write and publish your content</p>
+            <Badge 
               variant="outline" 
-              size="sm" 
-              onClick={() => setShowDraftDialog(true)}
+              className="text-xs h-5 px-2 font-normal"
             >
-              Recover Drafts ({availableDrafts.length})
+              {formData.status.charAt(0).toUpperCase() + formData.status.slice(1)}
+            </Badge>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          {/* Status indicators - minimal */}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <ConnectivityIndicator isOnline={isOnline} />
+            <AutoSaveIndicator
+              lastSaved={lastSaved}
+              isSaving={isSaving}
+              autoSaveEnabled={autoSaveEnabled}
+            />
+          </div>
+          
+          {/* Clean button group */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSEOSidebar(!showSEOSidebar)}
+              className={cn("h-9 text-muted-foreground hover:text-foreground", 
+                showSEOSidebar && "bg-muted text-foreground")}
+            >
+              <Focus className="w-4 h-4 mr-2" />
+              SEO
             </Button>
-          )} */}
-          <Button variant="outline" size="sm" asChild>
-            <a href="/admin/posts">
-              <X className="mr-2 h-4 w-4" />
-              Cancel
-            </a>
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            size="sm" 
-            disabled={isLoading || !formData.title.trim() || (formData.status === 'scheduled' && (!formData.publishDate || new Date(formData.publishDate) <= new Date()))}
-            data-tour="save-button"
-          >
-            <Save className="mr-2 h-4 w-4" />
-            {isLoading ? 'Saving...' : 
-             formData.status === 'published' ? 'Publish Now' :
-             formData.status === 'scheduled' ? 'Schedule Post' :
-             'Save Draft'}
-          </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              asChild 
+              className="h-9 text-muted-foreground hover:text-foreground"
+            >
+              <a href="/admin/posts">Cancel</a>
+            </Button>
+            
+            <Button 
+              onClick={handleSubmit} 
+              size="sm" 
+              disabled={isLoading || !formData.title.trim() || (formData.status === 'scheduled' && (!formData.publishDate || new Date(formData.publishDate) <= new Date()))}
+              className="h-9 px-6 bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200 border-0"
+            >
+              {isLoading ? 'Saving...' : 
+               formData.status === 'published' ? 'Publish' :
+               formData.status === 'scheduled' ? 'Schedule' :
+               'Save Draft'}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -323,16 +321,16 @@ function AddPostPage() {
 
             {/* Editor Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3" data-tour="editor-tabs">
-                <TabsTrigger value="editor" className="flex items-center gap-2">
+              <TabsList className="grid w-full grid-cols-3 h-10" data-tour="editor-tabs">
+                <TabsTrigger value="editor" className="flex items-center gap-2 text-sm">
                   <FileText className="h-4 w-4" />
                   Editor
                 </TabsTrigger>
-                <TabsTrigger value="preview" className="flex items-center gap-2">
+                <TabsTrigger value="preview" className="flex items-center gap-2 text-sm">
                   <Eye className="h-4 w-4" />
                   Preview
                 </TabsTrigger>
-                <TabsTrigger value="settings" className="flex items-center gap-2" data-tour="settings-tab">
+                <TabsTrigger value="settings" className="flex items-center gap-2 text-sm" data-tour="settings-tab">
                   <Settings className="h-4 w-4" />
                   Metadata
                 </TabsTrigger>
@@ -578,35 +576,36 @@ function AddPostPage() {
                   {/* Post Statistics */}
                   <Card className="mt-6 max-w-4xl">
                     <CardHeader>
-                      <CardTitle>Post Statistics</CardTitle>
-                      <CardDescription>Overview of your post content</CardDescription>
+                      <CardTitle className="text-lg">Content Overview</CardTitle>
+                      <CardDescription>Quick stats about your post</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 rounded-lg border">
-                          <div className="font-bold text-2xl text-blue-600 dark:text-blue-400">
-                            {
-                              formData.content
-                                .replace(/<[^>]*>/g, "")
-                                .split(" ")
-                                .filter((word) => word.length > 0).length
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center p-4 rounded-lg border bg-card">
+                          <div className="text-2xl font-semibold">
+                            {formData.content
+                              .replace(/<[^>]*>/g, "")
+                              .split(" ")
+                              .filter((word) => word.length > 0).length
                             }
                           </div>
-                          <div className="text-muted-foreground font-medium">Words</div>
+                          <div className="text-sm text-muted-foreground">Words</div>
                         </div>
-                        <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 rounded-lg border">
-                          <div className="font-bold text-2xl text-green-600 dark:text-green-400">{formData.content.replace(/<[^>]*>/g, "").length}</div>
-                          <div className="text-muted-foreground font-medium">Characters</div>
-                        </div>
-                        <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20 rounded-lg border">
-                          <div className="font-bold text-2xl text-purple-600 dark:text-purple-400">
+                        <div className="text-center p-4 rounded-lg border bg-card">
+                          <div className="text-2xl font-semibold">
                             {Math.ceil(formData.content.replace(/<[^>]*>/g, "").split(" ").length / 200)}
                           </div>
-                          <div className="text-muted-foreground font-medium">Min read</div>
+                          <div className="text-sm text-muted-foreground">Min read</div>
                         </div>
-                        <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/20 dark:to-orange-900/20 rounded-lg border">
-                          <div className="font-bold text-2xl text-orange-600 dark:text-orange-400">{(formData.content.match(/<h[1-6][^>]*>/g) || []).length}</div>
-                          <div className="text-muted-foreground font-medium">Headings</div>
+                        <div className="text-center p-4 rounded-lg border bg-card">
+                          <div className="text-2xl font-semibold">
+                            {(formData.content.match(/<h[1-6][^>]*>/g) || []).length}
+                          </div>
+                          <div className="text-sm text-muted-foreground">Headings</div>
+                        </div>
+                        <div className="text-center p-4 rounded-lg border bg-card">
+                          <div className="text-2xl font-semibold">{formData.tags.length}</div>
+                          <div className="text-sm text-muted-foreground">Tags</div>
                         </div>
                       </div>
                     </CardContent>
@@ -619,12 +618,12 @@ function AddPostPage() {
 
         {/* SEO Suggestions Sidebar - Only show when enabled */}
         {showSEOSidebar && (
-          <div className="w-full lg:w-80 flex-shrink-0">
-            <div className="sticky top-4 max-h-screen overflow-y-auto">
+          <div className="w-full lg:w-72 flex-shrink-0">
+            <div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
               <SEOSuggestionsSidebar
                 title={formData.title}
                 content={formData.content}
-                excerpt={formData.metaDescription} // Use metaDescription for SEO analysis
+                excerpt={formData.metaDescription}
                 slug={formData.slug}
                 tags={formData.tags}
                 featuredImage={formData.featuredImage}
@@ -633,7 +632,7 @@ function AddPostPage() {
                 onTagSuggestions={handleTagSuggestions}
                 onExcerptSuggestion={handleExcerptSuggestion}
                 onMetaDescriptionSuggestion={handleMetaDescriptionSuggestion}
-                className="space-y-4"
+                className="pr-2"
               />
             </div>
           </div>

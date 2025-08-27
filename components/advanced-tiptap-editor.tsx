@@ -1046,26 +1046,9 @@ export function AdvancedTiptapEditor({
       {/* Editor */}
       <Card className="relative overflow-hidden">
         {/* Toolbar */}
-        <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-b">
-          <div className="flex items-center justify-between p-3">
-            <div className="flex items-center gap-1">
-              {/* <Badge variant="secondary" className="text-xs">
-                Rich Text Editor
-              </Badge> */}
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsToolbarVisible(!isToolbarVisible)}
-              className="text-xs"
-            >
-              {isToolbarVisible ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
-              {isToolbarVisible ? "Hide" : "Show"}
-            </Button>
-          </div>
-
-          {isToolbarVisible && (
-            <div className="px-3 pb-3">
+        {isToolbarVisible && (
+          <div className="bg-muted/30 border-b p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-1">
                 {/* Undo/Redo */}
                 <div className="flex items-center">
@@ -1329,10 +1312,35 @@ export function AdvancedTiptapEditor({
                 </Button>
 
               </div>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsToolbarVisible(!isToolbarVisible)}
+                className="text-xs h-8 px-2 ml-2"
+              >
+                <EyeOff className="h-3 w-3 mr-1" />
+                Hide
+              </Button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
+
+        {/* Show Toolbar Button */}
+        {!isToolbarVisible && (
+          <div className="border-b p-2 bg-muted/10">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsToolbarVisible(true)}
+              className="text-xs h-7 px-2"
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              Show Toolbar
+            </Button>
+          </div>
+        )}
 
         {/* Editor Content */}
         <div className="relative">
@@ -1348,7 +1356,7 @@ export function AdvancedTiptapEditor({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-3 border-t bg-slate-50/50 dark:bg-slate-900/50">
+        <div className="flex items-center justify-between p-3 border-t bg-muted/20">
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             {/* <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">⌘B</kbd>
             <span>Bold</span>
@@ -1369,16 +1377,6 @@ export function AdvancedTiptapEditor({
                 Uploading...
               </div>
             )}
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
-              isOnline 
-                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
-                : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-            }`}>
-              <div className={`w-2 h-2 rounded-full ${
-                isOnline ? 'bg-green-500' : 'bg-red-500'
-              }`} />
-              {isOnline ? 'Online' : 'Offline'}
-            </div>
             <Badge variant="outline" className="text-xs">
               <Save className="h-3 w-3 mr-1" />
               Auto-save {enableAutoSave ? 'enabled' : 'disabled'}

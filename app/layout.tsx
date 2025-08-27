@@ -42,6 +42,11 @@ export default function RootLayout({
             <Toaster />
           </ThemeProvider>
           <script
+            src="https://cdn.jsdelivr.net/npm/@polar-sh/checkout@0.1/dist/embed.global.js"
+            defer
+            data-auto-init
+          />
+          <script
             dangerouslySetInnerHTML={{
               __html: `
                 var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
