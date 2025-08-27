@@ -155,7 +155,7 @@ interface AdvancedTiptapEditorProps {
 export function AdvancedTiptapEditor({
   content = "",
   onChange,
-  placeholder = "Title...",
+  placeholder = "Start writing your content...",
   className = "",
   heroImage = "",
   onHeroImageChange,
@@ -322,7 +322,7 @@ export function AdvancedTiptapEditor({
         multicolor: true,
       }),
       Placeholder.configure({
-        placeholder: 'Title...',
+        placeholder: 'Start writing your content...',
       }),
       Dropcursor.configure({
         color: '#3b82f6', 

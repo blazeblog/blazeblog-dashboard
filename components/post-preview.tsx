@@ -17,7 +17,7 @@ export function PostPreview({ title, content, excerpt }: PostPreviewProps) {
       <CardContent>
         <div className="space-y-4">
           <div>
-            <h1 className="text-2xl font-bold">{title || "Untitled Post"}</h1>
+            <h1 className="text-2xl font-bold">{title || "Your title here..."}</h1>
             {excerpt && <p className="text-muted-foreground mt-2">{excerpt}</p>}
           </div>
           <div
