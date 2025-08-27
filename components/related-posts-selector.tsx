@@ -12,8 +12,8 @@ import { useToast } from "@/hooks/use-toast"
 
 interface RelatedPostsSelectorProps {
   currentPostId?: number
-  selectedPosts: Post[]
-  onChange: (posts: Post[]) => void
+  selectedPosts: { id: number; title: string; slug?: string | null }[]
+  onChange: (posts: { id: number; title: string; slug?: string | null }[]) => void
   maxSelection?: number
 }
 
@@ -81,7 +81,7 @@ export function RelatedPostsSelector({
       return // Already selected
     }
 
-    onChange([...selectedPosts, post])
+    onChange([...selectedPosts, { id: post.id, title: post.title, slug: post.slug }])
   }
 
   const handleRemovePost = (postId: number) => {
@@ -127,7 +127,7 @@ export function RelatedPostsSelector({
     if (post.excerpt) {
       return post.excerpt.length > 50 ? post.excerpt.substring(0, 50) + '...' : post.excerpt
     }
-    return post.title || "Untitled Post"
+    return "No description available"
   }
 
   return (
@@ -150,15 +150,15 @@ export function RelatedPostsSelector({
               {selectedPosts.map((post, index) => (
                 <div
                   key={post.id}
-                  className="flex items-center gap-2 p-2 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50 rounded-md group text-sm"
+                  className="flex items-center gap-2 p-2 bg-card border border-border rounded-md group text-sm hover:bg-accent/50"
                   draggable
                   onDragStart={(e) => handleDragStart(e, index)}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, index)}
                 >
-                  <GripVertical className="h-3 w-3 text-gray-400 cursor-move opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <GripVertical className="h-3 w-3 text-muted-foreground cursor-move opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 dark:text-white truncate">
+                    <div className="font-medium text-foreground truncate">
                       {post.title}
                     </div>
                   </div>
@@ -180,7 +180,7 @@ export function RelatedPostsSelector({
         )}
 
         {/* Search and Add */}
-        <div className="space-y-2">
+        <div className="relative">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
@@ -192,21 +192,18 @@ export function RelatedPostsSelector({
             />
           </div>
 
-          {/* Available Posts */}
-          <div className="space-y-1 max-h-48 overflow-y-auto border rounded-lg p-2 bg-gray-50/50 dark:bg-gray-800/50 min-h-[192px]">
-            {isLoading ? (
-              <div className="text-center text-gray-500 py-8">
-                Loading posts...
-              </div>
-            ) : availablePosts.length === 0 && searchQuery.trim() === "" ? (
-              <div className="text-center text-gray-500 py-8">
-                Please enter a search query to find posts.
-              </div>
-            ) : availablePosts.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                No posts found.
-              </div>
-            ) : (
+          {/* Search Results Dropdown - Only show when searching */}
+          {(searchQuery.trim() || isLoading) && (
+            <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+              {isLoading ? (
+                <div className="text-center text-muted-foreground py-4 text-sm">
+                  Loading posts...
+                </div>
+              ) : availablePosts.length === 0 ? (
+                <div className="text-center text-muted-foreground py-4 text-sm">
+                  No posts found.
+                </div>
+              ) : (
               availablePosts.map((post) => {
                 const isSelected = selectedPosts.find(p => p.id === post.id)
                 const isMaxReached = selectedPosts.length >= maxSelection
@@ -216,17 +213,17 @@ export function RelatedPostsSelector({
                     onClick={() => !isSelected && !isMaxReached && handleAddPost(post)}
                     className={`flex items-center gap-2 p-2 rounded-md transition-colors ${
                       isSelected
-                        ? "bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700"
+                        ? "bg-primary/10 border border-primary/20"
                         : isMaxReached
-                        ? "bg-gray-50 dark:bg-gray-800 border border-transparent opacity-50 cursor-not-allowed"
-                        : "hover:bg-white dark:hover:bg-gray-700/50 border border-transparent cursor-pointer hover:shadow-sm"
+                        ? "bg-muted border border-transparent opacity-50 cursor-not-allowed"
+                        : "hover:bg-accent border border-transparent cursor-pointer hover:shadow-sm"
                     }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      <div className="text-sm font-medium text-foreground truncate">
                         {post.title}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <div className="text-xs text-muted-foreground truncate">
                         {formatPostDescription(post)}
                       </div>
                     </div>
@@ -235,19 +232,20 @@ export function RelatedPostsSelector({
                         Selected
                       </Badge>
                     ) : !isMaxReached ? (
-                      <div className="text-xs text-gray-400 px-2 py-1">
+                      <div className="text-xs text-muted-foreground px-2 py-1">
                         Click to add
                       </div>
                     ) : (
-                      <div className="text-xs text-gray-400 px-2 py-1">
+                      <div className="text-xs text-muted-foreground px-2 py-1">
                         Max reached
                       </div>
                     )}
                   </div>
                 )
               })
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

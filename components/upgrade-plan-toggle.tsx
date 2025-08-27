@@ -13,7 +13,7 @@ interface UpgradePlanToggleProps {
 }
 
 export function UpgradePlanToggle({ 
-  checkoutId = "polar_cl_GTPxnJaASpf8oAsOEqLdk48KMvV2br5pgDwga33pVYx",
+checkoutId = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_ID,
   planName = "Premium Plan",
   planDescription = "Access advanced features, priority support, and more"
 }: UpgradePlanToggleProps) {
@@ -25,9 +25,8 @@ export function UpgradePlanToggle({
     if (typeof window !== "undefined" && checkoutId) {
       try {
         setIsLoading(true)
-        
-        // Use the checkout page route for better UX
-        router.push(`/admin/checkout?id=${checkoutId}`)
+        const url = `/admin/checkout?id=${checkoutId}`
+        window.location.href = url
       } catch (error) {
         console.error("Error initiating checkout:", error)
         toast({

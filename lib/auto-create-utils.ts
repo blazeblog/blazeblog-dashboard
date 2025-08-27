@@ -169,21 +169,6 @@ export async function ensureCategoryExists(
   }
 }
 
-export async function createTagsFromText(
-  text: string,
-  { api, toast }: AutoCreateOptions
-): Promise<Tag[]> {
-  // Split by comma and clean up
-  const tagNames = text
-    .split(",")
-    .map(tag => tag.trim())
-    .filter(tag => tag.length > 0 && tag.length <= 50) // Reasonable tag length
-    .slice(0, 10) // Max 10 tags
-
-  return ensureTagsExist(tagNames, { api, toast })
-}
-
-// Bulk create multiple tags
 export async function bulkCreateTags(
   tagNames: string[],
   { api, toast }: AutoCreateOptions

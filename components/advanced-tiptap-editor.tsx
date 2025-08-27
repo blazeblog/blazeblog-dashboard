@@ -104,7 +104,7 @@ const convertFormattedTextToHTML = (text: string): string => {
   return processedLines.join('\n')
 }
 
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import { useClientApi } from "@/lib/client-api"
 import { useToast } from "@/hooks/use-toast"
 import { getImageUrl } from "@/lib/image-utils"
@@ -188,6 +188,11 @@ export function AdvancedTiptapEditor({
   const editorImgRef = useRef<HTMLImageElement>(null)
   const api = useClientApi()
   const { toast } = useToast()
+
+  // Memoize expensive calculations for performance
+  const wordCount = useMemo(() => {
+    return content.replace(/<[^>]*>/g, "").split(/\s+/).filter(word => word.length > 0).length
+  }, [content])
 
   // Helper function to create a cropped image
   const getCroppedImg = useCallback((image: HTMLImageElement, crop: Crop): Promise<Blob> => {
@@ -1016,8 +1021,8 @@ export function AdvancedTiptapEditor({
                         setEditorImageToCrop("")
                       }}
                     >
-                      Cancel
-                    </Button>
+                        Cancel
+                      </Button>
                     <Button
                       size="sm"
                       onClick={applyEditorCropAndInsert}
@@ -1330,15 +1335,17 @@ export function AdvancedTiptapEditor({
         {/* Show Toolbar Button */}
         {!isToolbarVisible && (
           <div className="border-b p-2 bg-muted/10">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsToolbarVisible(true)}
-              className="text-xs h-7 px-2"
-            >
-              <Eye className="h-3 w-3 mr-1" />
-              Show Toolbar
-            </Button>
+            <div className="flex justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsToolbarVisible(true)}
+                className="text-xs h-7 px-2"
+              >
+                <Eye className="h-3 w-3 mr-1" />
+                Show Toolbar
+              </Button>
+            </div>
           </div>
         )}
 
@@ -1350,30 +1357,24 @@ export function AdvancedTiptapEditor({
           />
           
           {/* Word Count */}
-          <div className="absolute bottom-4 right-6 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs text-muted-foreground border">
-            {content.replace(/<[^>]*>/g, "").split(" ").filter(word => word.length > 0).length} words
+          <div className="absolute bottom-4 right-6 bg-background/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs text-muted-foreground border">
+            {wordCount} words
           </div>
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between p-3 border-t bg-muted/20">
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {/* <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">⌘B</kbd>
-            <span>Bold</span>
-            <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">⌘I</kbd>
-            <span>Italic</span>
-            <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">⌘K</kbd>
-            <span>Link</span> */}
-            <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">Tab</kbd>
+            <kbd className="px-2 py-1 bg-muted rounded text-xs border font-mono">Tab</kbd>
             <span>5 spaces</span>
-            <kbd className="px-2 py-1 bg-white dark:bg-slate-700 rounded text-xs border font-mono">Del</kbd>
+            <kbd className="px-2 py-1 bg-muted rounded text-xs border font-mono">Del</kbd>
             <span>Delete image</span>
             <span className="text-muted-foreground/70">• Drag & drop images • Click image to select</span>
           </div>
           <div className="flex items-center gap-2">
             {isUploading && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-muted text-muted-foreground">
+                <div className="w-2 h-2 bg-foreground/50 rounded-full animate-pulse" />
                 Uploading...
               </div>
             )}

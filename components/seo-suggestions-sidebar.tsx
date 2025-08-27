@@ -399,17 +399,17 @@ export function SEOSuggestionsSidebar({
   const wordCount = content.replace(/<[^>]*>/g, "").split(/\s+/).filter(word => word.length > 0).length
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn("space-y-1.5", className)}>
       {/* Overall SEO Score - Circular Design */}
       <Card className="border border-muted">
-        <CardContent className="pt-4 pb-4">
+        <CardContent className="pt-2 pb-2">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <h3 className="font-medium text-sm">SEO Score</h3>
               <p className="text-xs text-muted-foreground">Overall optimization</p>
               <Badge 
                 variant={overallScore >= 80 ? "default" : overallScore >= 60 ? "secondary" : "destructive"}
-                className="text-xs px-2 py-0.5"
+                className="text-xs px-1.5 py-0"
               >
                 {overallScore >= 80 ? "Excellent" : overallScore >= 60 ? "Good" : "Needs Work"}
               </Badge>
@@ -454,7 +454,7 @@ export function SEOSuggestionsSidebar({
 
       {/* AI Metadata Generation */}
       <Card className="border border-muted bg-accent/30">
-        <CardContent className="pt-3 pb-3 space-y-2">
+        <CardContent className="pt-1.5 pb-1.5 space-y-1">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
             <h3 className="font-medium text-sm">AI Assistant</h3>
@@ -465,7 +465,7 @@ export function SEOSuggestionsSidebar({
             disabled={isGenerating || (rateLimitInfo && rateLimitInfo.availableRequests <= 0) || !content.trim()}
             variant="default"
             size="sm"
-            className="w-full h-8"
+            className="w-full h-7"
           >
             {isGenerating ? (
               <>
@@ -478,22 +478,23 @@ export function SEOSuggestionsSidebar({
           </Button>
           
           {/* Rate limit info */}
-          {rateLimitInfo && (
-            <p className="text-xs text-center text-muted-foreground">
-              {rateLimitInfo.availableRequests > 0 
+          <p className="text-xs text-center text-muted-foreground h-4 flex items-center justify-center">
+            {rateLimitInfo ? (
+              rateLimitInfo.availableRequests > 0 
                 ? `${rateLimitInfo.availableRequests} uses left today`
                 : "Daily limit reached"
-              }
-            </p>
-          )}
+            ) : (
+              <div className="w-20 h-3 bg-muted/30 rounded animate-pulse" />
+            )}
+          </p>
         </CardContent>
       </Card>
 
       {/* Content Stats */}
       <Card className="border border-muted">
-        <CardContent className="pt-3 pb-3">
-          <h3 className="font-medium text-sm mb-2">Content Stats</h3>
-          <div className="grid grid-cols-2 gap-3 text-xs">
+        <CardContent className="pt-1.5 pb-1.5">
+          <h3 className="font-medium text-sm mb-1">Content Stats</h3>
+          <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="text-center">
               <div className={cn("font-medium", wordCount >= 300 ? "text-green-600" : "text-yellow-600")}>
                 {wordCount}
@@ -510,8 +511,8 @@ export function SEOSuggestionsSidebar({
 
       {/* Headings Structure */}
       <Card className="border border-muted">
-        <CardContent className="pt-3 pb-3">
-          <div className="space-y-2">
+        <CardContent className="pt-1.5 pb-1.5">
+          <div className="space-y-1">
             <h3 className="font-medium text-sm">Heading Structure</h3>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
@@ -578,8 +579,8 @@ export function SEOSuggestionsSidebar({
       {/* SEO Suggestions - Only show most important ones */}
       {seoAnalysis.filter(item => item.status !== "good").slice(0, 3).map((item, index) => (
         <Card key={index} className="border border-muted">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-start gap-3">
+          <CardContent className="pt-1.5 pb-1.5">
+            <div className="flex items-start gap-2">
               <div className="flex-shrink-0 mt-0.5">
                 {item.status === "warning" && <AlertCircle className="h-4 w-4 text-yellow-500" />}
                 {item.status === "error" && <XCircle className="h-4 w-4 text-red-500" />}

@@ -203,12 +203,12 @@ export function AdminSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="space-y-1">
         {navigation.map((section) => (
-          <SidebarGroup key={section.title}>
-            <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+          <SidebarGroup key={section.title} className="py-1">
+            {section.title && <SidebarGroupLabel className="text-xs font-medium text-muted-foreground/70 px-2 mb-1">{section.title}</SidebarGroupLabel>}
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="space-y-0.5">
                 {section.items.map((item) => {
                   const isActive = pathname === item.url || pathname.startsWith(item.url + "/")
 
