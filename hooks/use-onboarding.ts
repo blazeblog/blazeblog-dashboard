@@ -8,6 +8,7 @@ interface OnboardingData {
   companyName: string
   blogUrl: string
   themeId: string
+  timezone: string
 }
 
 interface OnboardingStatus {
@@ -54,7 +55,8 @@ export function useOnboarding(): OnboardingStatus {
       await api.patch('/customer/complete', {
         companyName: data.companyName,
         blogUrl: data.blogUrl,
-        themeId: data.themeId
+        themeId: data.themeId,
+        timezone: data.timezone
       })
       
       // Mark onboarding as completed in localStorage (for immediate UI update)
