@@ -79,7 +79,7 @@ export function ThemesPage() {
   const selectTheme = async (themeId: number, palette?: string) => {
     setApplying(themeId)
     try {
-      const selectedPalette = palette || themePalettes[themeId] || ''
+      const selectedPalette = palette || themePalettes[themeId] || 'light'
       await api.patch('/customer/theme', {
         themeId,
         colorPalette: selectedPalette
@@ -90,7 +90,7 @@ export function ThemesPage() {
       
       toast({
         title: "Success!",
-        description: "Theme has been applied successfully.",
+        description: `Theme "${themes.find(t => t.id === themeId)?.name}" with "${selectedPalette}" palette has been applied successfully.`,
         variant: "default"
       })
     } catch (error) {
@@ -113,12 +113,41 @@ export function ThemesPage() {
   }
 
   const colorPaletteOptions = [
-    { value: 'light', label: 'Light', description: 'Clean and bright appearance' },
-    { value: 'dark', label: 'Dark', description: 'Easy on the eyes' },
-    { value: 'auto', label: 'Auto', description: 'Follows system preference' },
-    { value: 'blue', label: 'Blue', description: 'Professional blue theme' },
-    { value: 'green', label: 'Green', description: 'Nature-inspired theme' },
-    { value: 'purple', label: 'Purple', description: 'Creative purple theme' },
+    { value: 'light', label: 'light', description: 'Clean and bright appearance', colors: ['#3b82f6', '#ec4899', '#10b981', '#374151'] },
+    { value: 'dark', label: 'dark', description: 'Easy on the eyes', colors: ['#3b82f6', '#ec4899', '#10b981', '#ffffff'] },
+    { value: 'cupcake', label: 'cupcake', description: 'Sweet and colorful', colors: ['#10b981', '#ec4899', '#f59e0b', '#374151'] },
+    { value: 'bumblebee', label: 'bumblebee', description: 'Bright and energetic', colors: ['#f59e0b', '#f97316', '#000000', '#6b7280'] },
+    { value: 'emerald', label: 'emerald', description: 'Nature-inspired green', colors: ['#10b981', '#3b82f6', '#f97316', '#374151'] },
+    { value: 'corporate', label: 'corporate', description: 'Professional business theme', colors: ['#0ea5e9', '#6b7280', '#10b981', '#000000'] },
+    { value: 'synthwave', label: 'synthwave', description: 'Retro futuristic vibes', colors: ['#ec4899', '#0ea5e9', '#f59e0b', '#3b82f6'] },
+    { value: 'retro', label: 'retro', description: 'Vintage inspired design', colors: ['#dc2626', '#10b981', '#f59e0b', '#6b7280'] },
+    { value: 'cyberpunk', label: 'cyberpunk', description: 'High-tech dystopian feel', colors: ['#ec4899', '#0ea5e9', '#ec4899', '#f59e0b'] },
+    { value: 'valentine', label: 'valentine', description: 'Romantic pink theme', colors: ['#ec4899', '#a855f7', '#0ea5e9', '#a855f7'] },
+    { value: 'halloween', label: 'halloween', description: 'Spooky orange and black', colors: ['#f97316', '#a855f7', '#22c55e', '#ffffff'] },
+    { value: 'garden', label: 'garden', description: 'Fresh garden colors', colors: ['#ec4899', '#6b7280', '#22c55e', '#ffffff'] },
+    { value: 'forest', label: 'forest', description: 'Deep forest greens', colors: ['#22c55e', '#22c55e', '#22c55e', '#ffffff'] },
+    { value: 'aqua', label: 'aqua', description: 'Ocean-inspired blues', colors: ['#0ea5e9', '#6b7280', '#000000', '#3b82f6'] },
+    { value: 'lofi', label: 'lofi', description: 'Muted and relaxed', colors: ['#000000', '#6b7280', '#9ca3af', '#d1d5db'] },
+    { value: 'pastel', label: 'pastel', description: 'Soft pastel colors', colors: ['#a855f7', '#ec4899', '#10b981', '#6b7280'] },
+    { value: 'fantasy', label: 'fantasy', description: 'Magical fantasy theme', colors: ['#a855f7', '#0ea5e9', '#f59e0b', '#000000'] },
+    { value: 'wireframe', label: 'wireframe', description: 'Minimalist wireframe style', colors: ['#6b7280', '#9ca3af', '#d1d5db', '#e5e7eb'] },
+    { value: 'black', label: 'black', description: 'Pure black theme', colors: ['#ffffff', '#9ca3af', '#d1d5db', '#e5e7eb'] },
+    { value: 'luxury', label: 'luxury', description: 'Premium luxury feel', colors: ['#ffffff', '#3b82f6', '#a855f7', '#f59e0b'] },
+    { value: 'dracula', label: 'dracula', description: 'Dark vampire theme', colors: ['#ec4899', '#a855f7', '#f59e0b', '#ffffff'] },
+    { value: 'cmyk', label: 'cmyk', description: 'Print-inspired colors', colors: ['#0ea5e9', '#ec4899', '#f59e0b', '#000000'] },
+    { value: 'autumn', label: 'autumn', description: 'Warm autumn colors', colors: ['#dc2626', '#dc2626', '#f59e0b', '#6b7280'] },
+    { value: 'business', label: 'business', description: 'Professional business', colors: ['#3b82f6', '#6b7280', '#f97316', '#ffffff'] },
+    { value: 'acid', label: 'acid', description: 'Bright neon colors', colors: ['#ec4899', '#f59e0b', '#84cc16', '#3b82f6'] },
+    { value: 'lemonade', label: 'lemonade', description: 'Fresh lemon yellow', colors: ['#84cc16', '#000000', '#f59e0b', '#374151'] },
+    { value: 'night', label: 'night', description: 'Deep night colors', colors: ['#3b82f6', '#6b7280', '#ec4899', '#ffffff'] },
+    { value: 'coffee', label: 'coffee', description: 'Rich coffee browns', colors: ['#f59e0b', '#6b7280', '#0ea5e9', '#ffffff'] },
+    { value: 'winter', label: 'winter', description: 'Cool winter palette', colors: ['#3b82f6', '#6b7280', '#ec4899', '#3b82f6'] },
+    { value: 'dim', label: 'dim', description: 'Dimmed color scheme', colors: ['#10b981', '#f97316', '#a855f7', '#ffffff'] },
+    { value: 'nord', label: 'nord', description: 'Arctic nord palette', colors: ['#3b82f6', '#6b7280', '#9ca3af', '#d1d5db'] },
+    { value: 'sunset', label: 'sunset', description: 'Warm sunset colors', colors: ['#f97316', '#ec4899', '#a855f7', '#ffffff'] },
+    { value: 'caramellatte', label: 'caramellatte', description: 'Creamy caramel tones', colors: ['#000000', '#6b7280', '#f59e0b', '#dc2626'] },
+    { value: 'abyss', label: 'abyss', description: 'Deep abyss theme', colors: ['#84cc16', '#a855f7', '#ffffff', '#0ea5e9'] },
+    { value: 'silk', label: 'silk', description: 'Smooth silk texture', colors: ['#f59e0b', '#f97316', '#0ea5e9', '#ffffff'] }
   ]
 
   const openPreview = (theme: Theme) => {
@@ -239,9 +268,20 @@ export function ThemesPage() {
                       <SelectContent>
                         {colorPaletteOptions.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{option.label}</span>
-                              <span className="text-xs text-muted-foreground">{option.description}</span>
+                            <div className="flex items-center gap-3">
+                              <div className="flex gap-1">
+                                {option.colors.map((color, index) => (
+                                  <div 
+                                    key={index}
+                                    className="w-3 h-3 rounded-full border border-gray-300"
+                                    style={{ backgroundColor: color }}
+                                  />
+                                ))}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-medium capitalize">{option.label}</span>
+                                <span className="text-xs text-muted-foreground">{option.description}</span>
+                              </div>
                             </div>
                           </SelectItem>
                         ))}
@@ -252,7 +292,7 @@ export function ThemesPage() {
                   <div className="flex gap-2">
                     <Button
                       className="flex-1"
-                      onClick={() => selectTheme(theme.id)}
+                      onClick={() => selectTheme(theme.id, themePalettes[theme.id])}
                       disabled={applying === theme.id}
                       variant={selectedThemeId === theme.id ? "secondary" : "default"}
                     >
@@ -354,9 +394,20 @@ export function ThemesPage() {
                     <SelectContent>
                       {colorPaletteOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{option.label}</span>
-                            <span className="text-xs text-muted-foreground">{option.description}</span>
+                          <div className="flex items-center gap-3">
+                            <div className="flex gap-1">
+                              {option.colors.map((color, index) => (
+                                <div 
+                                  key={index}
+                                  className="w-3 h-3 rounded-full border border-gray-300"
+                                  style={{ backgroundColor: color }}
+                                />
+                              ))}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium capitalize">{option.label}</span>
+                              <span className="text-xs text-muted-foreground">{option.description}</span>
+                            </div>
                           </div>
                         </SelectItem>
                       ))}
@@ -366,7 +417,7 @@ export function ThemesPage() {
                 
                 <Button
                   onClick={() => {
-                    selectTheme(previewTheme.id)
+                    selectTheme(previewTheme.id, themePalettes[previewTheme.id])
                     closePreview()
                   }}
                   disabled={applying === previewTheme.id}

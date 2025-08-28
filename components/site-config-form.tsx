@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Save, Settings, Flag, Upload, X, BarChart, DollarSign } from "lucide-react"
+import { Save, Settings, Flag, Upload, X, BarChart, DollarSign, Plus, Trash2, Link } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useClientApi } from "@/lib/client-api"
 import { getImageUrl } from "@/lib/image-utils"
@@ -31,6 +31,16 @@ interface SiteConfig {
   seoTitle: string
   aboutUsContent: string
   homeMetaDescription: string
+}
+
+interface NavigationLink {
+  label: string
+  url: string
+}
+
+interface NavigationConfig {
+  headerNavigationLinks: NavigationLink[]
+  footerNavigationLinks: NavigationLink[]
 }
 
 interface AnalyticsProvider {
@@ -73,12 +83,46 @@ interface Ads {
 interface ConfigData {
   featureFlags: FeatureFlags
   siteConfig: SiteConfig
+  navigation?: NavigationConfig
   analytics: Analytics
   ads: Ads
   siteAds?: Ads
+  headerNavigationLinks?: NavigationLink[]
+  footerNavigationLinks?: NavigationLink[]
 }
 
 export function SiteConfigForm() {
+  const [urlErrors, setUrlErrors] = useState<{[key: string]: string}>({})
+
+  const isValidUrl = (url: string): boolean => {
+    if (!url.trim()) return false
+    try {
+      const urlObj = new URL(url)
+      // Only allow HTTPS URLs
+      return urlObj.protocol === 'https:'
+    } catch {
+      return false
+    }
+  }
+
+  const validateUrl = (url: string, type: 'header' | 'footer', index: number) => {
+    const key = `${type}-${index}`
+    if (url.trim() && !isValidUrl(url)) {
+      setUrlErrors(prev => ({
+        ...prev,
+        [key]: 'Please enter a valid HTTPS URL (e.g., https://example.com)'
+      }))
+      return false
+    } else {
+      setUrlErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[key]
+        return newErrors
+      })
+      return true
+    }
+  }
+
   const [config, setConfig] = useState<ConfigData>({
     featureFlags: {
       enableTagsPage: false,
@@ -97,6 +141,8 @@ export function SiteConfigForm() {
       aboutUsContent: '',
       homeMetaDescription: ''
     },
+    headerNavigationLinks: [],
+    footerNavigationLinks: [],
     analytics: {
       googleAnalytics: { enabled: false, trackingId: '', script: '' },
       microsoftClarity: { enabled: false, trackingId: '', script: '' },
@@ -179,6 +225,8 @@ export function SiteConfigForm() {
       setConfig({
         featureFlags: { ...defaultFeatureFlags, ...data.featureFlags },
         siteConfig: { ...defaultSiteConfig, ...data.siteConfig },
+        headerNavigationLinks: data.headerNavigationLinks || [],
+        footerNavigationLinks: data.footerNavigationLinks || [],
         analytics: { ...defaultAnalytics, ...data.analytics },
         ads: { ...defaultAds, ...(data.ads || data.siteAds) }
       })
@@ -196,9 +244,44 @@ export function SiteConfigForm() {
   }
 
   const saveConfig = async () => {
+    // Validate all URLs before saving
+    let hasErrors = false
+    
+    // Validate header navigation links
+    config.headerNavigationLinks?.forEach((link, index) => {
+      if (link.url.trim() && !isValidUrl(link.url)) {
+        validateUrl(link.url, 'header', index)
+        hasErrors = true
+      }
+    })
+    
+    // Validate footer navigation links
+    config.footerNavigationLinks?.forEach((link, index) => {
+      if (link.url.trim() && !isValidUrl(link.url)) {
+        validateUrl(link.url, 'footer', index)
+        hasErrors = true
+      }
+    })
+    
+    if (hasErrors) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the invalid URLs before saving.",
+        variant: "destructive"
+      })
+      return
+    }
+    
     setSaving(true)
     try {
-      await api.patch('/customer/config', config)
+      // Prepare the payload with navigation links separate from siteConfig
+      const payload = {
+        ...config,
+        headerNavigationLinks: config.headerNavigationLinks,
+        footerNavigationLinks: config.footerNavigationLinks
+      }
+      
+      await api.patch('/customer/config', payload)
       toast({
         title: "Success!",
         description: "Site configuration has been updated successfully.",
@@ -269,6 +352,58 @@ export function SiteConfigForm() {
         ...prev.ads,
         enabled
       }
+    }))
+  }
+
+  const addNavigationLink = (type: 'header' | 'footer') => {
+    const fieldName = type === 'header' ? 'headerNavigationLinks' : 'footerNavigationLinks'
+    const maxLimit = type === 'header' ? 5 : 10
+    
+    if (config[fieldName]?.length >= maxLimit) {
+      toast({
+        title: "Limit Reached",
+        description: `You can only add up to ${maxLimit} ${type} navigation links.`,
+        variant: "destructive"
+      })
+      return
+    }
+    
+    setConfig(prev => ({
+      ...prev,
+      [fieldName]: [...(prev[fieldName] || []), { label: '', url: '' }]
+    }))
+  }
+
+  const removeNavigationLink = (type: 'header' | 'footer', index: number) => {
+    const fieldName = type === 'header' ? 'headerNavigationLinks' : 'footerNavigationLinks'
+    
+    // Clear URL error for this item
+    const errorKey = `${type}-${index}`
+    setUrlErrors(prev => {
+      const newErrors = { ...prev }
+      delete newErrors[errorKey]
+      return newErrors
+    })
+    
+    setConfig(prev => ({
+      ...prev,
+      [fieldName]: prev[fieldName]?.filter((_, i) => i !== index) || []
+    }))
+  }
+
+  const updateNavigationLink = (type: 'header' | 'footer', index: number, field: 'label' | 'url', value: string) => {
+    const fieldName = type === 'header' ? 'headerNavigationLinks' : 'footerNavigationLinks'
+    
+    // Validate URL if it's a URL field
+    if (field === 'url') {
+      validateUrl(value, type, index)
+    }
+    
+    setConfig(prev => ({
+      ...prev,
+      [fieldName]: prev[fieldName]?.map((link, i) => 
+        i === index ? { ...link, [field]: value } : link
+      ) || []
     }))
   }
 
@@ -450,6 +585,135 @@ export function SiteConfigForm() {
                   rows={4}
                 />
               </div>
+              
+              <Separator />
+              
+              {/* Header Navigation Links */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base font-semibold">Header Navigation Links</Label>
+                    <p className="text-sm text-muted-foreground">Add navigation links for your site header (max 5)</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addNavigationLink('header')}
+                    disabled={config.headerNavigationLinks?.length >= 5}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Link
+                  </Button>
+                </div>
+                
+                {config.headerNavigationLinks?.map((link, index) => {
+                  const errorKey = `header-${index}`
+                  const hasError = urlErrors[errorKey]
+                  return (
+                    <div key={index} className="space-y-2">
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1 space-y-2">
+                          <Label htmlFor={`header-label-${index}`}>Label</Label>
+                          <Input
+                            id={`header-label-${index}`}
+                            value={link.label}
+                            onChange={(e) => updateNavigationLink('header', index, 'label', e.target.value)}
+                            placeholder="Link text"
+                          />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <Label htmlFor={`header-url-${index}`}>URL</Label>
+                          <Input
+                            id={`header-url-${index}`}
+                            value={link.url}
+                            onChange={(e) => updateNavigationLink('header', index, 'url', e.target.value)}
+                            placeholder="https://example.com"
+                            className={hasError ? "border-red-500 focus:border-red-500" : ""}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeNavigationLink('header', index)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {hasError && (
+                        <p className="text-sm text-red-500 mt-1">{hasError}</p>
+                      )}
+                    </div>
+                  )
+                }) || []}
+              </div>
+              
+              <Separator />
+              
+              {/* Footer Navigation Links */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base font-semibold">Footer Navigation Links</Label>
+                    <p className="text-sm text-muted-foreground">Add navigation links for your site footer (max 10)</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addNavigationLink('footer')}
+                    disabled={config.footerNavigationLinks?.length >= 10}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Link
+                  </Button>
+                </div>
+                
+                {config.footerNavigationLinks?.map((link, index) => {
+                  const errorKey = `footer-${index}`
+                  const hasError = urlErrors[errorKey]
+                  return (
+                    <div key={index} className="space-y-2">
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1 space-y-2">
+                          <Label htmlFor={`footer-label-${index}`}>Label</Label>
+                          <Input
+                            id={`footer-label-${index}`}
+                            value={link.label}
+                            onChange={(e) => updateNavigationLink('footer', index, 'label', e.target.value)}
+                            placeholder="Link text"
+                          />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <Label htmlFor={`footer-url-${index}`}>URL</Label>
+                          <Input
+                            id={`footer-url-${index}`}
+                            value={link.url}
+                            onChange={(e) => updateNavigationLink('footer', index, 'url', e.target.value)}
+                            placeholder="https://example.com"
+                            className={hasError ? "border-red-500 focus:border-red-500" : ""}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeNavigationLink('footer', index)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {hasError && (
+                        <p className="text-sm text-red-500 mt-1">{hasError}</p>
+                      )}
+                    </div>
+                  )
+                }) || []}
+              </div>
+              
               <Button onClick={saveConfig} disabled={saving}>
                 <Save className="mr-2 h-4 w-4" />
                 {saving ? 'Saving...' : 'Save Configuration'}

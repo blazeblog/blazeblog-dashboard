@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Building2,
   Globe,
@@ -17,16 +18,60 @@ import {
   ArrowLeft,
   Sparkles,
   Rocket,
-  Heart,
-  X,
-  Star,
   Zap,
   Crown,
-  Wand2,
-  Sparkle
+  Sparkle,
+  Clock,
+  AlertCircle
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useOnboarding, useSlugCheck } from "@/hooks/use-onboarding"
+
+// Common timezones list with GMT offsets and short forms
+const timezones = [
+  { value: "EST_NY", fullValue: "America/New_York", label: "Eastern Time (EST) - New York (GMT-5/-4)", shortForm: "EST" },
+  { value: "CST_CH", fullValue: "America/Chicago", label: "Central Time (CST) - Chicago (GMT-6/-5)", shortForm: "CST" },
+  { value: "MST_DV", fullValue: "America/Denver", label: "Mountain Time (MST) - Denver (GMT-7/-6)", shortForm: "MST" },
+  { value: "PST_LA", fullValue: "America/Los_Angeles", label: "Pacific Time (PST) - Los Angeles (GMT-8/-7)", shortForm: "PST" },
+  { value: "AKST", fullValue: "America/Anchorage", label: "Alaska Time (AKST) - Anchorage (GMT-9/-8)", shortForm: "AKST" },
+  { value: "HST", fullValue: "Pacific/Honolulu", label: "Hawaii Time (HST) - Honolulu (GMT-10)", shortForm: "HST" },
+  { value: "MST_PH", fullValue: "America/Phoenix", label: "Arizona Time (MST) - Phoenix (GMT-7)", shortForm: "MST" },
+  { value: "EST_TO", fullValue: "America/Toronto", label: "Eastern Time (EST) - Toronto (GMT-5/-4)", shortForm: "EST" },
+  { value: "PST_VA", fullValue: "America/Vancouver", label: "Pacific Time (PST) - Vancouver (GMT-8/-7)", shortForm: "PST" },
+  { value: "EST_MO", fullValue: "America/Montreal", label: "Eastern Time (EST) - Montreal (GMT-5/-4)", shortForm: "EST" },
+  { value: "CST_MX", fullValue: "America/Mexico_City", label: "Central Time (CST) - Mexico City (GMT-6/-5)", shortForm: "CST" },
+  { value: "BRT", fullValue: "America/Sao_Paulo", label: "Brasília Time (BRT) - São Paulo (GMT-3)", shortForm: "BRT" },
+  { value: "ART", fullValue: "America/Buenos_Aires", label: "Argentina Time (ART) - Buenos Aires (GMT-3)", shortForm: "ART" },
+  { value: "GMT", fullValue: "Europe/London", label: "Greenwich Time (GMT) - London (GMT+0/+1)", shortForm: "GMT" },
+  { value: "CET_PA", fullValue: "Europe/Paris", label: "Central European Time (CET) - Paris (GMT+1/+2)", shortForm: "CET" },
+  { value: "CET_BE", fullValue: "Europe/Berlin", label: "Central European Time (CET) - Berlin (GMT+1/+2)", shortForm: "CET" },
+  { value: "CET_RO", fullValue: "Europe/Rome", label: "Central European Time (CET) - Rome (GMT+1/+2)", shortForm: "CET" },
+  { value: "CET_MA", fullValue: "Europe/Madrid", label: "Central European Time (CET) - Madrid (GMT+1/+2)", shortForm: "CET" },
+  { value: "CET_AM", fullValue: "Europe/Amsterdam", label: "Central European Time (CET) - Amsterdam (GMT+1/+2)", shortForm: "CET" },
+  { value: "CET_ST", fullValue: "Europe/Stockholm", label: "Central European Time (CET) - Stockholm (GMT+1/+2)", shortForm: "CET" },
+  { value: "MSK", fullValue: "Europe/Moscow", label: "Moscow Time (MSK) - Moscow (GMT+3)", shortForm: "MSK" },
+  { value: "TRT", fullValue: "Europe/Istanbul", label: "Turkey Time (TRT) - Istanbul (GMT+3)", shortForm: "TRT" },
+  { value: "EET", fullValue: "Africa/Cairo", label: "Eastern European Time (EET) - Cairo (GMT+2)", shortForm: "EET" },
+  { value: "SAST", fullValue: "Africa/Johannesburg", label: "South Africa Time (SAST) - Johannesburg (GMT+2)", shortForm: "SAST" },
+  { value: "WAT", fullValue: "Africa/Lagos", label: "West Africa Time (WAT) - Lagos (GMT+1)", shortForm: "WAT" },
+  { value: "GST", fullValue: "Asia/Dubai", label: "Gulf Standard Time (GST) - Dubai (GMT+4)", shortForm: "GST" },
+  { value: "IST", fullValue: "Asia/Kolkata", label: "India Standard Time (IST) - Mumbai/Delhi (GMT+5:30)", shortForm: "IST" },
+  { value: "BDT", fullValue: "Asia/Dhaka", label: "Bangladesh Time (BDT) - Dhaka (GMT+6)", shortForm: "BDT" },
+  { value: "WIB", fullValue: "Asia/Jakarta", label: "Western Indonesian Time (WIB) - Jakarta (GMT+7)", shortForm: "WIB" },
+  { value: "ICT", fullValue: "Asia/Bangkok", label: "Indochina Time (ICT) - Bangkok (GMT+7)", shortForm: "ICT" },
+  { value: "SGT", fullValue: "Asia/Singapore", label: "Singapore Time (SGT) - Singapore (GMT+8)", shortForm: "SGT" },
+  { value: "HKT", fullValue: "Asia/Hong_Kong", label: "Hong Kong Time (HKT) - Hong Kong (GMT+8)", shortForm: "HKT" },
+  { value: "CST_CN", fullValue: "Asia/Shanghai", label: "China Standard Time (CST) - Shanghai (GMT+8)", shortForm: "CST" },
+  { value: "JST", fullValue: "Asia/Tokyo", label: "Japan Standard Time (JST) - Tokyo (GMT+9)", shortForm: "JST" },
+  { value: "KST", fullValue: "Asia/Seoul", label: "Korea Standard Time (KST) - Seoul (GMT+9)", shortForm: "KST" },
+  { value: "AEST_SY", fullValue: "Australia/Sydney", label: "Australian Eastern Time (AEST) - Sydney (GMT+10/+11)", shortForm: "AEST" },
+  { value: "AEST_ME", fullValue: "Australia/Melbourne", label: "Australian Eastern Time (AEST) - Melbourne (GMT+10/+11)", shortForm: "AEST" },
+  { value: "AEST_BR", fullValue: "Australia/Brisbane", label: "Australian Eastern Time (AEST) - Brisbane (GMT+10)", shortForm: "AEST" },
+  { value: "AWST", fullValue: "Australia/Perth", label: "Australian Western Time (AWST) - Perth (GMT+8)", shortForm: "AWST" },
+  { value: "NZST", fullValue: "Pacific/Auckland", label: "New Zealand Time (NZST) - Auckland (GMT+12/+13)", shortForm: "NZST" },
+  { value: "FJT", fullValue: "Pacific/Fiji", label: "Fiji Time (FJT) - Suva (GMT+12/+13)", shortForm: "FJT" },
+  { value: "UTC", fullValue: "UTC", label: "Coordinated Universal Time (UTC) (GMT+0)", shortForm: "UTC" }
+]
 
 // Mock themes data - will be replaced with API
 const mockThemes = [
@@ -85,7 +130,7 @@ interface OnboardingData {
   website: string
   blogSlug: string
   selectedTheme: string
-  description: string
+  timezone: string
 }
 
 interface OnboardingOverlayProps {
@@ -107,7 +152,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
     website: "",
     blogSlug: "",
     selectedTheme: "",
-    description: ""
+    timezone: "EST_NY" // Default to Eastern Time New York
   })
 
   // Auto-close overlay when onboarding is completed
@@ -121,13 +166,13 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
     {
       id: "company",
       title: "Company Information",
-      description: "Tell us about your company and what makes it unique. This helps us personalize your blog experience.",
+      description: "Tell us about your company and set up your timezone. This helps us personalize your blog experience and schedule posts.",
       icon: Building2,
-      fields: ["companyName", "website", "description"],
+      fields: ["companyName", "website", "timezone"],
       tips: [
         "Your company name will appear in your blog header",
         "Website is optional but helps with branding",
-        "Description helps visitors understand your business"
+        "Timezone helps in scheduling posts at the right time"
       ]
     },
     {
@@ -209,11 +254,16 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
     setIsLoading(true)
     
     try {
+      // Get the short form of the selected timezone
+      const selectedTimezone = timezones.find(tz => tz.value === onboardingData.timezone)
+      const timezoneToSend = selectedTimezone?.shortForm || onboardingData.timezone
+      
       // Call the complete-onboarding API with proper data structure
       await hasCompletedOnboarding({
         companyName: onboardingData.companyName,
         blogUrl: `${onboardingData.blogSlug}.blazeblog.xyz`,
-        themeId: onboardingData.selectedTheme
+        themeId: onboardingData.selectedTheme,
+        timezone: timezoneToSend // Send short form timezone (e.g., "EST", "IST")
       })
       
       toast({
@@ -252,25 +302,6 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
     }
   }
 
-  const handleClose = () => {
-    if (isRequired) {
-      // If onboarding is required, just hide temporarily and show a helpful message
-      setIsHidden(true)
-      toast({
-        title: "Setup Required",
-        description: "Please complete the setup to get started with BlazeBlog. We'll be right here when you're ready!",
-        variant: "default"
-      })
-      
-      // Show again after 5 seconds
-      setTimeout(() => {
-        setIsHidden(false)
-      }, 5000)
-    } else {
-      // If not required, close permanently
-      onClose()
-    }
-  }
 
   const currentStepData = steps[currentStep]
   const isLastStep = currentStep === steps.length - 1
@@ -313,53 +344,12 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
-        {/* Epic Animated Background - Darker */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-slate-900 to-black" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/30 via-blue-900/20 to-pink-900/30" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.08),transparent_60%)]" />
-        
-        {/* Animated Gradient Orbs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animation: 'float 6s ease-in-out infinite' }} />
-          <div className="absolute -top-20 right-1/4 w-80 h-80 bg-blue-500/15 rounded-full blur-3xl" style={{ animation: 'float 8s ease-in-out infinite reverse' }} />
-          <div className="absolute bottom-1/4 -right-20 w-72 h-72 bg-pink-500/15 rounded-full blur-3xl" style={{ animation: 'float 10s ease-in-out infinite' }} />
-          <div className="absolute -bottom-10 left-1/3 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl" style={{ animation: 'float 12s ease-in-out infinite reverse' }} />
-        </div>
-        
-        {/* Floating Sparkles */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 bg-white/30 rounded-full"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animation: `sparkle ${3 + Math.random() * 4}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 5}s`
-              }}
-            />
-          ))}
-        </div>
+        {/* Dark Full Screen Background */}
+        <div className="absolute inset-0 bg-black" />
 
-        {/* Onboarding Modal - 2 Column Layout */}
-        <div className="relative w-full h-screen flex items-center justify-center p-4 md:p-6">
-          <div className="relative w-full max-w-7xl mx-auto max-h-[95vh] overflow-hidden">
-            <Card className="bg-black/60 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/60 overflow-hidden h-full" style={{
-              background: 'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%)',
-              backdropFilter: 'blur(20px)',
-              animation: 'slideInFromBottom 0.8s cubic-bezier(0.16, 1, 0.3, 1)'
-            }}>
-              {/* Close Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClose}
-                className="absolute top-6 right-6 z-10 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300"
-                title={isRequired ? "Hide temporarily (will return in 5 seconds)" : "Close onboarding"}
-              >
-                <X className="h-5 w-5" />
-              </Button>
+        {/* Onboarding Modal - Full Screen Dark */}
+        <div className="relative w-full h-screen p-8">
+          <Card className="bg-black border-0 shadow-none overflow-hidden h-full w-full rounded-2xl">
 
               {/* Progress Header */}
               <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -469,18 +459,32 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                         </div>
                         
                         <div className="space-y-4">
-                          <Label htmlFor="description" className="text-lg font-semibold text-white flex items-center gap-2">
-                            <Heart className="h-5 w-5 text-pink-400" />
-                            Description (Optional)
+                          <Label htmlFor="timezone" className="text-lg font-semibold text-white flex items-center gap-2">
+                            <Clock className="h-5 w-5 text-blue-400" />
+                            Timezone
                           </Label>
-                          <Textarea
-                            id="description"
-                            placeholder="Tell us about your company..."
-                            value={onboardingData.description}
-                            onChange={(e) => setOnboardingData(prev => ({ ...prev, description: e.target.value }))}
-                            rows={4}
-                            className="text-lg bg-black/20 border-white/20 backdrop-blur-xl text-white placeholder:text-white/40 focus:bg-black/30 focus:border-pink-400 transition-all duration-300 resize-none"
-                          />
+                          <Select
+                            value={onboardingData.timezone}
+                            onValueChange={(value) => setOnboardingData(prev => ({ ...prev, timezone: value }))}
+                          >
+                            <SelectTrigger className="h-12 text-lg bg-black/20 border border-white/20 backdrop-blur-xl text-white focus:bg-black/30 focus:border-blue-400 transition-all duration-300 rounded-md">
+                              <SelectValue className="text-white" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-gray-900 border-gray-700 text-white max-h-60">
+                              {timezones.map((tz) => (
+                                <SelectItem 
+                                  key={tz.value} 
+                                  value={tz.value}
+                                  className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer"
+                                >
+                                  {tz.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-white/50">
+                            This will help in scheduling posts at the right time for your audience
+                          </p>
                         </div>
                       </div>
                     )}
@@ -523,7 +527,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                                 </div>
                               ) : slugResult.exists ? (
                                 <div className="flex items-center space-x-2 text-red-400">
-                                  <X className="h-4 w-4" />
+                                  <AlertCircle className="h-4 w-4" />
                                   <span className="text-sm">URL already taken</span>
                                 </div>
                               ) : (
@@ -551,7 +555,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                     {currentStep === 2 && (
                       <div className="space-y-6" style={{ animation: 'slideInFromRight 0.6s ease-out' }}>
                         <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto scrollbar-thin">
-                          {mockThemes.map((theme, index) => (
+                          {mockThemes.map((theme) => (
                             <div
                               key={theme.id}
                               onClick={() => setOnboardingData(prev => ({ ...prev, selectedTheme: theme.id }))}
@@ -669,63 +673,8 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                 </div>
               </div>
             </Card>
-          </div>
         </div>
       </div>
-      
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        
-        @keyframes sparkle {
-          0%, 100% { opacity: 0; transform: scale(0); }
-          50% { opacity: 1; transform: scale(1); }
-        }
-        
-        @keyframes glow {
-          0% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); }
-          100% { box-shadow: 0 0 40px rgba(168, 85, 247, 0.8), 0 0 60px rgba(236, 72, 153, 0.4); }
-        }
-        
-        @keyframes slideInFromBottom {
-          0% { opacity: 0; transform: translateY(50px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes slideInFromRight {
-          0% { opacity: 0; transform: translateX(30px); }
-          100% { opacity: 1; transform: translateX(0); }
-        }
-
-        /* Custom scrollbar styles */
-        .scrollbar-thin {
-          scrollbar-width: thin;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 6px;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: 3px;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.3);
-        }
-
-        /* Smooth scrolling */
-        * {
-          scroll-behavior: smooth;
-        }
-      `}</style>
     </>
   )
 }
