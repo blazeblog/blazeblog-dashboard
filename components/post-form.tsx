@@ -147,10 +147,7 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
       setIsLoading(true)
       setError(null)
 
-      // Ensure tags exist
       const tagsWithIds = await ensureTagsExist(formData.tags.map(t => t.name), { api, toast })
-
-      // Content is saved as-is since title is separate
 
       const postData = {
         title: formData.title,
@@ -161,10 +158,9 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
         featuredImage: formData.featuredImage || undefined,
         categoryId: formData.categoryId && formData.categoryId !== "" ? Number(formData.categoryId) : undefined,
         slug: formData.slug,
-        userId: 1, // TODO: Get from auth context
         tagIds: tagsWithIds.map(tag => tag.id),
         relatedPostIds: formData.relatedPosts.map(post => post.id),
-        publishDate: formData.status === 'scheduled' ? formData.publishDate : undefined
+        publishedAt: formData.status === 'scheduled' ? formData.publishDate : undefined
       }
 
       let result
