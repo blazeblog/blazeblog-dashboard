@@ -75,10 +75,9 @@ export default function NotionIntegrationPage() {
         }
       }
     } catch (error) {
-      console.error('Failed to load integrations:', error)
       toast({
         title: "Error",
-        description: "Failed to load Notion integrations",
+        description: error instanceof Error ? error.message : "Failed to load Notion integrations",
         variant: "destructive",
       })
     } finally {

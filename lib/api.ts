@@ -184,6 +184,27 @@ interface User {
   updatedAt: string
 }
 
+interface ApiKey {
+  id: number
+  keyName: string
+  prefix: string
+  lastUsedAt?: string
+  usageCount: number
+  usageCountTotal: number
+  rateLimitDaily: number
+  rateLimitPerMinute: number
+  expiresAt?: string
+  isActive: boolean
+  createdAt: string
+}
+
+interface CreateApiKeyDto {
+  keyName: string
+  rateLimitDaily?: number
+  rateLimitPerMinute?: number
+  expiresAt?: string
+}
+
 /**
  * Common API function with Clerk JWT authentication
  * @param endpoint - API endpoint (e.g., '/posts', '/users')
@@ -312,4 +333,4 @@ export const api = {
 }
 
 // Export types for use in components
-export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment, User }
+export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment, User, ApiKey, CreateApiKeyDto }

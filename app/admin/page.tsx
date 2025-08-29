@@ -79,7 +79,6 @@ export default function AdminDashboard() {
       const response = await api.get<DashboardData>('/home/dashboard')
       setDashboardData(response)
     } catch (error) {
-      console.error('Error fetching dashboard data:', error)
       setError('Failed to load dashboard data')
     } finally {
       setIsLoading(false)

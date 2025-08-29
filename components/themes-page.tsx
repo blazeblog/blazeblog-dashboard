@@ -160,7 +160,7 @@ export function ThemesPage() {
   }
 
   const groupedThemes = themes.reduce((acc, theme) => {
-    const category = theme.category || 'Other'
+    const category = theme.category || 'Default'
     if (!acc[category]) {
       acc[category] = []
     }
@@ -259,7 +259,7 @@ export function ThemesPage() {
                   <div className="space-y-2">
                     <Label className="text-xs">Color Palette</Label>
                     <Select
-                      value={selectedThemeId === theme.id ? colorPalette : (themePalettes[theme.id] || 'light')}
+                      value={themePalettes[theme.id] || 'light'}
                       onValueChange={(value) => updateThemePalette(theme.id, value)}
                     >
                       <SelectTrigger className="h-8 text-xs">
@@ -290,26 +290,35 @@ export function ThemesPage() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button
-                      className="flex-1"
-                      onClick={() => selectTheme(theme.id, themePalettes[theme.id])}
-                      disabled={applying === theme.id}
-                      variant={selectedThemeId === theme.id ? "secondary" : "default"}
-                    >
-                      {applying === theme.id ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Applying...
-                        </>
-                      ) : selectedThemeId === theme.id ? (
-                        <>
-                          <Check className="h-4 w-4 mr-2" />
-                          Applied
-                        </>
-                      ) : (
-                        "Apply Theme"
-                      )}
-                    </Button>
+                    {(() => {
+                      const isCurrentTheme = selectedThemeId === theme.id
+                      const currentPalette = themePalettes[theme.id] || 'light'
+                      const isPaletteChanged = isCurrentTheme && currentPalette !== colorPalette
+                      const showApplyButton = !isCurrentTheme || isPaletteChanged
+                      
+                      return (
+                        <Button
+                          className="flex-1"
+                          onClick={() => selectTheme(theme.id, currentPalette)}
+                          disabled={applying === theme.id}
+                          variant={showApplyButton ? "default" : "secondary"}
+                        >
+                          {applying === theme.id ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Applying...
+                            </>
+                          ) : showApplyButton ? (
+                            "Apply Theme"
+                          ) : (
+                            <>
+                              <Check className="h-4 w-4 mr-2" />
+                              Applied
+                            </>
+                          )}
+                        </Button>
+                      )
+                    })()}
                   </div>
                 </CardContent>
               </Card>
@@ -385,7 +394,7 @@ export function ThemesPage() {
                 <div className="flex flex-col gap-1 min-w-[150px]">
                   <Label className="text-xs">Color Palette</Label>
                   <Select
-                    value={selectedThemeId === previewTheme.id ? colorPalette : (themePalettes[previewTheme.id] || 'light')}
+                    value={themePalettes[previewTheme.id] || 'light'}
                     onValueChange={(value) => updateThemePalette(previewTheme.id, value)}
                   >
                     <SelectTrigger className="h-8 text-xs">
@@ -415,27 +424,37 @@ export function ThemesPage() {
                   </Select>
                 </div>
                 
-                <Button
-                  onClick={() => {
-                    selectTheme(previewTheme.id, themePalettes[previewTheme.id])
-                    closePreview()
-                  }}
-                  disabled={applying === previewTheme.id}
-                >
-                  {applying === previewTheme.id ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Applying...
-                    </>
-                  ) : selectedThemeId === previewTheme.id ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" />
-                      Applied
-                    </>
-                  ) : (
-                    "Apply This Theme"
-                  )}
-                </Button>
+                {(() => {
+                  const isCurrentTheme = selectedThemeId === previewTheme.id
+                  const currentPalette = themePalettes[previewTheme.id] || 'light'
+                  const isPaletteChanged = isCurrentTheme && currentPalette !== colorPalette
+                  const showApplyButton = !isCurrentTheme || isPaletteChanged
+                  
+                  return (
+                    <Button
+                      onClick={() => {
+                        selectTheme(previewTheme.id, currentPalette)
+                        closePreview()
+                      }}
+                      disabled={applying === previewTheme.id}
+                      variant={showApplyButton ? "default" : "secondary"}
+                    >
+                      {applying === previewTheme.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Applying...
+                        </>
+                      ) : showApplyButton ? (
+                        "Apply This Theme"
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          Applied
+                        </>
+                      )}
+                    </Button>
+                  )
+                })()}
               </div>
             </div>
           </div>
