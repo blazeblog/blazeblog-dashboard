@@ -1,7 +1,7 @@
 "use client"
 
 import { useAuth } from "@clerk/nextjs"
-import type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment, User } from "./api"
+import type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment, User, ApiKey, CreateApiKeyDto } from "./api"
 
 // Form-related types based on Forms API documentation
 export type FieldType = 
@@ -692,4 +692,4 @@ export interface UserSubscription {
   }
 }
 
-export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment, User }
+export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment, User, ApiKey, CreateApiKeyDto }

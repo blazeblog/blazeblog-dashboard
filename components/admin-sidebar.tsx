@@ -18,6 +18,7 @@ import {
   Palette,
   Mail,
   Zap,
+  Key,
 } from "lucide-react"
 
 import {
@@ -154,6 +155,20 @@ const navigation: NavigationSection[] = [
         url: "/admin/notion",
         icon: Zap,
         badge: "Silver+",
+      },
+    ],
+  },
+  {
+    title: "Developer",
+    items: [
+      {
+        title: "APIs",
+        url: "/admin/api-keys",
+        icon: Key,
+        submenu: [
+          { title: "API Keys", url: "/admin/api-keys" },
+          { title: "Create New", url: "/admin/api-keys/create" },
+        ],
       },
     ],
   },
