@@ -205,6 +205,34 @@ interface CreateApiKeyDto {
   expiresAt?: string
 }
 
+interface CustomHostname {
+  success: boolean
+  hostname: string
+  txtRecord: {
+    name: string
+    value: string
+  }
+  cnameRecord: {
+    name: string
+    value: string
+  }
+  status: 'pending' | 'active' | 'moved' | 'pending_deletion' | 'deleted'
+  ssl_status: 'pending_validation' | 'pending_issuance' | 'pending_deployment' | 'active' | 'pending_deletion' | 'deleted'
+  id: string
+}
+
+interface CustomHostnameStatus {
+  success: boolean
+  hostname: string
+  status: 'pending' | 'active' | 'moved' | 'pending_deletion' | 'deleted'
+  ssl_status: 'pending_validation' | 'pending_issuance' | 'pending_deployment' | 'active' | 'pending_deletion' | 'deleted'
+  id: string
+}
+
+interface CreateCustomHostnameRequest {
+  hostname: string
+}
+
 /**
  * Common API function with Clerk JWT authentication
  * @param endpoint - API endpoint (e.g., '/posts', '/users')

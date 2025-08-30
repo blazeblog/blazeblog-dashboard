@@ -471,10 +471,6 @@ export function useClientApi() {
       // Get sync history
       getSyncLogs: (id: number, params: { limit?: number } = {}) =>
         makeRequest<NotionSyncLogResponse[]>(`/notion/${id}/sync-logs?limit=${params.limit || 10}`),
-      
-      // Get synced pages
-      getSyncedPages: (id: number, params: { limit?: number } = {}) =>
-        makeRequest<NotionSyncedPageResponse[]>(`/notion/${id}/synced-pages?limit=${params.limit || 10}`),
     },
   }
 }
@@ -690,6 +686,35 @@ export interface UserSubscription {
   integrationLimits: {
     notion: number // 0 for free/bronze, 1 for silver, 3 for gold, 10 for platinum
   }
+}
+
+// Custom Domain types
+export interface CustomHostname {
+  success: boolean
+  hostname: string
+  txtRecord: {
+    name: string
+    value: string
+  }
+  cnameRecord: {
+    name: string
+    value: string
+  }
+  status: 'pending' | 'active' | 'moved' | 'pending_deletion' | 'deleted'
+  ssl_status: 'pending_validation' | 'pending_issuance' | 'pending_deployment' | 'active' | 'pending_deletion' | 'deleted'
+  id: string
+}
+
+export interface CustomHostnameStatus {
+  success: boolean
+  hostname: string
+  status: 'pending' | 'active' | 'moved' | 'pending_deletion' | 'deleted'
+  ssl_status: 'pending_validation' | 'pending_issuance' | 'pending_deployment' | 'active' | 'pending_deletion' | 'deleted'
+  id: string
+}
+
+export interface CreateCustomHostnameRequest {
+  hostname: string
 }
 
 export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment, User, ApiKey, CreateApiKeyDto }
