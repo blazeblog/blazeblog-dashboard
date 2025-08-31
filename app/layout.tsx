@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: "Dashboard | BlazeBlog",
   description: "BlazeBlog Admin Dashboard",
   generator: "Next.js",
+  icons: {
+    icon: "/logo_blaze.ico",
+  },
 }
 
 export default function RootLayout({
