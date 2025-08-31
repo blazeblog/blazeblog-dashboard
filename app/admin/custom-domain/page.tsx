@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Globe, 
@@ -34,6 +36,8 @@ export default function CustomDomainPage() {
   const [isPolling, setIsPolling] = useState(false)
   const [domainError, setDomainError] = useState("")
   const [activeTab, setActiveTab] = useState("setup")
+  const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, hostname: '', domainToDelete: '' })
+  const [deleteInput, setDeleteInput] = useState('')
   const { toast } = useToast()
   const api = useClientApi()
 
@@ -44,13 +48,38 @@ export default function CustomDomainPage() {
 
   const fetchCustomHostnames = useCallback(async () => {
     try {
-      const response = await api.get<CustomHostname[]>('/cf/hostnames')
-      const list = Array.isArray(response) ? response : []
+      console.log('Fetching custom hostnames from /cf/hostnames...')
+      const response = await api.get('/cf/hostnames')
+      console.log('Raw API response:', response)
+      
+      // Handle the actual API response format: {hasCustomDomain, isVerified, currentDomain}
+      let list: CustomHostname[] = []
+      
+      if (response && response.hasCustomDomain && response.currentDomain) {
+        // Convert the response to CustomHostname format for display
+        const mockHostname: CustomHostname = {
+          id: 'current-domain',
+          hostname: response.currentDomain,
+          status: response.isVerified ? 'active' : 'pending',
+          ssl_status: response.isVerified ? 'active' : 'pending_validation',
+          success: true,
+          txtRecord: {
+            name: '@',
+            value: 'verification-pending'
+          },
+          cnameRecord: {
+            name: '@',
+            value: 'target-pending'
+          }
+        }
+        list = [mockHostname]
+      }
+      
+      console.log('Processed hostnames list:', list)
       setCustomHostnames(list)
       return list
     } catch (error) {
       console.error('Failed to fetch custom hostnames:', error)
-      // Don't show error to user on initial load - might just be empty
       setCustomHostnames([])
       return [] as CustomHostname[]
     }
@@ -133,6 +162,7 @@ export default function CustomDomainPage() {
   // After initial fetch, surface the correct tab and kick off polling if needed
   useEffect(() => {
     if (customHostnames.length > 0) {
+      // Switch to domains tab and disable setup tab
       setActiveTab('domains')
 
       const hasPending = customHostnames.some(
@@ -141,6 +171,9 @@ export default function CustomDomainPage() {
       if (hasPending && !isPolling) {
         setIsPolling(true)
       }
+    } else {
+      // If no domains, allow setup tab
+      setActiveTab('setup')
     }
   }, [customHostnames, isPolling])
 
@@ -187,18 +220,29 @@ export default function CustomDomainPage() {
     }
   }
 
-  const handleDeleteDomain = async (hostnameId: string, hostname: string) => {
-    if (!confirm(`Are you sure you want to delete ${hostname}? This action cannot be undone.`)) {
+  const openDeleteConfirmation = (hostnameId: string, hostname: string) => {
+    setDeleteConfirmation({ isOpen: true, hostname: hostnameId, domainToDelete: hostname })
+    setDeleteInput('')
+  }
+
+  const closeDeleteConfirmation = () => {
+    setDeleteConfirmation({ isOpen: false, hostname: '', domainToDelete: '' })
+    setDeleteInput('')
+  }
+
+  const handleDeleteDomain = async () => {
+    if (deleteInput !== deleteConfirmation.domainToDelete) {
       return
     }
 
     try {
-      await api.delete(`/cf/${hostnameId}`)
-      setCustomHostnames(prev => prev.filter(h => h.id !== hostnameId))
+      await api.delete(`/cf/${deleteConfirmation.hostname}`)
+      setCustomHostnames(prev => prev.filter(h => h.id !== deleteConfirmation.hostname))
       toast({
         title: "Domain Deleted",
-        description: `${hostname} has been removed from your account.`,
+        description: `${deleteConfirmation.domainToDelete} has been removed from your account.`,
       })
+      closeDeleteConfirmation()
     } catch (error: any) {
       toast({
         title: "Error",
@@ -206,6 +250,21 @@ export default function CustomDomainPage() {
         variant: "destructive",
       })
     }
+  }
+
+  const handleDeleteInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDeleteInput(e.target.value)
+  }
+
+  const handleDeleteInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Prevent paste
+    if (e.ctrlKey && e.key === 'v') {
+      e.preventDefault()
+    }
+  }
+
+  const handleDeleteInputPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault()
   }
 
   const handleRefreshStatus = async () => {
@@ -259,16 +318,34 @@ export default function CustomDomainPage() {
         </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="setup">Domain Setup</TabsTrigger>
-          <TabsTrigger value="domains">
-            My Domains
-            {customHostnames.some(h => h.status === 'pending' || h.ssl_status !== 'active') && (
-              <Badge className="ml-2 bg-yellow-500 text-white">Action Required</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="dns">DNS Guide</TabsTrigger>
-        </TabsList>
+        <TooltipProvider>
+          <TabsList>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger 
+                  value="setup" 
+                  disabled={customHostnames.length > 0}
+                  className="data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
+                >
+                  Domain Setup
+                </TabsTrigger>
+              </TooltipTrigger>
+              {customHostnames.length > 0 && (
+                <TooltipContent>
+                  <p>You already have a domain configured. Delete existing domain to add a new one.</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+            
+            <TabsTrigger value="domains">
+              My Domains
+              {customHostnames.some(h => h.status === 'pending' || h.ssl_status !== 'active') && (
+                <Badge className="ml-2 bg-yellow-500 text-white">Action Required</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="dns">DNS Guide</TabsTrigger>
+          </TabsList>
+        </TooltipProvider>
 
         <TabsContent value="setup" className="space-y-6">
           <Card>
@@ -389,16 +466,17 @@ export default function CustomDomainPage() {
                           </Button>
                         )}
                         <Button 
-                          variant="ghost" 
+                          variant="destructive" 
                           size="sm"
-                          onClick={() => handleDeleteDomain(hostname.id, hostname.hostname)}
+                          onClick={() => openDeleteConfirmation(hostname.id, hostname.hostname)}
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-4 w-4 mr-1" />
+                          Delete
                         </Button>
                       </div>
                     </div>
                     
-                    {(hostname.status === 'pending' || hostname.ssl_status === 'initializing' || hostname.ssl_status === 'pending_validation') && (
+                    {(hostname.status === 'pending' || hostname.ssl_status === 'pending_validation') && (
                       <div className="mt-4 p-4 bg-muted/30 rounded-lg border">
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
@@ -665,6 +743,52 @@ export default function CustomDomainPage() {
         </TabsContent>
       </Tabs>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmation.isOpen} onOpenChange={(open) => !open && closeDeleteConfirmation()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Custom Domain</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently remove the custom domain from your account and your blog will no longer be accessible via this domain, which may cause unexpected issues for your visitors.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <p className="text-sm font-medium text-destructive">
+                To confirm deletion, type the domain name: <span className="font-mono bg-destructive/20 px-1 rounded">{deleteConfirmation.domainToDelete}</span>
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="delete-confirmation">Domain name</Label>
+              <Input
+                id="delete-confirmation"
+                value={deleteInput}
+                onChange={handleDeleteInputChange}
+                onKeyDown={handleDeleteInputKeyDown}
+                onPaste={handleDeleteInputPaste}
+                placeholder={`Type "${deleteConfirmation.domainToDelete}" to confirm`}
+                className="font-mono"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeDeleteConfirmation}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteDomain}
+              disabled={deleteInput !== deleteConfirmation.domainToDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Domain
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   )
 }

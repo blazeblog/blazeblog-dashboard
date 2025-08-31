@@ -3,6 +3,7 @@
 import { useUser } from "@clerk/nextjs"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import {
   LayoutDashboard,
   Users,
@@ -205,9 +206,18 @@ export function AdminSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/admin">
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Blazeblog</span>
-                  <span className="truncate text-xs">CMS</span>
+                <div className="flex items-center gap-2">
+                  <Image 
+                    src="/logo_blaze.ico" 
+                    alt="Blazeblog" 
+                    width={20} 
+                    height={20} 
+                    className="flex-shrink-0"
+                  />
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">Blazeblog</span>
+                    <span className="truncate text-xs">CMS</span>
+                  </div>
                 </div>
               </Link>
             </SidebarMenuButton>
