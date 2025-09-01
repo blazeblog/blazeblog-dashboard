@@ -319,13 +319,13 @@ export default function CustomDomainPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TooltipProvider>
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto">
             <Tooltip>
               <TooltipTrigger asChild>
                 <TabsTrigger 
                   value="setup" 
                   disabled={customHostnames.length > 0}
-                  className="data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
+                  className="data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed text-xs sm:text-sm p-2 sm:p-3"
                 >
                   Domain Setup
                 </TabsTrigger>
@@ -337,13 +337,15 @@ export default function CustomDomainPage() {
               )}
             </Tooltip>
             
-            <TabsTrigger value="domains">
-              My Domains
-              {customHostnames.some(h => h.status === 'pending' || h.ssl_status !== 'active') && (
-                <Badge className="ml-2 bg-yellow-500 text-white">Action Required</Badge>
-              )}
+            <TabsTrigger value="domains" className="text-xs sm:text-sm p-2 sm:p-3">
+              <span className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+                My Domains
+                {customHostnames.some(h => h.status === 'pending' || h.ssl_status !== 'active') && (
+                  <Badge className="text-[10px] sm:text-xs bg-yellow-500 text-white">Action Required</Badge>
+                )}
+              </span>
             </TabsTrigger>
-            <TabsTrigger value="dns">DNS Guide</TabsTrigger>
+            <TabsTrigger value="dns" className="text-xs sm:text-sm p-2 sm:p-3">DNS Guide</TabsTrigger>
           </TabsList>
         </TooltipProvider>
 
@@ -375,7 +377,7 @@ export default function CustomDomainPage() {
                     Enter your domain without "www" (e.g., example.com). Make sure you own this domain.
                   </p>
                 </div>
-                <Button type="submit" disabled={isLoading || !domain}>
+                <Button type="submit" disabled={isLoading || !domain} className="w-full sm:w-auto">
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -406,7 +408,7 @@ export default function CustomDomainPage() {
         </TabsContent>
 
         <TabsContent value="domains" className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-semibold">Your Custom Domains</h3>
               <p className="text-sm text-muted-foreground">
@@ -417,6 +419,7 @@ export default function CustomDomainPage() {
               variant="outline" 
               onClick={handleRefreshStatus}
               disabled={customHostnames.length === 0}
+              className="w-full sm:w-auto"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh Status
@@ -438,23 +441,25 @@ export default function CustomDomainPage() {
               {customHostnames.map((hostname) => (
                 <Card key={hostname.id}>
                   <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-3">
-                          <h4 className="text-lg font-semibold">{hostname.hostname}</h4>
-                          {getStatusBadge(hostname.status, hostname.ssl_status)}
-                          {isPolling && (hostname.status === 'pending' || hostname.ssl_status !== 'active') && (
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                          )}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                          <h4 className="text-lg font-semibold break-all">{hostname.hostname}</h4>
+                          <div className="flex items-center gap-2">
+                            {getStatusBadge(hostname.status, hostname.ssl_status)}
+                            {isPolling && (hostname.status === 'pending' || hostname.ssl_status !== 'active') && (
+                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            )}
+                          </div>
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p>Domain Status: <span className="capitalize">{hostname.status}</span></p>
                           <p>SSL Status: <span className="capitalize">{hostname.ssl_status.replace(/_/g, ' ')}</span></p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                         {hostname.status === 'active' && (
-                          <Button variant="outline" size="sm" asChild>
+                          <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
                             <a 
                               href={`https://${hostname.hostname}`} 
                               target="_blank" 
@@ -469,6 +474,7 @@ export default function CustomDomainPage() {
                           variant="destructive" 
                           size="sm"
                           onClick={() => openDeleteConfirmation(hostname.id, hostname.hostname)}
+                          className="w-full sm:w-auto"
                         >
                           <X className="h-4 w-4 mr-1" />
                           Delete
@@ -479,13 +485,14 @@ export default function CustomDomainPage() {
                     {(hostname.status === 'pending' || hostname.ssl_status === 'pending_validation') && (
                       <div className="mt-4 p-4 bg-muted/30 rounded-lg border">
                         <div className="space-y-4">
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <h5 className="font-medium">⚠️ DNS Verification Required</h5>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => pollHostnameStatus(hostname.id)}
                               disabled={isPolling}
+                              className="w-full sm:w-auto"
                             >
                               {isPolling ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -516,12 +523,13 @@ export default function CustomDomainPage() {
                                     <div className="space-y-2">
                                       <div>
                                         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Name/Host:</label>
-                                        <div className="mt-1 flex items-center gap-2">
-                                          <code className="text-sm bg-muted px-2 py-1 rounded border block break-all">{hostname.txtRecord.name}</code>
+                                        <div className="mt-1 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                          <code className="text-sm bg-muted px-2 py-1 rounded border block break-all flex-1 w-full">{hostname.txtRecord.name}</code>
                                           <Button
                                             variant="outline"
                                             size="sm"
                                             onClick={() => copyToClipboard(hostname.txtRecord.name)}
+                                            className="w-full sm:w-auto flex-shrink-0"
                                           >
                                             <Copy className="h-4 w-4 mr-1" />
                                             Copy
@@ -530,12 +538,13 @@ export default function CustomDomainPage() {
                                       </div>
                                       <div>
                                         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Value:</label>
-                                        <div className="mt-1 flex items-center gap-2">
-                                          <code className="text-sm bg-muted px-2 py-1 rounded border block break-all">{hostname.txtRecord.value}</code>
+                                        <div className="mt-1 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                          <code className="text-sm bg-muted px-2 py-1 rounded border block break-all flex-1 w-full">{hostname.txtRecord.value}</code>
                                           <Button
                                             variant="outline"
                                             size="sm"
                                             onClick={() => copyToClipboard(hostname.txtRecord.value)}
+                                            className="w-full sm:w-auto flex-shrink-0"
                                           >
                                             <Copy className="h-4 w-4 mr-1" />
                                             Copy
@@ -557,12 +566,13 @@ export default function CustomDomainPage() {
                                     <div className="space-y-2">
                                       <div>
                                         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Name/Host:</label>
-                                        <div className="mt-1 flex items-center gap-2">
-                                          <code className="text-sm bg-muted px-2 py-1 rounded border block break-all">{hostname.cnameRecord.name}</code>
+                                        <div className="mt-1 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                          <code className="text-sm bg-muted px-2 py-1 rounded border block break-all flex-1 w-full">{hostname.cnameRecord.name}</code>
                                           <Button
                                             variant="outline"
                                             size="sm"
                                             onClick={() => copyToClipboard(hostname.cnameRecord.name)}
+                                            className="w-full sm:w-auto flex-shrink-0"
                                           >
                                             <Copy className="h-4 w-4 mr-1" />
                                             Copy
@@ -571,12 +581,13 @@ export default function CustomDomainPage() {
                                       </div>
                                       <div>
                                         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Value:</label>
-                                        <div className="mt-1 flex items-center gap-2">
-                                          <code className="text-sm bg-muted px-2 py-1 rounded border block break-all">{hostname.cnameRecord.value}</code>
+                                        <div className="mt-1 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                          <code className="text-sm bg-muted px-2 py-1 rounded border block break-all flex-1 w-full">{hostname.cnameRecord.value}</code>
                                           <Button
                                             variant="outline"
                                             size="sm"
                                             onClick={() => copyToClipboard(hostname.cnameRecord.value)}
+                                            className="w-full sm:w-auto flex-shrink-0"
                                           >
                                             <Copy className="h-4 w-4 mr-1" />
                                             Copy
@@ -671,7 +682,7 @@ export default function CustomDomainPage() {
                     </AlertDescription>
                   </Alert>
 
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-base">Popular DNS Providers</CardTitle>
@@ -725,6 +736,58 @@ export default function CustomDomainPage() {
                     </Card>
                   </div>
                 </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg">Subfolder Hosting Setup</h4>
+                  
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Alternative Option:</strong> If you want to host your blog on a subfolder (e.g., yourdomain.com/blog) instead of a subdomain, 
+                      you can configure this through your existing website's server or CDN.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="space-y-4">
+                    <div className="border-l-4 border-blue-500 pl-4">
+                      <h5 className="font-medium">Step 1: Configure Your Server/CDN</h5>
+                      <p className="text-sm text-muted-foreground">
+                        Set up a reverse proxy or redirect rule on your main website to forward requests from 
+                        <code className="bg-muted px-1 rounded mx-1">yourdomain.com/blog/*</code> to your BlazeBlog subdomain.
+                      </p>
+                    </div>
+                    
+                    <div className="border-l-4 border-blue-500 pl-4">
+                      <h5 className="font-medium">Step 2: Popular Platform Examples</h5>
+                      <div className="text-sm text-muted-foreground space-y-2">
+                        <div>
+                          <strong>Cloudflare:</strong> Use Page Rules or Workers to proxy <code className="bg-muted px-1 rounded">/blog/*</code>
+                        </div>
+                        <div>
+                          <strong>Nginx:</strong> Add location block: <code className="bg-muted px-1 rounded">location /blog/ {"{ proxy_pass https://your-blazeblog-domain.com/; }"}</code>
+                        </div>
+                        <div>
+                          <strong>Apache:</strong> Use mod_proxy: <code className="bg-muted px-1 rounded">ProxyPass /blog/ https://your-blazeblog-domain.com/</code>
+                        </div>
+                        <div>
+                          <strong>Vercel:</strong> Add rewrite in <code className="bg-muted px-1 rounded">vercel.json</code>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="border-l-4 border-yellow-500 pl-4">
+                      <h5 className="font-medium">Step 3: Update BlazeBlog Base Path</h5>
+                      <p className="text-sm text-muted-foreground">
+                        Contact support to configure your BlazeBlog instance for subfolder hosting. We'll need to update 
+                        the base path and internal routing to work correctly with your proxy setup.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
 
                 <Alert>
                   <AlertCircle className="h-4 w-4" />

@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -165,8 +165,8 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
   const steps = [
     {
       id: "company",
-      title: "Company Information",
-      description: "Tell us about your company and set up your timezone. This helps us personalize your blog experience and schedule posts.",
+      title: "Blog Information",
+      description: "Tell us about your blog and set up your timezone. This helps us personalize your blog experience and schedule posts.",
       icon: Building2,
       fields: ["companyName", "website", "timezone"],
       tips: [
@@ -348,18 +348,24 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
         <div className="absolute inset-0 bg-black" />
 
         {/* Onboarding Modal - Full Screen Dark */}
-        <div className="relative w-full h-screen p-8">
-          <Card className="bg-black border-0 shadow-none overflow-hidden h-full w-full rounded-2xl">
+        <div className="relative w-full h-screen p-2 sm:p-4 lg:p-8">
+          <Card className="bg-black border-0 shadow-none overflow-hidden h-full w-full rounded-lg lg:rounded-2xl">
 
               {/* Progress Header */}
-              <div className="flex items-center justify-between p-6 border-b border-white/10">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg" style={{ animation: 'glow 3s ease-in-out infinite alternate' }}>
-                    <Crown className="h-6 w-6 text-white" />
+              <div className="flex flex-col sm:flex-row items-center justify-between p-4 lg:p-6 border-b border-white/10 gap-4">
+                <div className="flex flex-col sm:flex-row items-center sm:space-x-4 space-y-2 sm:space-y-0">
+                  <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center shadow-lg">
+                    <Image 
+                      src="/logo_blaze.ico" 
+                      alt="BlazeBlog" 
+                      width={24} 
+                      height={24} 
+                      className="flex-shrink-0"
+                    />
                   </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-white">Welcome to BlazeBlog!</h1>
-                    <p className="text-white/60">Let's set up your blog in minutes</p>
+                  <div className="text-center sm:text-left">
+                    <h1 className="text-xl lg:text-2xl font-bold text-white">Welcome to BlazeBlog!</h1>
+                    <p className="text-white/60 text-sm lg:text-base">Let's set up your blog in minutes</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -368,29 +374,29 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                     const isCompleted = index < currentStep
                     return (
                       <div key={step.id} className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                        isCompleted ? "bg-green-400" : isActive ? "bg-purple-400 animate-pulse" : "bg-white/20"
+                        isCompleted ? "bg-green-400" : isActive ? "bg-blue-400 animate-pulse" : "bg-white/20"
                       }`} />
                     )
                   })}
                 </div>
               </div>
 
-              {/* 2-Column Layout */}
-              <div className="flex h-[calc(100%-120px)] overflow-hidden">
-                {/* Left Column - Information & Description */}
-                <div className="w-1/2 p-8 bg-black/30 border-r border-white/10 overflow-y-auto scrollbar-thin">
+              {/* Mobile-Responsive Layout */}
+              <div className="flex flex-col lg:flex-row h-[calc(100%-120px)] overflow-hidden">
+                {/* Left Column - Information & Description (hidden on mobile) */}
+                <div className="hidden lg:block lg:w-1/2 p-4 lg:p-8 bg-black/30 lg:border-r border-white/10 overflow-y-auto scrollbar-thin">
                   <div className="space-y-6">
                     {/* Step Icon & Title */}
                     <div className="text-center">
                       <div className={`w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center shadow-2xl ${
-                        currentStep === 0 ? "bg-gradient-to-r from-blue-500 to-purple-600 shadow-blue-500/50" :
-                        currentStep === 1 ? "bg-gradient-to-r from-cyan-500 to-blue-600 shadow-cyan-500/50" :
-                        currentStep === 2 ? "bg-gradient-to-r from-pink-500 to-purple-600 shadow-pink-500/50" :
-                        "bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 shadow-green-500/50"
-                      }`} style={{ animation: 'float 3s ease-in-out infinite' }}>
+                        currentStep === 0 ? "bg-blue-600" :
+                        currentStep === 1 ? "bg-cyan-600" :
+                        currentStep === 2 ? "bg-gray-700" :
+                        "bg-green-600"
+                      }`}>
                         <currentStepData.icon className="h-12 w-12 text-white" />
                       </div>
-                      <h2 className="text-3xl font-bold text-white mb-4 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+                      <h2 className="text-3xl font-bold text-white mb-4">
                         {currentStepData.title}
                       </h2>
                       <p className="text-lg text-white/70 leading-relaxed mb-8">
@@ -407,7 +413,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                       <ul className="space-y-3">
                         {currentStepData.tips?.map((tip, index) => (
                           <li key={index} className="flex items-start gap-3 text-white/70">
-                            <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mt-2 flex-shrink-0" />
+                            <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0" />
                             <span>{tip}</span>
                           </li>
                         ))}
@@ -424,23 +430,41 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                 </div>
 
                 {/* Right Column - Forms & Actions */}
-                <div className="w-1/2 p-8 overflow-y-auto scrollbar-thin">
-                  <div className="max-w-md mx-auto space-y-6">
+                <div className="w-full lg:w-1/2 p-4 lg:p-8 overflow-y-auto scrollbar-thin">
+                  <div className="max-w-md mx-auto space-y-4 lg:space-y-6">
+                    
+                    {/* Mobile Step Header - shown only on mobile */}
+                    <div className="lg:hidden text-center mb-6">
+                      <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center shadow-2xl ${
+                        currentStep === 0 ? "bg-blue-600" :
+                        currentStep === 1 ? "bg-cyan-600" :
+                        currentStep === 2 ? "bg-gray-700" :
+                        "bg-green-600"
+                      }`}>
+                        <currentStepData.icon className="h-8 w-8 text-white" />
+                      </div>
+                      <h2 className="text-xl font-bold text-white mb-2">
+                        {currentStepData.title}
+                      </h2>
+                      <p className="text-sm text-white/70">
+                        {currentStepData.description}
+                      </p>
+                    </div>
                     
                     {/* Step 1: Company Information */}
                     {currentStep === 0 && (
-                      <div className="space-y-6" style={{ animation: 'slideInFromRight 0.6s ease-out' }}>
+                      <div className="space-y-4 lg:space-y-6" style={{ animation: 'slideInFromRight 0.6s ease-out' }}>
                         <div className="space-y-4">
                           <Label htmlFor="companyName" className="text-lg font-semibold text-white flex items-center gap-2">
                             <Zap className="h-5 w-5 text-yellow-400" />
-                            Company Name *
+                            Company Name or Blog Name *
                           </Label>
                           <Input
                             id="companyName"
-                            placeholder="Enter your company name"
+                            placeholder="Enter your company or blog name"
                             value={onboardingData.companyName}
                             onChange={(e) => setOnboardingData(prev => ({ ...prev, companyName: e.target.value }))}
-                            className="h-12 text-lg bg-black/20 border-white/20 backdrop-blur-xl text-white placeholder:text-white/40 focus:bg-black/30 focus:border-purple-400 transition-all duration-300"
+                            className="h-12 text-lg bg-gray-800 border-gray-600 text-white placeholder:text-white/40 focus:bg-gray-700 focus:border-blue-400 transition-all duration-300"
                           />
                         </div>
                         
@@ -454,7 +478,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                             placeholder="https://yourcompany.com"
                             value={onboardingData.website}
                             onChange={(e) => setOnboardingData(prev => ({ ...prev, website: e.target.value }))}
-                            className="h-12 text-lg bg-black/20 border-white/20 backdrop-blur-xl text-white placeholder:text-white/40 focus:bg-black/30 focus:border-green-400 transition-all duration-300"
+                            className="h-12 text-lg bg-gray-800 border-gray-600 text-white placeholder:text-white/40 focus:bg-gray-700 focus:border-green-400 transition-all duration-300"
                           />
                         </div>
                         
@@ -467,7 +491,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                             value={onboardingData.timezone}
                             onValueChange={(value) => setOnboardingData(prev => ({ ...prev, timezone: value }))}
                           >
-                            <SelectTrigger className="h-12 text-lg bg-black/20 border border-white/20 backdrop-blur-xl text-white focus:bg-black/30 focus:border-blue-400 transition-all duration-300 rounded-md">
+                            <SelectTrigger className="h-12 text-lg bg-gray-800 border-gray-600 text-white focus:bg-gray-700 focus:border-blue-400 transition-all duration-300 rounded-md">
                               <SelectValue className="text-white" />
                             </SelectTrigger>
                             <SelectContent className="bg-gray-900 border-gray-700 text-white max-h-60">
@@ -477,7 +501,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                                   value={tz.value}
                                   className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer"
                                 >
-                                  {tz.label}
+                                  {tz.shortForm} ({tz.label.match(/GMT[+-][\d:]+/)?.[0] || 'GMT+0'})
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -504,15 +528,15 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                               placeholder="your-blog-name"
                               value={onboardingData.blogSlug}
                               onChange={(e) => handleSlugChange(e.target.value)}
-                              className={`h-12 text-lg pr-40 bg-black/20 border-white/20 backdrop-blur-xl text-white placeholder:text-white/40 focus:bg-black/30 transition-all duration-500 ${
+                              className={`h-12 text-lg pr-40 bg-gray-800 border-gray-600 text-white placeholder:text-white/40 focus:bg-gray-700 transition-all duration-500 ${
                                 onboardingData.blogSlug.length >= 3 && slugResult.exists
                                   ? "border-red-400 focus:border-red-500" 
                                   : onboardingData.blogSlug.length >= 3 && !slugResult.exists && !slugResult.isChecking
                                   ? "border-green-400 focus:border-green-500"
-                                  : "focus:border-purple-400"
+                                  : "focus:border-blue-400"
                               }`}
                             />
-                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-medium text-white/70 bg-black/20 backdrop-blur-xl px-3 py-1 rounded-lg border border-white/10">
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-medium text-white/70 bg-gray-700 px-3 py-1 rounded-lg border border-gray-600">
                               .blazeblog.xyz
                             </div>
                           </div>
@@ -540,7 +564,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                           )}
 
                           {onboardingData.blogSlug && (
-                            <div className="p-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-xl rounded-xl border border-white/10">
+                            <div className="p-4 bg-blue-500/20 rounded-xl border border-blue-400/30">
                               <p className="text-sm text-white/70 mb-2">Your blog will be live at:</p>
                               <p className="text-lg font-bold font-mono text-white">
                                 {onboardingData.blogSlug}.blazeblog.xyz
@@ -554,14 +578,14 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                     {/* Step 3: Theme Selection */}
                     {currentStep === 2 && (
                       <div className="space-y-6" style={{ animation: 'slideInFromRight 0.6s ease-out' }}>
-                        <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto scrollbar-thin">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 lg:gap-4 max-h-80 lg:max-h-96 overflow-y-auto scrollbar-thin">
                           {mockThemes.map((theme) => (
                             <div
                               key={theme.id}
                               onClick={() => setOnboardingData(prev => ({ ...prev, selectedTheme: theme.id }))}
                               className={`relative cursor-pointer rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
                                 onboardingData.selectedTheme === theme.id
-                                  ? "border-purple-400 shadow-lg shadow-purple-500/30"
+                                  ? "border-blue-400 shadow-lg shadow-blue-500/30"
                                   : "border-white/20 hover:border-white/40"
                               }`}
                             >
@@ -586,7 +610,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                               
                               {/* Selection Indicator */}
                               {onboardingData.selectedTheme === theme.id && (
-                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
                                   <CheckCircle className="h-4 w-4 text-white" />
                                 </div>
                               )}
@@ -599,7 +623,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                     {/* Step 4: Summary */}
                     {currentStep === 3 && (
                       <div className="space-y-6 text-center" style={{ animation: 'slideInFromRight 0.6s ease-out' }}>
-                        <div className="w-24 h-24 mx-auto bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/50" style={{ animation: 'float 3s ease-in-out infinite' }}>
+                        <div className="w-24 h-24 mx-auto bg-green-600 rounded-full flex items-center justify-center shadow-2xl">
                           <Rocket className="h-12 w-12 text-white" />
                         </div>
                         
@@ -629,12 +653,12 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                     )}
 
                     {/* Navigation Buttons */}
-                    <div className="flex items-center justify-between pt-6 border-t border-white/10">
+                    <div className="flex flex-col sm:flex-row items-center justify-between pt-4 lg:pt-6 border-t border-white/10 gap-3 sm:gap-0">
                       <Button
                         variant="outline"
                         onClick={handlePrev}
                         disabled={isFirstStep}
-                        className="px-6 py-2 bg-black/20 border-white/20 text-white hover:bg-black/40 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full sm:w-auto px-4 lg:px-6 py-2 bg-black/20 border-white/20 text-white hover:bg-black/40 backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed order-2 sm:order-1"
                       >
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Previous
@@ -644,8 +668,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                         <Button
                           onClick={handleComplete}
                           disabled={isLoading}
-                          className="px-8 py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600 text-white font-semibold shadow-lg"
-                          style={{ animation: isLoading ? 'none' : 'glow 2s ease-in-out infinite alternate' }}
+                          className="w-full sm:w-auto px-6 lg:px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold order-1 sm:order-2"
                         >
                           {isLoading ? (
                             <>
@@ -662,7 +685,7 @@ export function OnboardingOverlay({ isOpen, onClose, isRequired = false }: Onboa
                       ) : (
                         <Button
                           onClick={handleNext}
-                          className="px-8 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+                          className="w-full sm:w-auto px-6 lg:px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold order-1 sm:order-2"
                         >
                           Continue
                           <ArrowRight className="h-4 w-4 ml-2" />
