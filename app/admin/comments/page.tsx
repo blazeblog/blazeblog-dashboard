@@ -94,12 +94,9 @@ export default async function CommentsPage({
   return (
     <AdminLayout title="Comments">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Comments</h2>
-            <p className="text-muted-foreground">Manage and moderate blog comments</p>
-          </div>
+        {/* Description */}
+        <div>
+          <p className="text-muted-foreground">Manage and moderate blog comments</p>
         </div>
 
         {/* Filters */}

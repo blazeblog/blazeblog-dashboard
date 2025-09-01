@@ -206,8 +206,7 @@ export default function NotionIntegrationPage() {
       <AdminLayout title="Notion Integration">
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold">Notion Integration</h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground">
               {partialIntegration 
                 ? "Complete your Notion integration setup" 
                 : "Connect your Notion workspace to sync posts automatically"
@@ -260,8 +259,7 @@ export default function NotionIntegrationPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Notion Integration</h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground">
               Manage your Notion sync settings and view sync status
             </p>
           </div>

@@ -78,13 +78,10 @@ export default function CategoriesPage() {
   }, [filters])
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Categories">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
-            <p className="text-muted-foreground">Organize your content with categories</p>
-          </div>
+          <p className="text-muted-foreground">Organize your content with categories</p>
         </div>
 
         {error && (

@@ -7,6 +7,7 @@ import { useClientApi, type Category, type Post, type Tag } from "@/lib/client-a
 import { useToast } from "@/hooks/use-toast"
 import { useAutoSave } from "@/hooks/use-auto-save"
 import { Button } from "@/components/ui/button"
+import { useSidebar } from "@/components/ui/sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -49,6 +50,7 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
   const router = useRouter()
   const api = useClientApi()
   const { toast } = useToast()
+  const { toggleSidebar, state } = useSidebar()
 
   // Form state
   const [formData, setFormData] = useState<PostFormData>({
@@ -241,24 +243,20 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
     )
   }
 
-  const pageTitle = mode === "add" ? "Create New Post" : "Edit Post"
   const pageDescription = mode === "add" ? "Write and publish your content" : "Edit and update your content"
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 mb-8 border-b">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <p className="text-sm text-muted-foreground">{pageDescription}</p>
-            <Badge 
-              variant="outline" 
-              className="text-xs h-5 px-2 font-normal"
-            >
-              {formData.status.charAt(0).toUpperCase() + formData.status.slice(1)}
-            </Badge>
-          </div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 mb-6">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground">{pageDescription}</p>
+          <Badge 
+            variant="outline" 
+            className="text-xs h-5 px-2 font-normal"
+          >
+            {formData.status.charAt(0).toUpperCase() + formData.status.slice(1)}
+          </Badge>
         </div>
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
@@ -277,12 +275,16 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowSEOSidebar(!showSEOSidebar)}
+              onClick={() => {
+                const willBeCollapsed = state === "expanded"
+                toggleSidebar()
+                setShowSEOSidebar(!willBeCollapsed)
+              }}
               className={cn("h-9 text-muted-foreground hover:text-foreground text-sm", 
-                showSEOSidebar && "bg-muted text-foreground")}
+                state === "collapsed" && !showSEOSidebar && "bg-muted text-foreground")}
             >
               <Focus className="w-4 h-4 mr-2" />
-              SEO
+              Focus
             </Button>
             
             <Button 
@@ -317,7 +319,7 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main Content */}
-        <div className={`flex-1 min-w-0 ${!showSEOSidebar ? 'w-full max-w-none px-0' : ''}`}>
+        <div className="flex-1 min-w-0">
           <div className="space-y-6">
             {/* Editor Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>

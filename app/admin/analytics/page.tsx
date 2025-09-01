@@ -121,11 +121,10 @@ export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState("7d")
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Analytics">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
             <p className="text-muted-foreground">Track your site's performance and user behavior</p>
           </div>
           <div className="flex items-center gap-4">

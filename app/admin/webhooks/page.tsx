@@ -57,8 +57,7 @@ export default function WebhooksListPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold">Webhooks</h1>
-            <p className="text-sm text-muted-foreground">Manage webhook endpoints and inspect deliveries</p>
+            <p className="text-muted-foreground">Manage webhook endpoints and inspect deliveries</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" asChild>

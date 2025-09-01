@@ -307,14 +307,10 @@ export default function CustomDomainPage() {
   return (
     <AdminLayout title="Custom Domain">
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Globe className="h-8 w-8" />
-          <div>
-            <h1 className="text-3xl font-bold">Custom Domain</h1>
-            <p className="text-muted-foreground">
-              Connect your own domain to your blog
-            </p>
-          </div>
+        <div>
+          <p className="text-muted-foreground">
+            Connect your own domain to your blog
+          </p>
         </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
