@@ -917,11 +917,10 @@ export default function FormsPage() {
 
   if (isCreating || editingForm) {
     return (
-      <AdminLayout>
+      <AdminLayout title={editingForm ? "Edit Form" : "Create Form"}>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">{editingForm ? "Edit Form" : "Create New Form"}</h1>
               <p className="text-muted-foreground">
                 {editingForm ? "Modify your existing form" : "Build a custom lead generation form"}
               </p>
@@ -942,11 +941,10 @@ export default function FormsPage() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Forms">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Lead Generation Forms</h1>
             <p className="text-muted-foreground">Create and manage custom forms to capture leads</p>
           </div>
           <Button type="button" onClick={() => setIsCreating(true)}>

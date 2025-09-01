@@ -101,7 +101,6 @@ export default function ApiKeysPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">API Keys</h2>
             <p className="text-muted-foreground">Manage your API keys for programmatic access</p>
           </div>
           <Button onClick={handleCreateNew}>

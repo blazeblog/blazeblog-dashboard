@@ -159,6 +159,53 @@ export interface UpdateNewsletterRequest {
   isActive?: boolean
 }
 
+// Webhooks types
+export type WebhookEvent = 'newsletter.subscribed' | 'comment.added'
+
+export interface Webhook {
+  id: number
+  customerId: number
+  url: string
+  events: WebhookEvent[]
+  isActive: boolean
+  description?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateWebhookRequest {
+  url: string
+  events: WebhookEvent[]
+  isActive: boolean
+  description?: string
+}
+
+export interface RotateSecretResponse {
+  secret: string // base64url
+}
+
+export interface CreateWebhookResponse extends Webhook {
+  secret: string // base64url, only returned on create
+}
+
+export interface WebhookDeliveryAttempt {
+  id: number
+  webhookId: number
+  customerId: number
+  event: WebhookEvent
+  payload: Record<string, any>
+  url: string
+  attempt: number
+  httpStatus: number | null
+  responseTimeMs: number | null
+  signature: string | null // e.g., "t=...,v1=..."
+  responseBody: string | null
+  error: string | null
+  deliveredAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
   body?: any
@@ -322,6 +369,37 @@ export function useClientApi() {
       
     delete: <T = any>(endpoint: string, options?: Omit<ApiOptions, 'method'>) =>
       makeRequest<T>(endpoint, { ...options, method: 'DELETE' }),
+
+    // Webhooks API methods
+    webhooks: {
+      // Create a webhook (returns secret once)
+      create: (data: CreateWebhookRequest) =>
+        makeRequest<CreateWebhookResponse>('/webhooks', { method: 'POST', body: data }),
+
+      // List webhooks
+      list: () =>
+        makeRequest<Webhook[]>('/webhooks'),
+
+      // Get a single webhook
+      get: (id: number) =>
+        makeRequest<Webhook>(`/webhooks/${id}`),
+
+      // Update webhook
+      update: (id: number, updates: Partial<CreateWebhookRequest>) =>
+        makeRequest<Webhook>(`/webhooks/${id}`, { method: 'PATCH', body: updates }),
+
+      // Delete webhook
+      delete: (id: number) =>
+        makeRequest<void>(`/webhooks/${id}`, { method: 'DELETE' }),
+
+      // Rotate secret for a webhook
+      rotateSecret: (id: number) =>
+        makeRequest<RotateSecretResponse>(`/webhooks/${id}/rotate-secret`, { method: 'POST' }),
+
+      // List delivery attempts for a webhook (paginated)
+      listEvents: (id: number, params: PaginationParams = {}) =>
+        makeRequest<PaginatedResponse<WebhookDeliveryAttempt>>(`/webhooks/${id}/events${buildQueryString(params)}`),
+    },
 
     // Related Posts API methods
     relatedPosts: {

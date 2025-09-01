@@ -42,6 +42,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { getImageUrl } from "@/lib/image-utils"
+import { Webhook as WebhookIcon } from "lucide-react"
 
 interface SubmenuItem {
   title: string
@@ -169,6 +170,15 @@ const navigation: NavigationSection[] = [
         submenu: [
           { title: "API Keys", url: "/admin/api-keys" },
           { title: "Create New", url: "/admin/api-keys/create" },
+        ],
+      },
+      {
+        title: "Webhooks",
+        url: "/admin/webhooks",
+        icon: WebhookIcon,
+        submenu: [
+          { title: "All Webhooks", url: "/admin/webhooks" },
+          { title: "Create New", url: "/admin/webhooks/create" },
         ],
       },
     ],

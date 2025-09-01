@@ -249,10 +249,7 @@ export default function PostsPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Posts</h2>
-            <p className="text-muted-foreground">Manage your blog posts and articles</p>
-          </div>
+          <p className="text-muted-foreground">Manage your blog posts and articles</p>
           <Button asChild>
             <Link href="/admin/posts/add">
               <Plus className="mr-2 h-4 w-4" />

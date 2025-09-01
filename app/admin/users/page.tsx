@@ -98,12 +98,9 @@ export default function UsersPage() {
   return (
     <AdminLayout title="Users">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Users</h2>
-            <p className="text-muted-foreground">Manage user accounts and permissions</p>
-          </div>
+        {/* Description */}
+        <div>
+          <p className="text-muted-foreground">Manage user accounts and permissions</p>
         </div>
 
         {/* Stats Cards */}
