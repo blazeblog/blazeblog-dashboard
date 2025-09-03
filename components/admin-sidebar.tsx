@@ -20,6 +20,8 @@ import {
   Mail,
   Zap,
   Key,
+  Download,
+  Database,
 } from "lucide-react"
 
 import {
@@ -104,7 +106,7 @@ const navigation: NavigationSection[] = [
         title: "Tags",
         url: "/admin/tags",
         icon: Hash,
-          submenu: [
+        submenu: [
           { title: "All Tags", url: "/admin/tags" },
           { title: "Add New", url: "/admin/tags/add" },
         ],
@@ -131,7 +133,7 @@ const navigation: NavigationSection[] = [
         submenu: [
           { title: "Subscribers", url: "/admin/newsletter" },
         ],
-      },
+      }
     ],
   },
   {
@@ -141,6 +143,10 @@ const navigation: NavigationSection[] = [
         title: "Users",
         url: "/admin/users",
         icon: Users,
+        submenu: [
+          { title: "All Users", url: "/admin/users" },
+          { title: "Invitations", url: "/admin/users/invitations" },
+        ],
       },
       // {
       //   title: "Roles & Permissions",
@@ -201,6 +207,11 @@ const navigation: NavigationSection[] = [
         url: "/admin/custom-domain",
         icon: Globe,
       },
+      {
+        title: "Data Management",
+        url: "/admin/data-management",
+        icon: Database,
+      },
     ],
   },
 ]
@@ -217,11 +228,11 @@ export function AdminSidebar() {
             <SidebarMenuButton size="lg" asChild>
               <Link href="/admin">
                 <div className="flex items-center gap-2">
-                  <Image 
-                    src="/logo_blaze.ico" 
-                    alt="Blazeblog" 
-                    width={20} 
-                    height={20} 
+                  <Image
+                    src="/logo_blaze.ico"
+                    alt="Blazeblog"
+                    width={20}
+                    height={20}
                     className="flex-shrink-0"
                   />
                   <div className="grid flex-1 text-left text-sm leading-tight">

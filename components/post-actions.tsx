@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 interface PostActionsProps {
   postId: number
@@ -30,6 +31,7 @@ interface PostActionsProps {
 export function PostActions({ postId, onDelete }: PostActionsProps) {
   const router = useRouter()
   const api = useClientApi()
+  const { toast } = useToast()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -39,9 +41,18 @@ export function PostActions({ postId, onDelete }: PostActionsProps) {
       await api.delete(`/posts/${postId}`)
       // Call the onDelete callback to update the parent state immediately
       onDelete?.(postId)
+      toast({
+        title: "Post Deleted",
+        description: "The post has been successfully deleted.",
+        variant: "default"
+      })
     } catch (error) {
       console.error('Error deleting post:', error)
-      // TODO: Show error toast/notification to user
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete the post. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setIsDeleting(false)
       setShowDeleteDialog(false)

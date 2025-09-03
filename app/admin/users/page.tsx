@@ -84,23 +84,21 @@ export default function UsersPage() {
   }
 
   const handleDeleteUser = async (user: User) => {
-    // TODO: Implement user deletion with confirmation
     console.log('Delete user:', user)
   }
 
   const handleSendEmail = (user: User) => {
-    // TODO: Implement email functionality
     window.open(`mailto:${user.email}`, '_blank')
   }
 
-  // Removed full-screen loading states to prevent weird behavior
 
   return (
     <AdminLayout title="Users">
       <div className="space-y-6">
-        {/* Description */}
-        <div>
+        {/* Description + Actions */}
+        <div className="flex items-center justify-between">
           <p className="text-muted-foreground">Manage user accounts and permissions</p>
+          <Button onClick={() => router.push('/admin/users/invitations')}>Invitations</Button>
         </div>
 
         {/* Stats Cards */}
@@ -178,6 +176,7 @@ export default function UsersPage() {
           </CardContent>
         </Card>
 
+        
         {/* Users Table */}
         <Card>
           <CardHeader>

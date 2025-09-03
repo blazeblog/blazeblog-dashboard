@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Save, Settings, Flag, Upload, X, BarChart, DollarSign, Plus, Trash2, Link } from "lucide-react"
+import { Save, Settings, Flag, Upload, X, BarChart, DollarSign, Plus, Trash2, Link, Info } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useClientApi } from "@/lib/client-api"
 import { getImageUrl } from "@/lib/image-utils"
@@ -36,6 +36,7 @@ interface SiteConfig {
 interface NavigationLink {
   label: string
   url: string
+  children?: NavigationLink[]
 }
 
 interface NavigationConfig {
@@ -333,12 +334,13 @@ export function SiteConfigForm() {
   }
 
   const updateAds = (provider: keyof Ads, field: keyof AdProvider, value: boolean | string) => {
+    if (provider === 'enabled' || provider === 'custom') return
     setConfig(prev => ({
       ...prev,
       ads: {
         ...prev.ads,
         [provider]: {
-          ...prev.ads[provider],
+          ...prev.ads[provider] as AdProvider,
           [field]: value
         }
       }
@@ -357,9 +359,9 @@ export function SiteConfigForm() {
 
   const addNavigationLink = (type: 'header' | 'footer') => {
     const fieldName = type === 'header' ? 'headerNavigationLinks' : 'footerNavigationLinks'
-    const maxLimit = type === 'header' ? 5 : 10
+    const maxLimit = type === 'header' ? 5 : 5
     
-    if (config[fieldName]?.length >= maxLimit) {
+    if ((config[fieldName]?.length || 0) >= maxLimit) {
       toast({
         title: "Limit Reached",
         description: `You can only add up to ${maxLimit} ${type} navigation links.`,
@@ -405,6 +407,83 @@ export function SiteConfigForm() {
         i === index ? { ...link, [field]: value } : link
       ) || []
     }))
+  }
+
+  const addChildLink = (type: 'header' | 'footer', parentIndex: number) => {
+    const fieldName = type === 'header' ? 'headerNavigationLinks' : 'footerNavigationLinks'
+    const maxChildLimit = type === 'header' ? 5 : 7
+    
+    setConfig(prev => {
+      const links = prev[fieldName] || []
+      const parentLink = links[parentIndex]
+      
+      if (!parentLink) return prev
+      
+      const currentChildren = parentLink.children || []
+      if (currentChildren.length >= maxChildLimit) {
+        toast({
+          title: "Limit Reached",
+          description: `You can only add up to ${maxChildLimit} child links.`,
+          variant: "destructive"
+        })
+        return prev
+      }
+      
+      const updatedLinks = links.map((link, i) => 
+        i === parentIndex 
+          ? { ...link, children: [...currentChildren, { label: '', url: '' }] }
+          : link
+      )
+      
+      return {
+        ...prev,
+        [fieldName]: updatedLinks
+      }
+    })
+  }
+
+  const removeChildLink = (type: 'header' | 'footer', parentIndex: number, childIndex: number) => {
+    const fieldName = type === 'header' ? 'headerNavigationLinks' : 'footerNavigationLinks'
+    
+    setConfig(prev => {
+      const links = prev[fieldName] || []
+      const updatedLinks = links.map((link, i) => 
+        i === parentIndex 
+          ? { 
+              ...link, 
+              children: link.children?.filter((_, ci) => ci !== childIndex) 
+            }
+          : link
+      )
+      
+      return {
+        ...prev,
+        [fieldName]: updatedLinks
+      }
+    })
+  }
+
+  const updateChildLink = (type: 'header' | 'footer', parentIndex: number, childIndex: number, field: 'label' | 'url', value: string) => {
+    const fieldName = type === 'header' ? 'headerNavigationLinks' : 'footerNavigationLinks'
+    
+    setConfig(prev => {
+      const links = prev[fieldName] || []
+      const updatedLinks = links.map((link, i) => 
+        i === parentIndex 
+          ? { 
+              ...link, 
+              children: link.children?.map((child, ci) => 
+                ci === childIndex ? { ...child, [field]: value } : child
+              )
+            }
+          : link
+      )
+      
+      return {
+        ...prev,
+        [fieldName]: updatedLinks
+      }
+    })
   }
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -464,22 +543,24 @@ export function SiteConfigForm() {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="site-config" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="site-config" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Site Configuration
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto p-1">
+          <TabsTrigger value="site-config" className="flex items-center gap-1 md:gap-2 px-2 py-2 text-xs md:text-sm">
+            <Settings className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Configuration</span>
+            <span className="sm:hidden">Config</span>
           </TabsTrigger>
-          <TabsTrigger value="feature-flags" className="flex items-center gap-2">
-            <Flag className="h-4 w-4" />
-            Feature Flags
+          <TabsTrigger value="feature-flags" className="flex items-center gap-1 md:gap-2 px-2 py-2 text-xs md:text-sm">
+            <Flag className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Features</span>
+            <span className="sm:hidden">Flags</span>
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart className="h-4 w-4" />
-            Analytics
+          <TabsTrigger value="analytics" className="flex items-center gap-1 md:gap-2 px-2 py-2 text-xs md:text-sm">
+            <BarChart className="h-4 w-4 flex-shrink-0" />
+            <span>Analytics</span>
           </TabsTrigger>
-          <TabsTrigger value="ads" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            Ads
+          <TabsTrigger value="ads" className="flex items-center gap-1 md:gap-2 px-2 py-2 text-xs md:text-sm">
+            <DollarSign className="h-4 w-4 flex-shrink-0" />
+            <span>Ads</span>
           </TabsTrigger>
         </TabsList>
 
@@ -592,7 +673,22 @@ export function SiteConfigForm() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base font-semibold">Header Navigation Links</Label>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-base font-semibold">Header Navigation Links</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                        onClick={() => toast({
+                          title: "Navigation Info",
+                          description: "Each parent link can have up to 5 child links. Child links create dropdown menus in your site navigation.",
+                          variant: "default"
+                        })}
+                      >
+                        <Info className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <p className="text-sm text-muted-foreground">Add navigation links for your site header (max 5)</p>
                   </div>
                   <Button
@@ -600,7 +696,7 @@ export function SiteConfigForm() {
                     variant="outline"
                     size="sm"
                     onClick={() => addNavigationLink('header')}
-                    disabled={config.headerNavigationLinks?.length >= 5}
+                    disabled={(config.headerNavigationLinks?.length || 0) >= 5}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Link
@@ -611,7 +707,7 @@ export function SiteConfigForm() {
                   const errorKey = `header-${index}`
                   const hasError = urlErrors[errorKey]
                   return (
-                    <div key={index} className="space-y-2">
+                    <div key={index} className="space-y-3 border rounded-lg p-4">
                       <div className="flex gap-2 items-end">
                         <div className="flex-1 space-y-2">
                           <Label htmlFor={`header-label-${index}`}>Label</Label>
@@ -634,6 +730,15 @@ export function SiteConfigForm() {
                         </div>
                         <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addChildLink('header', index)}
+                          disabled={(link.children?.length || 0) >= 5}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeNavigationLink('header', index)}
@@ -644,6 +749,42 @@ export function SiteConfigForm() {
                       </div>
                       {hasError && (
                         <p className="text-sm text-red-500 mt-1">{hasError}</p>
+                      )}
+                      
+                      {/* Child Links */}
+                      {link.children && link.children.length > 0 && (
+                        <div className="ml-4 pl-4 border-l-2 border-muted space-y-2">
+                          <Label className="text-sm font-medium text-muted-foreground">Child Links (max 5)</Label>
+                          {link.children.map((child, childIndex) => (
+                            <div key={childIndex} className="flex gap-2 items-end">
+                              <div className="flex-1 space-y-1">
+                                <Input
+                                  value={child.label}
+                                  onChange={(e) => updateChildLink('header', index, childIndex, 'label', e.target.value)}
+                                  placeholder="Child link text"
+                                  className="text-sm"
+                                />
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <Input
+                                  value={child.url}
+                                  onChange={(e) => updateChildLink('header', index, childIndex, 'url', e.target.value)}
+                                  placeholder="https://example.com"
+                                  className="text-sm"
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeChildLink('header', index, childIndex)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   )
@@ -656,15 +797,30 @@ export function SiteConfigForm() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base font-semibold">Footer Navigation Links</Label>
-                    <p className="text-sm text-muted-foreground">Add navigation links for your site footer (max 10)</p>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-base font-semibold">Footer Navigation Links</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                        onClick={() => toast({
+                          title: "Navigation Info",
+                          description: "Each parent link can have up to 7 child links. Child links create dropdown menus in your site navigation.",
+                          variant: "default"
+                        })}
+                      >
+                        <Info className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Add navigation links for your site footer (max 5)</p>
                   </div>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => addNavigationLink('footer')}
-                    disabled={config.footerNavigationLinks?.length >= 10}
+                    disabled={(config.footerNavigationLinks?.length || 0) >= 5}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Link
@@ -675,7 +831,7 @@ export function SiteConfigForm() {
                   const errorKey = `footer-${index}`
                   const hasError = urlErrors[errorKey]
                   return (
-                    <div key={index} className="space-y-2">
+                    <div key={index} className="space-y-3 border rounded-lg p-4">
                       <div className="flex gap-2 items-end">
                         <div className="flex-1 space-y-2">
                           <Label htmlFor={`footer-label-${index}`}>Label</Label>
@@ -698,6 +854,15 @@ export function SiteConfigForm() {
                         </div>
                         <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addChildLink('footer', index)}
+                          disabled={(link.children?.length || 0) >= 7}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeNavigationLink('footer', index)}
@@ -708,6 +873,42 @@ export function SiteConfigForm() {
                       </div>
                       {hasError && (
                         <p className="text-sm text-red-500 mt-1">{hasError}</p>
+                      )}
+                      
+                      {/* Child Links */}
+                      {link.children && link.children.length > 0 && (
+                        <div className="ml-4 pl-4 border-l-2 border-muted space-y-2">
+                          <Label className="text-sm font-medium text-muted-foreground">Child Links (max 7)</Label>
+                          {link.children.map((child, childIndex) => (
+                            <div key={childIndex} className="flex gap-2 items-end">
+                              <div className="flex-1 space-y-1">
+                                <Input
+                                  value={child.label}
+                                  onChange={(e) => updateChildLink('footer', index, childIndex, 'label', e.target.value)}
+                                  placeholder="Child link text"
+                                  className="text-sm"
+                                />
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <Input
+                                  value={child.url}
+                                  onChange={(e) => updateChildLink('footer', index, childIndex, 'url', e.target.value)}
+                                  placeholder="https://example.com"
+                                  className="text-sm"
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeChildLink('footer', index, childIndex)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   )
