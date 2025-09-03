@@ -2,7 +2,6 @@
 
 import { useParams } from "next/navigation"
 import { usePageTitle } from "@/hooks/use-page-title"
-import { AdminLayout } from "@/components/admin-layout"
 import { PostForm } from "@/components/post-form"
 
 function EditPostPage() {
@@ -12,11 +11,7 @@ function EditPostPage() {
   
   usePageTitle(`Edit Post - BlazeBlog Admin`)
 
-  return (
-    <AdminLayout title="Edit Post">
-      <PostForm mode="edit" postId={postIdNumber} />
-    </AdminLayout>
-  )
+  return <PostForm mode="edit" postId={postIdNumber} />
 }
 
 export default EditPostPage

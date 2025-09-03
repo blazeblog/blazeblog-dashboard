@@ -484,7 +484,7 @@ export function SEOSuggestionsSidebar({
                 ? `${rateLimitInfo.availableRequests} uses left today`
                 : "Daily limit reached"
             ) : (
-              <div className="w-20 h-3 bg-muted/30 rounded animate-pulse" />
+              <span className="inline-block w-20 h-3 bg-muted/30 rounded animate-pulse" />
             )}
           </p>
         </CardContent>
