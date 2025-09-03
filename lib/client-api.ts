@@ -160,7 +160,18 @@ export interface UpdateNewsletterRequest {
 }
 
 // Webhooks types
-export type WebhookEvent = 'newsletter.subscribed' | 'comment.added'
+export type WebhookEvent = 
+  | 'newsletter.subscribed' 
+  | 'comment.added'
+  | 'post.created'
+  | 'post.updated' 
+  | 'post.deleted'
+  | 'category.created'
+  | 'category.updated'
+  | 'category.deleted'
+  | 'tag.created'
+  | 'tag.updated'
+  | 'tag.deleted'
 
 export interface Webhook {
   id: number
@@ -169,6 +180,9 @@ export interface Webhook {
   events: WebhookEvent[]
   isActive: boolean
   description?: string
+  failureRate?: number
+  failureRateWindow?: string
+  autoDisabledAt?: string
   createdAt: string
   updatedAt: string
 }

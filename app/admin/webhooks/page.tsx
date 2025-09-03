@@ -69,6 +69,10 @@ export default function WebhooksListPage() {
           </div>
         </div>
 
+        <div className="text-xs text-muted-foreground/60 px-1">
+          Webhooks with >50% failure rate over 2 days are auto-disabled to prevent service abuse.
+        </div>
+
         <Card>
           <CardHeader>
             <CardTitle>All Webhooks</CardTitle>
@@ -102,15 +106,16 @@ export default function WebhooksListPage() {
               <div className="text-sm text-muted-foreground">No webhooks yet. Create one to get started.</div>
             ) : (
               <div className="overflow-x-auto">
-              <Table className="table-fixed">
+              <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[36%]">URL</TableHead>
-                    <TableHead className="w-[24%]">Events</TableHead>
-                    <TableHead className="w-[10%]">Status</TableHead>
-                    <TableHead className="w-[20%]">Description</TableHead>
-                    <TableHead className="w-[10%]">Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="min-w-[200px]">URL</TableHead>
+                    <TableHead className="min-w-[120px]">Events</TableHead>
+                    <TableHead className="min-w-[80px]">Status</TableHead>
+                    <TableHead className="min-w-[100px]">Health</TableHead>
+                    <TableHead className="min-w-[120px]">Description</TableHead>
+                    <TableHead className="min-w-[140px]">Created</TableHead>
+                    <TableHead className="text-right min-w-[120px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -142,8 +147,31 @@ export default function WebhooksListPage() {
                         <Badge variant={w.isActive ? "secondary" : "outline"} className="text-xs">
                           {w.isActive ? "Active" : "Disabled"}
                         </Badge>
+                        {w.autoDisabledAt && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Auto-disabled
+                          </div>
+                        )}
                       </TableCell>
-                      <TableCell className="max-w-[280px] truncate" title={w.description || undefined}>{w.description || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {w.failureRate !== undefined && w.failureRate > 0.5 ? (
+                          <div className="space-y-1">
+                            <Badge variant="destructive" className="text-xs">
+                              {Math.round(w.failureRate * 100)}% failure
+                            </Badge>
+                            <div className="text-xs text-muted-foreground">
+                              High failure rate detected
+                            </div>
+                          </div>
+                        ) : w.failureRate !== undefined ? (
+                          <Badge variant="outline" className="text-xs text-green-600">
+                            {Math.round(w.failureRate * 100)}% failure
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="max-w-[180px] truncate" title={w.description || undefined}>{w.description || "—"}</TableCell>
                       <TableCell className="whitespace-nowrap">{new Date(w.createdAt).toLocaleString()}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
