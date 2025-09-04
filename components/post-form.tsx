@@ -224,6 +224,56 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
     setFormData(prev => ({ ...prev, metaDescription }))
   }
 
+  const handlePreview = async () => {
+    if (!formData.title.trim()) {
+      toast({
+        title: "Error",
+        description: "Title is required for preview",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsLoading(true)
+
+      const tagsWithIds = await ensureTagsExist(formData.tags.map(t => t.name), { api, toast })
+
+      const postData = {
+        title: formData.title,
+        content: formData.content,
+        excerpt: formData.excerpt || undefined,
+        metaDescription: formData.metaDescription || undefined,
+        status: "draft", // Always preview as draft
+        featuredImage: formData.featuredImage || undefined,
+        categoryId: formData.categoryId && formData.categoryId !== "" ? Number(formData.categoryId) : undefined,
+        slug: formData.slug,
+        tagIds: tagsWithIds.map(tag => tag.id),
+        relatedPostIds: formData.relatedPosts.map(post => post.id),
+      }
+
+      const response = await api.post('/posts/preview', postData)
+      
+      if (response?.previewUrl) {
+        window.open(`/admin/posts/preview?url=${encodeURIComponent(response.previewUrl)}`, '_blank')
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to generate preview",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate preview",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -252,10 +302,7 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
         status={formData.status}
         publishDate={formData.publishDate}
         mode={mode}
-        onPreview={() => {
-        // Open preview with hardcoded BlazeBlog URL
-        window.open('/admin/posts/preview', '_blank')
-      }}
+        onPreview={handlePreview}
         onPublish={handleSubmit}
         onStatusChange={(status) => setFormData(prev => ({ ...prev, status }))}
         onSchedule={(date) => setFormData(prev => ({ ...prev, publishDate: date }))}

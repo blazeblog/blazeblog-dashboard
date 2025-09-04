@@ -41,7 +41,6 @@ export default function CreateWebhookPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold">Create Webhook</h1>
             <p className="text-sm text-muted-foreground">Add a new webhook receiver</p>
           </div>
           <Button variant="outline" asChild>

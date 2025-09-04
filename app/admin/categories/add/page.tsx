@@ -92,15 +92,8 @@ export default function AddCategoryPage() {
     <AdminLayout title="Add Category">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" asChild>
-            <a href="/admin/categories">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Categories
-            </a>
-          </Button>
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Create New Category</h2>
-            <p className="text-muted-foreground">Add a new category to organize your content</p>
+            <p className="text-sm text-muted-foreground">Add a new category to organize your content</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

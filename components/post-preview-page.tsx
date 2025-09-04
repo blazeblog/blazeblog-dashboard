@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, Monitor, Smartphone, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -15,13 +15,35 @@ export function PostPreviewPage({}: PostPreviewPageProps = {}) {
   const [activeView, setActiveView] = useState<'desktop' | 'mobile'>('desktop')
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
-  // Hardcoded BlazeBlog URL as requested
-  const blogUrl = "https://kushagra.blazeblog.xyz/software-engineers-the-power-of-side-projects"
+  // Get URL from search params or use fallback
+  const blogUrl = searchParams?.get('url') || "https://kushagra.blazeblog.xyz/software-engineers-the-power-of-side-projects"
+
+  const [iframeError, setIframeError] = useState(false)
 
   const handleIframeLoad = () => {
+    console.log('Iframe loaded successfully')
     setIsLoading(false)
   }
+
+  const handleIframeError = () => {
+    console.error('Iframe failed to load:', blogUrl)
+    setIsLoading(false)
+    setIframeError(true)
+  }
+
+  // Add timeout for slow loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('Iframe loading timeout')
+        setIsLoading(false)
+      }
+    }, 10000) // 10 second timeout
+
+    return () => clearTimeout(timeout)
+  }, [isLoading])
 
   return (
     <div 
