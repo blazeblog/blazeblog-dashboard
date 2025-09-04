@@ -121,7 +121,7 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
     }
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (overrideStatus?: "draft" | "published" | "scheduled") => {
     if (!formData.title.trim()) {
       setError("Title is required")
       return
@@ -133,18 +133,20 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
 
       const tagsWithIds = await ensureTagsExist(formData.tags.map(t => t.name), { api, toast })
 
+      const finalStatus = overrideStatus || formData.status
+
       const postData = {
         title: formData.title,
         content: formData.content,
         excerpt: formData.excerpt || undefined,
         metaDescription: formData.metaDescription || undefined,
-        status: formData.status,
+        status: finalStatus,
         featuredImage: formData.featuredImage || undefined,
         categoryId: formData.categoryId && formData.categoryId !== "" ? Number(formData.categoryId) : undefined,
         slug: formData.slug,
         tagIds: tagsWithIds.map(tag => tag.id),
         relatedPostIds: formData.relatedPosts.map(post => post.id),
-        publishedAt: formData.status === 'scheduled' ? formData.publishDate : undefined
+        publishedAt: finalStatus === 'scheduled' ? formData.publishDate : undefined
       }
 
       let result
@@ -153,19 +155,27 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
         toast({
           title: "Success",
           description: "Post created successfully",
+          duration: 3000,
         })
       } else {
         result = await api.put(`/posts/${postId}`, postData)
         toast({
           title: "Success", 
           description: "Post updated successfully",
+          duration: 3000,
         })
       }
 
-      if (formData.status === "published") {
+      // Update local state to reflect the change
+      if (overrideStatus) {
+        setFormData(prev => ({ ...prev, status: overrideStatus }))
+      }
+
+      if (finalStatus === "published") {
         router.push(`/admin/posts`)
       } else {
-        router.push(`/admin/posts/edit/${result.id}`)
+        const redirectId = mode === "edit" ? postId : result.id
+        router.push(`/admin/posts/edit/${redirectId}`)
       }
     } catch (error: any) {
       setError(error.message || `Failed to ${mode === "add" ? "create" : "update"} post`)
@@ -236,41 +246,47 @@ export function PostForm({ mode, postId, initialData }: PostFormProps) {
   }
 
   return (
-    <PostLayout
-      title={formData.title || "Untitled Post"}
-      status={formData.status}
-      publishDate={formData.publishDate}
-      onSave={() => {/* TODO: Implement preview */}}
-      onPublish={handleSubmit}
-      onStatusChange={(status) => setFormData(prev => ({ ...prev, status }))}
-      onSchedule={(date) => setFormData(prev => ({ ...prev, publishDate: date }))}
-      isLoading={isLoading}
-      isOnline={isOnline}
-      isSaving={isSaving}
-      lastSaved={lastSaved}
-      autoSaveEnabled={autoSaveEnabled}
-      sidebar={
-        <PostSettingsSidebar
-          formData={formData}
-          setFormData={setFormData}
-          categories={categories}
-          postId={postId}
-          onTitleSuggestion={handleTitleSuggestion}
-          onSlugSuggestion={handleSlugSuggestion}
-          onTagSuggestions={handleTagSuggestions}
-          onExcerptSuggestion={handleExcerptSuggestion}
-          onMetaDescriptionSuggestion={handleMetaDescriptionSuggestion}
+    <>
+      <PostLayout
+        title={formData.title || "Untitled Post"}
+        status={formData.status}
+        publishDate={formData.publishDate}
+        mode={mode}
+        onPreview={() => {
+        // Open preview with hardcoded BlazeBlog URL
+        window.open('/admin/posts/preview', '_blank')
+      }}
+        onPublish={handleSubmit}
+        onStatusChange={(status) => setFormData(prev => ({ ...prev, status }))}
+        onSchedule={(date) => setFormData(prev => ({ ...prev, publishDate: date }))}
+        isLoading={isLoading}
+        isOnline={isOnline}
+        isSaving={isSaving}
+        lastSaved={lastSaved}
+        autoSaveEnabled={autoSaveEnabled}
+        sidebar={
+          <PostSettingsSidebar
+            formData={formData}
+            setFormData={setFormData}
+            categories={categories}
+            postId={postId}
+            onTitleSuggestion={handleTitleSuggestion}
+            onSlugSuggestion={handleSlugSuggestion}
+            onTagSuggestions={handleTagSuggestions}
+            onExcerptSuggestion={handleExcerptSuggestion}
+            onMetaDescriptionSuggestion={handleMetaDescriptionSuggestion}
+          />
+        }
+      >
+        <PostEditor
+          title={formData.title}
+          content={formData.content}
+          featuredImage={formData.featuredImage}
+          onTitleChange={(title) => setFormData(prev => ({ ...prev, title }))}
+          onContentChange={(content) => setFormData(prev => ({ ...prev, content }))}
+          onFeaturedImageChange={(featuredImage) => setFormData(prev => ({ ...prev, featuredImage }))}
         />
-      }
-    >
-      <PostEditor
-        title={formData.title}
-        content={formData.content}
-        featuredImage={formData.featuredImage}
-        onTitleChange={(title) => setFormData(prev => ({ ...prev, title }))}
-        onContentChange={(content) => setFormData(prev => ({ ...prev, content }))}
-        onFeaturedImageChange={(featuredImage) => setFormData(prev => ({ ...prev, featuredImage }))}
-      />
-    </PostLayout>
+      </PostLayout>
+    </>
   )
 }

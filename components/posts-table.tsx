@@ -54,7 +54,6 @@ export function PostsTable({ posts, onDeletePost }: PostsTableProps) {
               </Badge>
             </TableCell>
             <TableCell>{post.user.username}</TableCell>
-            <TableCell>-</TableCell>
             <TableCell>{new Date(post.createdAt).toLocaleDateString()}</TableCell>
             <TableCell onClick={(e) => e.stopPropagation()}>
               <PostActions postId={post.id} onDelete={onDeletePost} />

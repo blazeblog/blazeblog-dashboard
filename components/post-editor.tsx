@@ -41,6 +41,7 @@ export function PostEditor({
         toast({
           title: "Success",
           description: "Feature image uploaded successfully",
+          duration: 3000
         })
       }
     } catch (error) {

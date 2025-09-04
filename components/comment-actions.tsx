@@ -44,6 +44,7 @@ export function CommentActions({ comment }: CommentActionsProps) {
         toast({
           title: "Success",
           description: "Comment approved successfully",
+          duration: 3000
         })
         router.refresh()
       } catch (error) {
@@ -66,6 +67,7 @@ export function CommentActions({ comment }: CommentActionsProps) {
         toast({
           title: "Success",
           description: "Comment rejected successfully",
+          duration: 3000
         })
         router.refresh()
       } catch (error) {
@@ -86,6 +88,7 @@ export function CommentActions({ comment }: CommentActionsProps) {
         toast({
           title: "Success",
           description: "Comment deleted successfully",
+          duration: 3000
         })
         setIsDeleteOpen(false)
         router.refresh()

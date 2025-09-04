@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Search, X, Plus, GripVertical, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,15 +27,35 @@ export function RelatedPostsSelector({
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [showDropdown, setShowDropdown] = useState(false)
   
+  const searchContainerRef = useRef<HTMLDivElement>(null)
   const api = useClientApi()
   const { toast } = useToast()
 
   useEffect(() => {
     if (searchQuery.trim()) {
       fetchAvailablePosts()
+      setShowDropdown(true)
+    } else {
+      setShowDropdown(false)
+      setAvailablePosts([])
     }
   }, [currentPostId, searchQuery])
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const fetchAvailablePosts = async () => {
     if (!searchQuery.trim()) {
@@ -82,6 +102,13 @@ export function RelatedPostsSelector({
     }
 
     onChange([...selectedPosts, { id: post.id, title: post.title, slug: post.slug }])
+    setShowDropdown(false) // Hide dropdown after selection
+  }
+
+  const handleInputFocus = () => {
+    if (searchQuery.trim() && availablePosts.length > 0) {
+      setShowDropdown(true)
+    }
   }
 
   const handleRemovePost = (postId: number) => {
@@ -180,7 +207,7 @@ export function RelatedPostsSelector({
         )}
 
         {/* Search and Add */}
-        <div className="relative">
+        <div className="relative" ref={searchContainerRef}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
@@ -188,12 +215,13 @@ export function RelatedPostsSelector({
               placeholder="Search by title, excerpt, or slug..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={handleInputFocus}
               className="pl-10 h-9"
             />
           </div>
 
-          {/* Search Results Dropdown - Only show when searching */}
-          {(searchQuery.trim() || isLoading) && (
+          {/* Search Results Dropdown - Only show when showDropdown is true */}
+          {showDropdown && (searchQuery.trim() || isLoading) && (
             <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border rounded-lg shadow-lg max-h-48 overflow-y-auto">
               {isLoading ? (
                 <div className="text-center text-muted-foreground py-4 text-sm">

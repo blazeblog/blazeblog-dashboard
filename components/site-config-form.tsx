@@ -286,7 +286,8 @@ export function SiteConfigForm() {
       toast({
         title: "Success!",
         description: "Site configuration has been updated successfully.",
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
     } catch (error) {
       console.error('Error saving config:', error)
@@ -501,7 +502,8 @@ export function SiteConfigForm() {
           toast({
             title: "Success!",
             description: "Logo has been uploaded successfully.",
-            variant: "default"
+            variant: "default",
+            duration: 3000
           })
         } else {
           throw new Error('Upload response did not contain URL')

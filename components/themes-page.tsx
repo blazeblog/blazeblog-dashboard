@@ -91,7 +91,8 @@ export function ThemesPage() {
       toast({
         title: "Success!",
         description: `Theme "${themes.find(t => t.id === themeId)?.name}" with "${selectedPalette}" palette has been applied successfully.`,
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
     } catch (error) {
       console.error('Error selecting theme:', error)

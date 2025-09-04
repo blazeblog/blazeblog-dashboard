@@ -98,6 +98,7 @@ export function NewsletterPage() {
       toast({
         title: "Success",
         description: "Subscriber added successfully",
+        duration: 3000
       })
     } catch (error: any) {
       console.error('Error adding subscriber:', error)
@@ -123,6 +124,7 @@ export function NewsletterPage() {
       toast({
         title: "Success",
         description: "Subscriber deleted successfully",
+        duration: 3000
       })
     } catch (error: any) {
       console.error('Error deleting subscriber:', error)
@@ -144,6 +146,7 @@ export function NewsletterPage() {
       toast({
         title: "Success",
         description: `Subscriber ${!newsletter.isActive ? 'activated' : 'deactivated'} successfully`,
+        duration: 3000
       })
     } catch (error: any) {
       console.error('Error updating subscriber:', error)

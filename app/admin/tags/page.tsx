@@ -110,7 +110,8 @@ export default function TagsPage() {
       toast({
         title: "Success!",
         description: `Tag "${newTagName}" created successfully.`,
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
 
       setNewTagName('')
@@ -142,7 +143,8 @@ export default function TagsPage() {
       toast({
         title: "Success!",
         description: `Tag "${tagToDelete.name}" deleted successfully.`,
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
 
       fetchTags() // Refresh current page

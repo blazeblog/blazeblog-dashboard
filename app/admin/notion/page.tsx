@@ -149,6 +149,7 @@ export default function NotionIntegrationPage() {
       toast({
         title: "Success",
         description: "Notion integration created successfully!",
+        duration: 3000
       })
     } catch (error) {
       console.error('Failed to create integration:', error)

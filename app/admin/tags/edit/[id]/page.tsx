@@ -101,7 +101,8 @@ export default function EditTagPage() {
       toast({
         title: "Success!",
         description: "Tag updated successfully.",
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
     } catch (error) {
       console.error('Error updating tag:', error)
@@ -124,7 +125,8 @@ export default function EditTagPage() {
       toast({
         title: "Success!",
         description: "Tag deleted successfully.",
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
       
       router.push('/admin/tags')

@@ -62,7 +62,8 @@ export default function AddCategoryPage() {
       toast({
         title: "Success!",
         description: `Category "${formData.name}" has been created successfully.`,
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
       
       // Clear form data after successful save

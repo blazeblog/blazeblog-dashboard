@@ -702,6 +702,7 @@ export function AdvancedTiptapEditor({
         toast({
           title: "Success",
           description: "Hero image cropped and uploaded successfully",
+          duration: 3000
         })
       }
     } catch (error) {
@@ -772,6 +773,7 @@ export function AdvancedTiptapEditor({
         toast({
           title: "Success",
           description: "Image cropped and inserted successfully",
+          duration: 3000
         })
       }
     } catch (error) {

@@ -94,6 +94,7 @@ export default function CreateApiKeyPage() {
       toast({
         title: "Success",
         description: "API key created successfully",
+        duration: 3000
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create API key')
