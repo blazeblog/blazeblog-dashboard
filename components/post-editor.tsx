@@ -17,6 +17,7 @@ interface PostEditorProps {
   onTitleChange: (title: string) => void
   onContentChange: (content: string) => void
   onFeaturedImageChange: (url: string) => void
+  titlePlaceholder?: string
 }
 
 export function PostEditor({
@@ -26,6 +27,7 @@ export function PostEditor({
   onTitleChange,
   onContentChange,
   onFeaturedImageChange,
+  titlePlaceholder = "Post title",
 }: PostEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const api = useClientApi()
@@ -109,7 +111,7 @@ export function PostEditor({
       {/* Title Input */}
       <div>
         <Textarea
-          placeholder="Post title"
+          placeholder={titlePlaceholder}
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           className="text-4xl font-bold border-0 px-0 py-0 text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent resize-none min-h-0 overflow-hidden"

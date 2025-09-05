@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Users,
   FileText,
+  FileStack,
   FolderOpen,
   Hash,
   Settings,
@@ -91,6 +92,15 @@ const navigation: NavigationSection[] = [
         submenu: [
           { title: "All Posts", url: "/admin/posts" },
           { title: "Add New", url: "/admin/posts/add" },
+        ],
+      },
+      {
+        title: "Pages",
+        url: "/admin/pages",
+        icon: FileStack,
+        submenu: [
+          { title: "All Pages", url: "/admin/pages" },
+          { title: "Add New", url: "/admin/pages/add" },
         ],
       },
       {

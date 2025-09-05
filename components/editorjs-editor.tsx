@@ -115,8 +115,8 @@ export default function EditorJsEditor({
           return
         }
 
-        // Initialize drag-drop functionality
-        new DragDrop(instance)
+        // Initialize drag-drop functionality (pass holder id explicitly to avoid config lookups)
+        new DragDrop(instance, editorId)
         
         // Initialize undo functionality
         new Undo({ editor: instance })
@@ -371,4 +371,3 @@ function htmlToInitialBlocks(html: string) {
 
   return blocks
 }
-
