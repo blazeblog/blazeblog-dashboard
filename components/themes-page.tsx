@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -11,6 +10,7 @@ import { Palette, Check, Eye, Monitor, Smartphone, ExternalLink, Loader2 } from 
 import { useToast } from "@/hooks/use-toast"
 import { useClientApi } from "@/lib/client-api"
 import { getImageUrl } from "@/lib/image-utils"
+// Note: We only send font names to the API.
 
 interface Theme {
   id: number
@@ -32,11 +32,23 @@ export function ThemesPage() {
   const [selectedThemeId, setSelectedThemeId] = useState<number | null>(null)
   const [colorPalette, setColorPalette] = useState<string>('')
   const [themePalettes, setThemePalettes] = useState<Record<number, string>>({})
+  const [themeFonts, setThemeFonts] = useState<Record<number, string>>({})
+  const [appliedFont, setAppliedFont] = useState<string>('inter')
   const [previewTheme, setPreviewTheme] = useState<Theme | null>(null)
   const [showMobileView, setShowMobileView] = useState(false)
   const [applying, setApplying] = useState<number | null>(null)
   const api = useClientApi()
   const { toast } = useToast()
+
+  const fontOptions: { value: string; label: string }[] = [
+    { value: "lora", label: "Lora" },
+    { value: "inter", label: "Inter" },
+    { value: "roboto", label: "Roboto" },
+    { value: "poppins", label: "Poppins" },
+    { value: "merriweather", label: "Merriweather" },
+    { value: "open sans", label: "Open Sans" },
+    { value: "source sans 3", label: "Source Sans 3" },
+  ]
 
   useEffect(() => {
     fetchThemes()
@@ -59,9 +71,15 @@ export function ThemesPage() {
       if (data.currentTheme) {
         setSelectedThemeId(data.currentTheme.themeId)
         setColorPalette(data.currentTheme.colorPalette || '')
+        const currentFont = (data.currentTheme as any).fontFamily || 'inter'
+        setAppliedFont(currentFont)
         setThemePalettes(prev => ({
           ...prev,
           [data.currentTheme!.themeId]: data.currentTheme!.colorPalette || 'light'
+        }))
+        setThemeFonts(prev => ({
+          ...prev,
+          [data.currentTheme!.themeId]: currentFont,
         }))
       }
     } catch (error) {
@@ -76,17 +94,21 @@ export function ThemesPage() {
     }
   }
 
+
   const selectTheme = async (themeId: number, palette?: string) => {
     setApplying(themeId)
     try {
       const selectedPalette = palette || themePalettes[themeId] || 'light'
+      const selectedFontKey = themeFonts[themeId] || 'inter'
       await api.patch('/customer/theme', {
         themeId,
-        colorPalette: selectedPalette
+        colorPalette: selectedPalette,
+        fontFamily: selectedFontKey,
       })
       
       setSelectedThemeId(themeId)
       setColorPalette(selectedPalette)
+      setAppliedFont(selectedFontKey)
       
       toast({
         title: "Success!",
@@ -110,6 +132,13 @@ export function ThemesPage() {
     setThemePalettes(prev => ({
       ...prev,
       [themeId]: palette
+    }))
+  }
+
+  const updateThemeFont = (themeId: number, fontKey: string) => {
+    setThemeFonts(prev => ({
+      ...prev,
+      [themeId]: fontKey
     }))
   }
 
@@ -229,7 +258,7 @@ export function ThemesPage() {
                     alt={theme.name}
                     className="aspect-video w-full object-cover rounded-t-lg"
                   />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-t-lg flex items-center justify-center gap-2">
+                  <div className="absolute inset-0 bg-black/50 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity rounded-t-lg flex items-center justify-center gap-2">
                     <Button
                       size="sm"
                       variant="secondary"
@@ -263,14 +292,14 @@ export function ThemesPage() {
                       value={themePalettes[theme.id] || 'light'}
                       onValueChange={(value) => updateThemePalette(theme.id, value)}
                     >
-                      <SelectTrigger className="h-8 text-xs">
+                      <SelectTrigger className="h-9 text-sm sm:h-8 sm:text-xs">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-w-80">
                         {colorPaletteOptions.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
-                            <div className="flex items-center gap-3">
-                              <div className="flex gap-1">
+                            <div className="flex items-center gap-2 w-full">
+                              <div className="flex gap-1 shrink-0">
                                 {option.colors.map((color, index) => (
                                   <div 
                                     key={index}
@@ -279,11 +308,30 @@ export function ThemesPage() {
                                   />
                                 ))}
                               </div>
-                              <div className="flex flex-col">
-                                <span className="font-medium capitalize">{option.label}</span>
-                                <span className="text-xs text-muted-foreground">{option.description}</span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-medium capitalize truncate">{option.label}</span>
+                                <span className="text-xs text-muted-foreground truncate">{option.description}</span>
                               </div>
                             </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Font</Label>
+                    <Select
+                      value={themeFonts[theme.id] || 'inter'}
+                      onValueChange={(value) => updateThemeFont(theme.id, value)}
+                    >
+                      <SelectTrigger className="h-9 text-sm sm:h-8 sm:text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fontOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            <span className="font-medium">{option.label}</span>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -294,8 +342,10 @@ export function ThemesPage() {
                     {(() => {
                       const isCurrentTheme = selectedThemeId === theme.id
                       const currentPalette = themePalettes[theme.id] || 'light'
+                      const currentFont = themeFonts[theme.id] || 'inter'
                       const isPaletteChanged = isCurrentTheme && currentPalette !== colorPalette
-                      const showApplyButton = !isCurrentTheme || isPaletteChanged
+                      const isFontChanged = isCurrentTheme && currentFont !== appliedFont
+                      const showApplyButton = !isCurrentTheme || isPaletteChanged || isFontChanged
                       
                       return (
                         <Button
@@ -366,19 +416,26 @@ export function ThemesPage() {
             </div>
             
             <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
-              <div className={`mx-auto ${showMobileView ? 'max-w-sm' : 'w-full'}`}>
-                <img
-                  src={showMobileView ? 
-                    (getImageUrl(previewTheme.mobileViewImages?.[0]) || getImageUrl(previewTheme.previewImageUrl) || '/placeholder.jpg') : 
-                    (getImageUrl(previewTheme.desktopViewImages?.[0]) || getImageUrl(previewTheme.previewImageUrl) || '/placeholder.jpg')
-                  }
-                  alt={`${previewTheme.name} ${showMobileView ? 'mobile' : 'desktop'} preview`}
-                  className="w-full h-auto rounded-lg border"
-                />
+              <div className={`mx-auto ${showMobileView ? 'max-w-[400px]' : 'w-full'}`}>
+                {showMobileView ? (
+                  <div className="relative w-full aspect-[9/19.5] rounded-lg border bg-background">
+                    <img
+                      src={getImageUrl(previewTheme.mobileViewImages?.[0]) || getImageUrl(previewTheme.previewImageUrl) || '/placeholder.jpg'}
+                      alt={`${previewTheme.name} mobile preview`}
+                      className="absolute inset-0 w-full h-full object-contain rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <img
+                    src={getImageUrl(previewTheme.desktopViewImages?.[0]) || getImageUrl(previewTheme.previewImageUrl) || '/placeholder.jpg'}
+                    alt={`${previewTheme.name} desktop preview`}
+                    className="w-full h-auto rounded-lg border"
+                  />
+                )}
               </div>
             </div>
 
-            <div className="p-4 border-t flex justify-between items-center gap-4">
+            <div className="p-4 border-t flex justify-between items-center gap-4 flex-wrap">
               <div className="flex gap-2">
                 {previewTheme.demoUrl && (
                   <Button
@@ -392,20 +449,20 @@ export function ThemesPage() {
               </div>
               
               <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1 min-w-[150px]">
+                <div className="flex flex-col gap-1 min-w-[150px] sm:min-w-[180px] w-full sm:w-auto">
                   <Label className="text-xs">Color Palette</Label>
                   <Select
                     value={themePalettes[previewTheme.id] || 'light'}
                     onValueChange={(value) => updateThemePalette(previewTheme.id, value)}
                   >
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger className="h-9 text-sm sm:h-8 sm:text-xs">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-w-80">
                       {colorPaletteOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          <div className="flex items-center gap-3">
-                            <div className="flex gap-1">
+                          <div className="flex items-center gap-2 w-full">
+                            <div className="flex gap-1 shrink-0">
                               {option.colors.map((color, index) => (
                                 <div 
                                   key={index}
@@ -414,11 +471,30 @@ export function ThemesPage() {
                                 />
                               ))}
                             </div>
-                            <div className="flex flex-col">
-                              <span className="font-medium capitalize">{option.label}</span>
-                              <span className="text-xs text-muted-foreground">{option.description}</span>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-medium capitalize truncate">{option.label}</span>
+                              <span className="text-xs text-muted-foreground truncate">{option.description}</span>
                             </div>
                           </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-1 min-w-[150px] sm:min-w-[180px] w-full sm:w-auto">
+                  <Label className="text-xs">Font</Label>
+                  <Select
+                    value={themeFonts[previewTheme.id] || 'inter'}
+                    onValueChange={(value) => updateThemeFont(previewTheme.id, value)}
+                  >
+                    <SelectTrigger className="h-9 text-sm sm:h-8 sm:text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fontOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <span className="font-medium">{option.label}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -428,8 +504,10 @@ export function ThemesPage() {
                 {(() => {
                   const isCurrentTheme = selectedThemeId === previewTheme.id
                   const currentPalette = themePalettes[previewTheme.id] || 'light'
+                  const currentFont = themeFonts[previewTheme.id] || 'inter'
                   const isPaletteChanged = isCurrentTheme && currentPalette !== colorPalette
-                  const showApplyButton = !isCurrentTheme || isPaletteChanged
+                  const isFontChanged = isCurrentTheme && currentFont !== appliedFont
+                  const showApplyButton = !isCurrentTheme || isPaletteChanged || isFontChanged
                   
                   return (
                     <Button
@@ -438,6 +516,7 @@ export function ThemesPage() {
                         closePreview()
                       }}
                       disabled={applying === previewTheme.id}
+                      className="w-full sm:w-auto"
                       variant={showApplyButton ? "default" : "secondary"}
                     >
                       {applying === previewTheme.id ? (

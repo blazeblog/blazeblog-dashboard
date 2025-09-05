@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Save, Settings, Flag, Upload, X, BarChart, DollarSign, Plus, Trash2, Link, Info } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useClientApi } from "@/lib/client-api"
@@ -90,6 +91,8 @@ interface ConfigData {
   siteAds?: Ads
   headerNavigationLinks?: NavigationLink[]
   footerNavigationLinks?: NavigationLink[]
+   socialMediaLinks?: { platform: string; url: string; label?: string }[];
+
 }
 
 export function SiteConfigForm() {
@@ -163,7 +166,8 @@ export function SiteConfigForm() {
       carbonAds: { enabled: false, zoneId: '', script: '' },
       buysellads: { enabled: false, networkId: '', script: '' },
       custom: []
-    }
+    },
+    socialMediaLinks: []
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -171,6 +175,7 @@ export function SiteConfigForm() {
   const logoFileInputRef = useRef<HTMLInputElement>(null)
   const api = useClientApi()
   const { toast } = useToast()
+  const [socialUrlErrors, setSocialUrlErrors] = useState<{[index: number]: string}>({})
 
   useEffect(() => {
     fetchConfig()
@@ -229,7 +234,8 @@ export function SiteConfigForm() {
         headerNavigationLinks: data.headerNavigationLinks || [],
         footerNavigationLinks: data.footerNavigationLinks || [],
         analytics: { ...defaultAnalytics, ...data.analytics },
-        ads: { ...defaultAds, ...(data.ads || data.siteAds) }
+        ads: { ...defaultAds, ...(data.ads || data.siteAds) },
+        socialMediaLinks: data.socialMediaLinks || []
       })
     } catch (error) {
       console.error('Error fetching config:', error)
@@ -263,6 +269,16 @@ export function SiteConfigForm() {
         hasErrors = true
       }
     })
+
+    // Validate social links
+    const socialErrors: {[index: number]: string} = {}
+    ;(config.socialMediaLinks || []).forEach((s, i) => {
+      if (s.url && !isValidUrl(s.url)) {
+        socialErrors[i] = 'Please enter a valid HTTPS URL (e.g., https://example.com)'
+        hasErrors = true
+      }
+    })
+    setSocialUrlErrors(socialErrors)
     
     if (hasErrors) {
       toast({
@@ -279,7 +295,8 @@ export function SiteConfigForm() {
       const payload = {
         ...config,
         headerNavigationLinks: config.headerNavigationLinks,
-        footerNavigationLinks: config.footerNavigationLinks
+        footerNavigationLinks: config.footerNavigationLinks,
+        socialMediaLinks: config.socialMediaLinks || []
       }
       
       await api.patch('/customer/config', payload)
@@ -545,26 +562,32 @@ export function SiteConfigForm() {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="site-config" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto p-1">
-          <TabsTrigger value="site-config" className="flex items-center gap-1 md:gap-2 px-2 py-2 text-xs md:text-sm">
-            <Settings className="h-4 w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Configuration</span>
-            <span className="sm:hidden">Config</span>
-          </TabsTrigger>
-          <TabsTrigger value="feature-flags" className="flex items-center gap-1 md:gap-2 px-2 py-2 text-xs md:text-sm">
-            <Flag className="h-4 w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Features</span>
-            <span className="sm:hidden">Flags</span>
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-1 md:gap-2 px-2 py-2 text-xs md:text-sm">
-            <BarChart className="h-4 w-4 flex-shrink-0" />
-            <span>Analytics</span>
-          </TabsTrigger>
-          <TabsTrigger value="ads" className="flex items-center gap-1 md:gap-2 px-2 py-2 text-xs md:text-sm">
-            <DollarSign className="h-4 w-4 flex-shrink-0" />
-            <span>Ads</span>
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto overflow-y-hidden">
+          <TabsList className="inline-flex h-auto p-1 w-max min-w-full">
+            <TabsTrigger value="site-config" className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-2 text-xs md:text-sm whitespace-nowrap flex-shrink-0">
+              <Settings className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden md:inline">Configuration</span>
+              <span className="md:hidden">Config</span>
+            </TabsTrigger>
+            <TabsTrigger value="feature-flags" className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-2 text-xs md:text-sm whitespace-nowrap flex-shrink-0">
+              <Flag className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden md:inline">Features</span>
+              <span className="md:hidden">Flags</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-2 text-xs md:text-sm whitespace-nowrap flex-shrink-0">
+              <BarChart className="h-4 w-4 flex-shrink-0" />
+              <span>Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="ads" className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-2 text-xs md:text-sm whitespace-nowrap flex-shrink-0">
+              <DollarSign className="h-4 w-4 flex-shrink-0" />
+              <span>Ads</span>
+            </TabsTrigger>
+            <TabsTrigger value="socials" className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-2 text-xs md:text-sm whitespace-nowrap flex-shrink-0">
+              <Link className="h-4 w-4 flex-shrink-0" />
+              <span>Socials</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="site-config" className="space-y-4 mt-6">
           <Card>
@@ -923,8 +946,104 @@ export function SiteConfigForm() {
               </Button>
             </CardContent>
           </Card>
-        </TabsContent>
+      </TabsContent>
 
+      <TabsContent value="socials" className="space-y-4 mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link className="h-5 w-5" />
+              Social Links
+            </CardTitle>
+            <CardDescription>Add your social media profiles. HTTPS URLs only.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {(config.socialMediaLinks || []).map((s, i) => (
+              <div key={i} className="grid grid-cols-1 sm:grid-cols-6 gap-2 items-start">
+                <div className="sm:col-span-2">
+                  <Label className="text-xs">Platform</Label>
+                  <Select
+                    value={s.platform || 'custom'}
+                    onValueChange={(v) => setConfig(prev => ({
+                      ...prev,
+                      socialMediaLinks: (prev.socialMediaLinks || []).map((x, idx) => idx === i ? { ...x, platform: v } : x)
+                    }))}
+                  >
+                    <SelectTrigger className="h-9 text-sm md:h-8 md:text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        { value: 'twitter', label: 'Twitter / X' },
+                        { value: 'facebook', label: 'Facebook' },
+                        { value: 'instagram', label: 'Instagram' },
+                        { value: 'linkedin', label: 'LinkedIn' },
+                        { value: 'youtube', label: 'YouTube' },
+                        { value: 'github', label: 'GitHub' },
+                        { value: 'tiktok', label: 'TikTok' },
+                        { value: 'reddit', label: 'Reddit' },
+                        { value: 'threads', label: 'Threads' },
+                        { value: 'bluesky', label: 'Bluesky' },
+                        { value: 'medium', label: 'Medium' },
+                        { value: 'substack', label: 'Substack' },
+                        { value: 'whatsapp', label: 'WhatsApp' },
+                        { value: 'email', label: 'Email' },
+                        { value: 'custom', label: 'Custom' },
+                      ].map(p => (
+                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:col-span-4">
+                  <Label className="text-xs">URL</Label>
+                  <Input
+                    placeholder="https://example.com/your-profile"
+                    value={s.url || ''}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setConfig(prev => ({
+                        ...prev,
+                        socialMediaLinks: (prev.socialMediaLinks || []).map((x, idx) => idx === i ? { ...x, url: val } : x)
+                      }))
+                      if (val && !isValidUrl(val)) {
+                        setSocialUrlErrors(prev => ({ ...prev, [i]: 'Please enter a valid HTTPS URL (e.g., https://example.com)' }))
+                      } else {
+                        setSocialUrlErrors(prev => {
+                          const next = { ...prev }
+                          delete next[i]
+                          return next
+                        })
+                      }
+                    }}
+                    className="h-9 text-sm md:h-8 md:text-xs"
+                  />
+                  {socialUrlErrors[i] ? (
+                    <p className="text-xs text-red-500 mt-1">{socialUrlErrors[i]}</p>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfig(prev => ({
+                  ...prev,
+                  socialMediaLinks: [...(prev.socialMediaLinks || []), { platform: 'custom', url: '' }]
+                }))}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Add Link
+              </Button>
+              <Button onClick={saveConfig} disabled={saving}>
+                <Save className="mr-2 h-4 w-4" />
+                {saving ? 'Saving...' : 'Save Configuration'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
         <TabsContent value="feature-flags" className="space-y-4 mt-6">
           <Card>
             <CardHeader>
