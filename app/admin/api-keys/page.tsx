@@ -72,6 +72,7 @@ export default function ApiKeysPage() {
       toast({
         title: "Success",
         description: "API key deleted successfully",
+        duration: 3000
       })
     } catch (err) {
       toast({

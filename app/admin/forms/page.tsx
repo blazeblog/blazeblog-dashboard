@@ -847,7 +847,8 @@ export default function FormsPage() {
         toast({
           title: "Success!",
           description: `Form "${formData.name}" has been updated successfully.`,
-          variant: "default"
+          variant: "default",
+          duration: 3000
         })
       } else {
         // Create new form
@@ -856,7 +857,8 @@ export default function FormsPage() {
         toast({
           title: "Success!",
           description: `Form "${formData.name}" has been created successfully.`,
-          variant: "default"
+          variant: "default",
+          duration: 3000
         })
       }
 
@@ -883,7 +885,8 @@ export default function FormsPage() {
       toast({
         title: "Success!",
         description: "Form has been deleted successfully.",
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
     } catch (error) {
       console.error('Error deleting form:', error)
@@ -903,7 +906,8 @@ export default function FormsPage() {
       toast({
         title: "Success!",
         description: `Form "${duplicated.name}" has been duplicated successfully.`,
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
     } catch (error) {
       console.error('Error duplicating form:', error)

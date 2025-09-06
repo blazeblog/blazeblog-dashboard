@@ -99,7 +99,8 @@ export function RevisionList({
       toast({
         title: "Success!",
         description: `Post restored to version ${revision.versionNumber} successfully.`,
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
       
       onRevisionRestore?.(revision)

@@ -160,7 +160,18 @@ export interface UpdateNewsletterRequest {
 }
 
 // Webhooks types
-export type WebhookEvent = 'newsletter.subscribed' | 'comment.added'
+export type WebhookEvent = 
+  | 'newsletter.subscribed' 
+  | 'comment.added'
+  | 'post.created'
+  | 'post.updated' 
+  | 'post.deleted'
+  | 'category.created'
+  | 'category.updated'
+  | 'category.deleted'
+  | 'tag.created'
+  | 'tag.updated'
+  | 'tag.deleted'
 
 export interface Webhook {
   id: number
@@ -169,6 +180,9 @@ export interface Webhook {
   events: WebhookEvent[]
   isActive: boolean
   description?: string
+  failureRate?: number
+  failureRateWindow?: string
+  autoDisabledAt?: string
   createdAt: string
   updatedAt: string
 }
@@ -369,6 +383,29 @@ export function useClientApi() {
       
     delete: <T = any>(endpoint: string, options?: Omit<ApiOptions, 'method'>) =>
       makeRequest<T>(endpoint, { ...options, method: 'DELETE' }),
+
+    // Invitations API methods
+    invitations: {
+      // Create an invitation
+      create: (data: { email: string; roleId?: number; expiresInDays?: number }) =>
+        makeRequest<Invitation>('/invitations', { method: 'POST', body: data }),
+
+      // List invitations (optionally filter by status)
+      list: (params: { status?: 'pending' | 'accepted' | 'revoked' | 'expired' } = {}) => {
+        const qs = new URLSearchParams()
+        if (params.status) qs.set('status', params.status)
+        const suffix = qs.toString() ? `?${qs.toString()}` : ''
+        return makeRequest<Invitation[]>(`/invitations${suffix}`)
+      },
+
+      // Revoke an invitation
+      revoke: (id: number) =>
+        makeRequest<{ success: true }>(`/invitations/${id}/revoke`, { method: 'POST' }),
+
+      // Accept invitation (public route, requires Clerk JWT in body)
+      accept: (token: string, data: { authorization: string; username?: string }) =>
+        makeRequest<{ customerId: number; userId: number }>(`/invitations/accept/${token}`, { method: 'POST', body: data }),
+    },
 
     // Webhooks API methods
     webhooks: {
@@ -793,6 +830,17 @@ export interface CustomHostnameStatus {
 
 export interface CreateCustomHostnameRequest {
   hostname: string
+}
+
+// Invitations
+export interface Invitation {
+  id: number
+  email: string
+  status: 'pending' | 'accepted' | 'revoked' | 'expired'
+  roleId?: number | null
+  expiresAt: string
+  createdAt: string
+  updatedAt: string
 }
 
 export type { PaginationParams, PaginatedResponse, Post, Category, Tag, PostRevision, Comment, User, ApiKey, CreateApiKeyDto }

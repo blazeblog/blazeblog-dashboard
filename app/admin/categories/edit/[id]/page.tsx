@@ -103,7 +103,8 @@ export default function EditCategoryPage() {
       toast({
         title: "Success!",
         description: `Category "${formData.name}" has been updated successfully.`,
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
       
       // Refresh the category data
@@ -130,7 +131,8 @@ export default function EditCategoryPage() {
       toast({
         title: "Success!",
         description: `Category "${category?.name}" has been deleted successfully.`,
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
       
       // After deletion, redirect to categories list is appropriate

@@ -7,8 +7,30 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Info } from "lucide-react"
 
-const ALL_EVENTS: WebhookEvent[] = ["newsletter.subscribed", "comment.added"]
+const EVENT_GROUPS = {
+  "Posts": {
+    events: ["post.created", "post.updated", "post.deleted"] as WebhookEvent[],
+    description: "Triggered when blog posts are created, updated, or deleted"
+  },
+  "Categories": {
+    events: ["category.created", "category.updated", "category.deleted"] as WebhookEvent[],
+    description: "Triggered when post categories are modified"
+  },
+  "Tags": {
+    events: ["tag.created", "tag.updated", "tag.deleted"] as WebhookEvent[],
+    description: "Triggered when post tags are modified"
+  },
+  "Engagement": {
+    events: ["newsletter.subscribed", "comment.added"] as WebhookEvent[],
+    description: "Triggered when users interact with your blog"
+  }
+}
+
+const ALL_EVENTS: WebhookEvent[] = Object.values(EVENT_GROUPS).flatMap(group => group.events)
 
 export interface WebhookFormProps {
   initial?: Partial<CreateWebhookRequest> & Partial<Webhook>
@@ -60,20 +82,41 @@ export function WebhookForm({ initial, submitting, onSubmit, submitLabel = "Save
         />
       </div>
 
-      <div className="space-y-2">
-        <Label>Subscribed Events</Label>
-        <div className="flex flex-col gap-2">
-          {ALL_EVENTS.map(ev => (
-            <label key={ev} className="flex items-center gap-3 text-sm">
-              <input
-                type="checkbox"
-                className="h-4 w-4"
-                checked={events.includes(ev)}
-                onChange={() => toggleEvent(ev)}
-              />
-              <span className="font-medium">{ev}</span>
-            </label>
-          ))}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Label>Subscribed Events</Label>
+          <Info className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <div className="max-h-64 overflow-y-auto border rounded-md p-3 bg-muted/20">
+          <div className="space-y-4">
+            {Object.entries(EVENT_GROUPS).map(([groupName, group]) => (
+              <div key={groupName} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium text-foreground">{groupName}</h4>
+                  <Badge variant="outline" className="text-xs">
+                    {group.events.filter(e => events.includes(e)).length}/{group.events.length}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">{group.description}</p>
+                <div className="grid grid-cols-1 gap-1.5">
+                  {group.events.map(ev => (
+                    <label key={ev} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/30 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 accent-blue-600"
+                        checked={events.includes(ev)}
+                        onChange={() => toggleEvent(ev)}
+                      />
+                      <span className="font-mono text-xs">{ev}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          Selected {events.length} of {ALL_EVENTS.length} events
         </div>
       </div>
 

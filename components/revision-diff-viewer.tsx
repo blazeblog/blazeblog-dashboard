@@ -332,7 +332,8 @@ export function RevisionDiffViewer({
       toast({
         title: "Success!",
         description: `Post restored to version ${revision.versionNumber} successfully.`,
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
       onRestore?.(revision)
       setShowRestoreDialog(null)

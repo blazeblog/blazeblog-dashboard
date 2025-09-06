@@ -33,6 +33,15 @@ export function useOnboarding(): OnboardingStatus {
     if (!isLoaded) return
 
     if (user) {
+      // Check if this is a child account - skip onboarding for child accounts
+      const isChildAccount = user.unsafeMetadata?.childAccount === true
+      
+      if (isChildAccount) {
+        setIsOnboarded(true)
+        setIsLoading(false)
+        return
+      }
+      
       // Check if user has completed onboarding
       // For now, we'll use localStorage as a temporary solution
       // In production, this should be stored in your database

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEditor, EditorContent } from "@tiptap/react"
+import { BubbleMenu, FloatingMenu } from "@tiptap/react/menus"
 import { NodeSelection } from "@tiptap/pm/state"
 import StarterKit from "@tiptap/starter-kit"
 import Link from "@tiptap/extension-link"
@@ -16,6 +17,20 @@ import Dropcursor from "@tiptap/extension-dropcursor"
 import BulletList from "@tiptap/extension-bullet-list"
 import OrderedList from "@tiptap/extension-ordered-list"
 import ListItem from "@tiptap/extension-list-item"
+import TaskList from "@tiptap/extension-task-list"
+import TaskItem from "@tiptap/extension-task-item"
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
+import { createLowlight } from "lowlight"
+import javascript from "highlight.js/lib/languages/javascript"
+import typescript from "highlight.js/lib/languages/typescript"
+import json from "highlight.js/lib/languages/json"
+import xml from "highlight.js/lib/languages/xml"
+import css from "highlight.js/lib/languages/css"
+import cpp from "highlight.js/lib/languages/cpp"
+import java from "highlight.js/lib/languages/java"
+import php from "highlight.js/lib/languages/php"
+import python from "highlight.js/lib/languages/python"
+import go from "highlight.js/lib/languages/go"
 import ImageResize from "tiptap-extension-resize-image"
 // Helper function to convert formatted text to HTML
 const convertFormattedTextToHTML = (text: string): string => {
@@ -115,6 +130,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { useTheme } from "next-themes"
 import { useDropzone } from "react-dropzone"
 import ReactCrop, { type Crop, centerCrop } from "react-image-crop"
 import "react-image-crop/dist/ReactCrop.css"
@@ -132,7 +148,7 @@ import {
   Image as ImageIcon, Link as LinkIcon, Type,
   Undo, Redo, Eye, EyeOff,
   Upload, Trash2, Save, Crop as CropIcon, Move3D, 
-  Scissors, Maximize2
+  Scissors, Maximize2, Minus
 } from "lucide-react"
 
 
@@ -167,6 +183,14 @@ export function AdvancedTiptapEditor({
   enableAutoSave = true,
   onDraftRecover,
 }: AdvancedTiptapEditorProps) {
+  // Configure lowlight with a curated language set
+  const lowlight = useMemo(() => {
+    const ll = createLowlight()
+    ll.register({ javascript, typescript, json, xml, css, cpp, java, php, python, go })
+    ll.registerAlias({ javascript: ["js"], typescript: ["ts"], xml: ["html"] })
+    return ll
+  }, [])
+  const { resolvedTheme } = useTheme()
   const [isToolbarVisible, setIsToolbarVisible] = useState(true)
   const [linkUrl, setLinkUrl] = useState("")
   const [imageUrl, setImageUrl] = useState("")
@@ -183,6 +207,8 @@ export function AdvancedTiptapEditor({
   const [editorCrop, setEditorCrop] = useState<Crop>()
   const [completedCrop, setCompletedCrop] = useState<Crop>()
   const [completedEditorCrop, setCompletedEditorCrop] = useState<Crop>()
+  // Notion-like slash command state
+  const [slashQuery, setSlashQuery] = useState<string>("")
   const imageFileInputRef = useRef<HTMLInputElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   const editorImgRef = useRef<HTMLImageElement>(null)
@@ -275,7 +301,7 @@ export function AdvancedTiptapEditor({
         bulletList: false, // Disable StarterKit's bulletList
         orderedList: false, // Disable StarterKit's orderedList
         listItem: false, // Disable StarterKit's listItem
-        codeBlock: false, // Disable default code block
+        codeBlock: false, // Disable default code block (use lowlight version)
       }),
       // Add individual list extensions for better control
       BulletList.configure({
@@ -296,6 +322,17 @@ export function AdvancedTiptapEditor({
         HTMLAttributes: {
           class: 'tiptap-list-item',
         },
+      }),
+      TaskList.configure({
+        HTMLAttributes: { class: 'tiptap-task-list list-none pl-0 my-4' },
+      }),
+      TaskItem.configure({
+        nested: true,
+        HTMLAttributes: { class: 'tiptap-task-item flex items-start gap-2 my-1' },
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        HTMLAttributes: { class: 'tiptap-code-block' },
       }),
       ImageResize.configure({
         inline: false,
@@ -322,7 +359,7 @@ export function AdvancedTiptapEditor({
         multicolor: true,
       }),
       Placeholder.configure({
-        placeholder: 'Start writing your content...',
+        placeholder: 'Type "/" for commands…',
       }),
       Dropcursor.configure({
         color: '#3b82f6', 
@@ -333,6 +370,21 @@ export function AdvancedTiptapEditor({
     onUpdate: ({ editor }) => {
       const html = editor.getHTML()
       onChange?.(html)
+      // Update slash query from current position
+      try {
+        const { $from } = editor.state.selection
+        const textBefore = $from.parent.textBetween(0, $from.parentOffset, '\n', '\n')
+        const match = textBefore.match(/(?:^|\s)\/([\w-]*)$/)
+        setSlashQuery(match ? match[1] : "")
+      } catch { /* noop */ }
+    },
+    onSelectionUpdate: ({ editor }) => {
+      try {
+        const { $from } = editor.state.selection
+        const textBefore = $from.parent.textBetween(0, $from.parentOffset, '\n', '\n')
+        const match = textBefore.match(/(?:^|\s)\/([\w-]*)$/)
+        setSlashQuery(match ? match[1] : "")
+      } catch { /* noop */ }
     },
     editorProps: {
       attributes: {
@@ -343,7 +395,8 @@ export function AdvancedTiptapEditor({
           "prose-pre:bg-slate-900 prose-pre:text-slate-100",
           "prose-code:bg-slate-100 prose-code:text-slate-800 prose-code:px-2 prose-code:py-1 prose-code:rounded",
           "dark:prose-code:bg-slate-800 dark:prose-code:text-slate-200",
-          "min-h-[500px] p-6 pb-24"
+          "min-h-[500px] p-6 pb-24",
+          resolvedTheme === 'dark' ? 'code-theme-dark' : 'code-theme-light'
         ),
       },
       handleKeyDown: (view, event) => {
@@ -396,8 +449,10 @@ export function AdvancedTiptapEditor({
           }
           return true
         }
-        
-        // Handle Delete key on selected images
+
+        // Basic slash command controls
+        if (event.key === 'Escape') setSlashQuery("")
+
         if (event.key === 'Delete' || event.key === 'Backspace') {
           const { state } = view
           const { selection } = state
@@ -524,6 +579,20 @@ export function AdvancedTiptapEditor({
     }
   }, [editor, content])
 
+  // Helper: remove "/<query>" before executing a command
+  const removeSlashCommandText = useCallback(() => {
+    if (!editor) return
+    const { state } = editor
+    const { $from } = state.selection
+    const textBefore = $from.parent.textBetween(0, $from.parentOffset, '\n', '\n')
+    const match = textBefore.match(/(?:^|\s)(\/([\w-]*))$/)
+    if (match) {
+      const len = match[1].length
+      const from = state.selection.from - len
+      editor.chain().focus().deleteRange({ from, to: state.selection.from }).run()
+    }
+  }, [editor])
+
   // Sync hero image when prop changes
   useEffect(() => {
     if (heroImage !== undefined && heroImageUrl !== heroImage) {
@@ -633,6 +702,7 @@ export function AdvancedTiptapEditor({
         toast({
           title: "Success",
           description: "Hero image cropped and uploaded successfully",
+          duration: 3000
         })
       }
     } catch (error) {
@@ -703,6 +773,7 @@ export function AdvancedTiptapEditor({
         toast({
           title: "Success",
           description: "Image cropped and inserted successfully",
+          duration: 3000
         })
       }
     } catch (error) {
@@ -1050,6 +1121,192 @@ export function AdvancedTiptapEditor({
 
       {/* Editor */}
       <Card className="relative overflow-hidden">
+        {/* Bubble menu for inline formatting */}
+        {typeof window !== 'undefined' && editor && BubbleMenu && (
+          <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }} className="rounded-md border bg-background shadow-sm">
+            <div className="flex items-center p-1 gap-1">
+              <Button variant={editor.isActive("bold") ? "default" : "ghost"} size="sm" className="h-7 w-7 p-0"
+                onClick={() => editor.chain().focus().toggleBold().run()}>
+                <Bold className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant={editor.isActive("italic") ? "default" : "ghost"} size="sm" className="h-7 w-7 p-0"
+                onClick={() => editor.chain().focus().toggleItalic().run()}>
+                <Italic className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant={editor.isActive("underline") ? "default" : "ghost"} size="sm" className="h-7 w-7 p-0"
+                onClick={() => editor.chain().focus().toggleUnderline().run()}>
+                <UnderlineIcon className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant={editor.isActive("strike") ? "default" : "ghost"} size="sm" className="h-7 w-7 p-0"
+                onClick={() => editor.chain().focus().toggleStrike().run()}>
+                <Strikethrough className="h-3.5 w-3.5" />
+              </Button>
+              <Separator orientation="vertical" className="h-5" />
+              <Button variant={editor.isActive("code") ? "default" : "ghost"} size="sm" className="h-7 w-7 p-0"
+                onClick={() => editor.chain().focus().toggleCode().run()}>
+                <Code className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </BubbleMenu>
+        )}
+
+        {/* Code language auto-detected by lowlight (no picker) */}
+
+        {/* Floating slash menu */}
+        {typeof window !== 'undefined' && editor && FloatingMenu && (
+          <FloatingMenu
+            editor={editor}
+            shouldShow={({ editor }) => {
+              const { $from } = editor.state.selection
+              const textBefore = $from.parent.textBetween(0, $from.parentOffset, '\n', '\n')
+              const match = textBefore.match(/(?:^|\s)\/([\w-]*)$/)
+              return Boolean(match)
+            }}
+            options={{ placement: 'left-start' }}
+            className="rounded-md border bg-background shadow-md min-w-[240px]"
+          >
+            <div className="p-2">
+              <Input
+                value={slashQuery}
+                onChange={(e) => setSlashQuery(e.target.value)}
+                placeholder="Search commands"
+                className="h-8 mb-2"
+              />
+              <div className="flex flex-col gap-1 max-h-64 overflow-auto">
+                {[
+                  {
+                    key: 'text',
+                    label: 'Text',
+                    hint: 'Paragraph',
+                    icon: Type,
+                    run: () => editor.chain().focus().setParagraph().run(),
+                    keywords: ['paragraph', 'text']
+                  },
+                  {
+                    key: 'h1',
+                    label: 'Heading 1',
+                    hint: '# Big heading',
+                    icon: Heading1,
+                    run: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
+                    keywords: ['h1','heading']
+                  },
+                  {
+                    key: 'h2',
+                    label: 'Heading 2',
+                    hint: '## Medium heading',
+                    icon: Heading2,
+                    run: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+                    keywords: ['h2','heading']
+                  },
+                  {
+                    key: 'h3',
+                    label: 'Heading 3',
+                    hint: '### Small heading',
+                    icon: Heading3,
+                    run: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
+                    keywords: ['h3','heading']
+                  },
+                  {
+                    key: 'todo',
+                    label: 'To-do list',
+                    hint: 'Track tasks',
+                    icon: List,
+                    run: () => editor.chain().focus().toggleTaskList().run(),
+                    keywords: ['task','todo','checkbox']
+                  },
+                  {
+                    key: 'ul',
+                    label: 'Bulleted list',
+                    hint: 'Create a simple list',
+                    icon: List,
+                    run: () => editor.chain().focus().toggleBulletList().run(),
+                    keywords: ['list','bullet']
+                  },
+                  {
+                    key: 'ol',
+                    label: 'Numbered list',
+                    hint: '1. 2. 3.',
+                    icon: ListOrdered,
+                    run: () => editor.chain().focus().toggleOrderedList().run(),
+                    keywords: ['list','number']
+                  },
+                  {
+                    key: 'quote',
+                    label: 'Quote',
+                    hint: 'Callout a quote',
+                    icon: Quote,
+                    run: () => editor.chain().focus().toggleBlockquote().run(),
+                    keywords: ['quote','blockquote','callout']
+                  },
+                  {
+                    key: 'code',
+                    label: 'Code block',
+                    hint: 'Monospace block',
+                    icon: Code,
+                    run: () => {
+                      const ok = editor.chain().focus().toggleCodeBlock().run()
+                      if (!ok) {
+                        editor.chain().focus().insertContent({ type: 'codeBlock', attrs: { language: null }, content: [] }).run()
+                      }
+                    },
+                    keywords: ['code','block']
+                  },
+                  {
+                    key: 'hr',
+                    label: 'Divider',
+                    hint: 'Insert a horizontal rule',
+                    icon: Minus,
+                    run: () => editor.chain().focus().setHorizontalRule().run(),
+                    keywords: ['divider','hr','rule']
+                  },
+                  {
+                    key: 'image',
+                    label: 'Image',
+                    hint: 'Upload and insert image',
+                    icon: ImageIcon,
+                    run: () => {
+                      // open a file picker and pipe through existing cropper
+                      const input = document.createElement('input')
+                      input.type = 'file'
+                      input.accept = 'image/*'
+                      input.onchange = (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0]
+                        if (file) handleEditorImageWithCrop(file)
+                      }
+                      input.click()
+                    },
+                    keywords: ['image','photo','media']
+                  },
+                ]
+                  .filter(item => !slashQuery ||
+                    item.label.toLowerCase().includes(slashQuery.toLowerCase()) ||
+                    item.keywords.some(k => k.includes(slashQuery.toLowerCase()))
+                  )
+                  .map(item => (
+                    <Button
+                      key={item.key}
+                      variant="ghost"
+                      className="justify-start h-8 px-2"
+                      onClick={() => {
+                        removeSlashCommandText()
+                        item.run()
+                        setSlashQuery("")
+                      }}
+                    >
+                      <item.icon className="h-4 w-4 mr-2" />
+                      <div className="flex flex-col items-start">
+                        <span className="text-sm">{item.label}</span>
+                        <span className="text-[10px] text-muted-foreground">{item.hint}</span>
+                      </div>
+                    </Button>
+                  ))}
+                {!slashQuery && (
+                  <div className="px-2 py-1 text-[11px] text-muted-foreground">Type to filter…</div>
+                )}
+              </div>
+            </div>
+          </FloatingMenu>
+        )}
         {/* Toolbar */}
         {isToolbarVisible && (
           <div className="bg-muted/30 border-b p-3">

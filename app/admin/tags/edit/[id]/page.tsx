@@ -101,7 +101,8 @@ export default function EditTagPage() {
       toast({
         title: "Success!",
         description: "Tag updated successfully.",
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
     } catch (error) {
       console.error('Error updating tag:', error)
@@ -124,7 +125,8 @@ export default function EditTagPage() {
       toast({
         title: "Success!",
         description: "Tag deleted successfully.",
-        variant: "default"
+        variant: "default",
+        duration: 3000
       })
       
       router.push('/admin/tags')
@@ -162,18 +164,9 @@ export default function EditTagPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push('/admin/tags')}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Tags
-            </Button>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Edit Tag</h1>
-              <p className="text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Modify tag information and URL slug
               </p>
             </div>

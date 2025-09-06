@@ -279,7 +279,7 @@ export function TagsInput({
 
       {/* Suggestions dropdown */}
       {showSuggestions && !disabled && (
-        <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-md max-h-48 overflow-y-auto">
+        <div className="absolute z-[5] w-full mt-1 bg-popover border rounded-md shadow-md max-h-48 overflow-y-auto">
           {isLoading ? (
             <div className="p-3 text-sm text-muted-foreground text-center">
               Loading suggestions...

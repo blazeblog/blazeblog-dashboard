@@ -337,7 +337,6 @@ export default function PostsPage() {
                       <TableHead>Category</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Author</TableHead>
-                      <TableHead>Views</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead className="w-[70px]">Actions</TableHead>
                     </TableRow>
