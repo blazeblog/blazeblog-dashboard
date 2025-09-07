@@ -2,13 +2,17 @@
 
 import { useUser, UserButton } from "@clerk/nextjs"
 import type React from "react"
-import { Search } from "lucide-react"
+import { useState } from "react"
+import { Search, RefreshCw, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AdminSidebar } from "./admin-sidebar"
 import { ThemeToggle } from "./theme-toggle"
 import { Skeleton } from "@/components/ui/skeleton"
 import { OnboardingRedirect } from "./onboarding-redirect"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useClientApi } from "@/lib/client-api"
+import { useToast } from "@/hooks/use-toast"
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -17,6 +21,32 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children, title = "Dashboard" }: AdminLayoutProps) {
   const { user, isLoaded } = useUser()
+  const api = useClientApi()
+  const { toast } = useToast()
+  const [isClearing, setIsClearing] = useState(false)
+
+  const handleClearCache = async () => {
+    try {
+      setIsClearing(true)
+      await api.post('/customer/clear-cache')
+      
+      toast({
+        title: "Cache Cleared Successfully! ✨",
+        description: "Your website cache has been cleared. Changes should be visible within a few minutes.",
+        duration: 5000
+      })
+    } catch (error) {
+      console.error('Error clearing cache:', error)
+      toast({
+        title: "Cache Clear Failed",
+        description: "Failed to clear cache. Please try again or contact support if the issue persists.",
+        variant: "destructive",
+        duration: 5000
+      })
+    } finally {
+      setIsClearing(false)
+    }
+  }
 
   const getTimeBasedGreeting = () => {
     const now = new Date()
@@ -86,6 +116,35 @@ export function AdminLayout({ children, title = "Dashboard" }: AdminLayoutProps)
               {/* <Button variant="ghost" size="icon">
                 <Bell className="h-4 w-4" />
               </Button> */}
+              
+              {/* Clear Cache Button with Tooltip */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={handleClearCache}
+                      disabled={isClearing}
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isClearing ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <div className="flex items-start gap-2 p-2">
+                      <Info className="h-4 w-4 mt-0.5 text-blue-400 flex-shrink-0" />
+                      <div className="text-left">
+                        <p className="font-medium text-sm">Clear Website Cache</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Clears your website's cache so visitors see the latest changes. 
+                          Use this after making updates to ensure they're visible immediately.
+                        </p>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
               <ThemeToggle />
               <UserButton
                 afterSignOutUrl="/"
