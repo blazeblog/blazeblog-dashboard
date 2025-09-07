@@ -104,7 +104,7 @@
     "react-hook-form": "latest",
     "react-image-crop": "^11.0.10",
     "react-resizable-panels": "latest",
-    "recharts": "latest",
+    "recharts": "^3.1.2",
     "sonner": "latest",
     "svix": "latest",
     "tailwind-merge": "^2.5.5",
