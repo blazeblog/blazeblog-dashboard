@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { MarkdownTextarea } from "@/components/ui/markdown-textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
@@ -269,12 +270,14 @@ export default function FormsPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="form-description">Description</Label>
-                <Textarea
+                <MarkdownTextarea
                   id="form-description"
+                  label="Description"
                   value={formData.description}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe your form's purpose"
+                  onChange={(value) => setFormData((prev) => ({ ...prev, description: value }))}
+                  placeholder="Describe your form's purpose. Use **markdown** for formatting!"
+                  enablePreview={true}
+                  minHeight={120}
                 />
               </div>
           </CardContent>
@@ -1035,9 +1038,13 @@ export default function FormsPage() {
             ) : (
               <div className="space-y-4">
                 {forms.map((form) => (
-                  <Card key={form.id} className="p-4">
+                  <Card 
+                    key={form.id} 
+                    className="p-4 cursor-pointer hover:shadow-md transition-shadow duration-200 hover:bg-accent/30"
+                    onClick={() => setEditingForm(form)}
+                  >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 flex-1">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-semibold">{form.name}</h3>
@@ -1058,7 +1065,7 @@ export default function FormsPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button type="button" variant="outline" size="sm" onClick={() => setPreviewForm(form)}>
                           <Eye className="h-4 w-4" />
                         </Button>
