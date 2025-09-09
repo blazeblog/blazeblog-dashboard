@@ -14,20 +14,34 @@ export function useFormsService() {
   // ============================================================================
 
   /**
-   * Get all forms with optional filtering
+   * Get all forms with optional filtering and pagination
    */
   const getForms = async (filters?: {
     status?: 'active' | 'draft' | 'archived'
     search?: string
-  }): Promise<Form[]> => {
+    page?: number
+    limit?: number
+  }): Promise<{
+    items: Form[]
+    total: number
+    page: number
+    limit: number
+  }> => {
     const queryParams = new URLSearchParams()
     if (filters?.status) queryParams.set('status', filters.status)
     if (filters?.search) queryParams.set('search', filters.search)
+    if (filters?.page) queryParams.set('page', filters.page.toString())
+    if (filters?.limit) queryParams.set('limit', filters.limit.toString())
     
     const queryString = queryParams.toString()
     const endpoint = queryString ? `/forms?${queryString}` : '/forms'
     
-    return api.get<Form[]>(endpoint)
+    return api.get<{
+      items: Form[]
+      total: number
+      page: number
+      limit: number
+    }>(endpoint)
   }
 
   /**
@@ -70,7 +84,7 @@ export function useFormsService() {
       id: `form_${Date.now()}`, // Generate new ID
       name: newName || `${originalForm.name} (Copy)`,
       status: 'draft',
-      steps: originalForm.steps.map((step, stepIndex) => ({
+      steps: originalForm.steps?.map((step, stepIndex) => ({
         ...step,
         id: `step_${Date.now()}_${stepIndex}`,
         formId: `form_${Date.now()}`,
@@ -79,7 +93,7 @@ export function useFormsService() {
           id: `field_${Date.now()}_${stepIndex}_${fieldIndex}`,
           stepId: `step_${Date.now()}_${stepIndex}`
         }))
-      }))
+      })) || []
     }
     
     return createForm(duplicatedForm)
@@ -100,10 +114,32 @@ export function useFormsService() {
   }
 
   /**
-   * Get all submissions for a form
+   * Get all submissions for a form with pagination
    */
-  const getFormSubmissions = async (formId: string): Promise<Submission[]> => {
-    return api.get<Submission[]>(`/forms/${formId}/submissions`)
+  const getFormSubmissions = async (formId: string, options?: {
+    page?: number
+    limit?: number
+    search?: string
+  }): Promise<{
+    items: Submission[]
+    total: number
+    page: number
+    limit: number
+  }> => {
+    const queryParams = new URLSearchParams()
+    if (options?.page) queryParams.set('page', options.page.toString())
+    if (options?.limit) queryParams.set('limit', options.limit.toString())
+    if (options?.search) queryParams.set('search', options.search)
+    
+    const queryString = queryParams.toString()
+    const endpoint = queryString ? `/forms/${formId}/submissions?${queryString}` : `/forms/${formId}/submissions`
+    
+    return api.get<{
+      items: Submission[]
+      total: number
+      page: number
+      limit: number
+    }>(endpoint)
   }
 
   /**
@@ -141,9 +177,21 @@ export function useFormsService() {
     averageConversionRate: number
     topPerformingForms: Array<{ formId: string; name: string; conversionRate: number; submissions: number }>
   }> => {
-    const forms = await getForms()
+    const formsResponse = await getForms({ limit: 1000 }) // Get all forms
+    const forms = formsResponse.items
     
-    const statsPromises = forms.map(form => 
+    // Use the submission counts directly from the API response for better performance
+    const totalForms = formsResponse.total
+    const activeForms = forms.filter(f => f.status === 'active').length
+    const totalSubmissions = forms.reduce((sum, form) => {
+      const count = typeof form.submissionCount === 'string' 
+        ? parseInt(form.submissionCount) 
+        : (form.submissionCount || 0)
+      return sum + count
+    }, 0)
+    
+    // For detailed stats like conversion rates, we still need to call the individual APIs
+    const statsPromises = forms.slice(0, 10).map(form => // Limit to top 10 for performance
       getFormStats(form.id).catch(() => ({ 
         totalSubmissions: 0, 
         conversionRate: 0,
@@ -151,21 +199,18 @@ export function useFormsService() {
       }))
     )
     
-    const allStats = await Promise.all(statsPromises)
-    
-    const totalForms = forms.length
-    const activeForms = forms.filter(f => f.status === 'active').length
-    const totalSubmissions = allStats.reduce((sum, stats) => sum + stats.totalSubmissions, 0)
-    const averageConversionRate = allStats.length > 0 
-      ? allStats.reduce((sum, stats) => sum + stats.conversionRate, 0) / allStats.length 
+    const detailedStats = await Promise.all(statsPromises)
+    const averageConversionRate = detailedStats.length > 0 
+      ? detailedStats.reduce((sum, stats) => sum + stats.conversionRate, 0) / detailedStats.length 
       : 0
 
     const topPerformingForms = forms
+      .slice(0, 10) // Limit to top 10 for performance
       .map((form, index) => ({
         formId: form.id,
         name: form.name,
-        conversionRate: allStats[index].conversionRate,
-        submissions: allStats[index].totalSubmissions
+        conversionRate: detailedStats[index]?.conversionRate || 0,
+        submissions: detailedStats[index]?.totalSubmissions || 0
       }))
       .sort((a, b) => b.conversionRate - a.conversionRate)
       .slice(0, 5)
@@ -200,6 +245,10 @@ export function useFormsService() {
     errors: Array<{ fieldId: string; message: string }>
   } => {
     const errors: Array<{ fieldId: string; message: string }> = []
+
+    if (!form.steps) {
+      return { isValid: true, errors: [] }
+    }
 
     form.steps.forEach(step => {
       step.fields.forEach(field => {
@@ -255,6 +304,8 @@ export function useFormsService() {
    * Calculate form completion percentage
    */
   const calculateCompletionPercentage = (form: Form, submissionData: Record<string, any>): number => {
+    if (!form.steps) return 0
+    
     const totalFields = form.steps.reduce((sum, step) => sum + step.fields.length, 0)
     const completedFields = Object.keys(submissionData).filter(key => {
       const value = submissionData[key]
@@ -325,7 +376,7 @@ export class FormsUtils {
    * Generate a CSV export of form submissions
    */
   static generateSubmissionsCSV(form: Form, submissions: Submission[]): string {
-    if (submissions.length === 0) return ''
+    if (submissions.length === 0 || !form.steps) return ''
 
     // Get all field labels for headers
     const headers = ['Submission ID', 'Submitted At']
@@ -355,38 +406,5 @@ export class FormsUtils {
     return rows.map(row => 
       row.map(cell => `"${cell?.toString().replace(/"/g, '""') || ''}"`).join(',')
     ).join('\n')
-  }
-
-  /**
-   * Calculate step completion rates
-   */
-  static calculateStepCompletionRates(form: Form, submissions: Submission[]): Array<{
-    stepId: string
-    stepTitle: string
-    completionRate: number
-    dropOffRate: number
-  }> {
-    if (submissions.length === 0) return []
-
-    return form.steps.map((step, index) => {
-      const stepFields = step.fields.map(f => f.id)
-      
-      const completedCount = submissions.filter(submission => {
-        return stepFields.some(fieldId => {
-          const value = submission.data[fieldId]
-          return value !== null && value !== undefined && value !== ''
-        })
-      }).length
-
-      const completionRate = (completedCount / submissions.length) * 100
-      const dropOffRate = index > 0 ? 100 - completionRate : 0
-
-      return {
-        stepId: step.id,
-        stepTitle: step.title,
-        completionRate,
-        dropOffRate
-      }
-    })
   }
 }

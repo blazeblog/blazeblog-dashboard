@@ -61,6 +61,8 @@ const fieldTypes = [
 export default function FormsPage() {
   usePageTitle("Forms - BlazeBlog Admin")
   const [forms, setForms] = useState<Form[]>([])
+  const [totalForms, setTotalForms] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
   const [isCreating, setIsCreating] = useState(false)
   const [editingForm, setEditingForm] = useState<Form | null>(null)
   const [previewForm, setPreviewForm] = useState<Form | null>(null)
@@ -82,11 +84,20 @@ export default function FormsPage() {
     loadStats()
   }, [])
 
+  // Load forms when page changes
+  useEffect(() => {
+    loadForms()
+  }, [currentPage])
+
   const loadForms = async () => {
     try {
       setLoading(true)
-      const formsData = await formsService.getForms()
-      setForms(formsData)
+      const formsResponse = await formsService.getForms({
+        page: currentPage,
+        limit: 20
+      })
+      setForms(formsResponse.items)
+      setTotalForms(formsResponse.total)
     } catch (error) {
       console.error('Error loading forms:', error)
       toast({
@@ -115,10 +126,14 @@ export default function FormsPage() {
   }: { form?: Form; onSave: (form: Form) => void; onCancel: () => void }) => {
     const [activeStepIndex, setActiveStepIndex] = useState(0)
     const [formData, setFormData] = useState<Form>(() => {
-      const formId = form?.id || `form_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+      if (form) {
+        return {...form} // Use spread to create a new object
+      }
+      
+      const formId = `form_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
       const stepId = `step_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
       
-      return form || {
+      return {
         id: formId,
         name: "",
         description: "",
@@ -139,12 +154,13 @@ export default function FormsPage() {
       }
     })
 
-    // Reset form data when switching between forms, but only if we're not currently editing
+    // Reset form data when switching between forms
     useEffect(() => {
       if (form && form.id !== formData.id) {
-        setFormData(form)
+        setFormData({...form}) // Create a new object to ensure state updates
+        setActiveStepIndex(0) // Reset to first step
       }
-    }, [form, formData.id])
+    }, [form])
 
     const addField = useCallback((stepId: string) => {
       setFormData((prev) => {
@@ -846,7 +862,7 @@ export default function FormsPage() {
       if (editingForm) {
         // Update existing form
         savedForm = await formsService.updateForm(formData.id, formData)
-        setForms((prev) => prev.map((f) => (f.id === formData.id ? savedForm : f)))
+        setForms((prev) => prev.map((f) => (f.id === formData.id ? {...savedForm} : f))) // Ensure new object reference
         toast({
           title: "Success!",
           description: `Form "${formData.name}" has been updated successfully.`,
@@ -856,7 +872,7 @@ export default function FormsPage() {
       } else {
         // Create new form
         savedForm = await formsService.createForm(formData)
-        setForms((prev) => [...prev, savedForm])
+        setForms((prev) => [...prev, {...savedForm}]) // Ensure new object reference
         toast({
           title: "Success!",
           description: `Form "${formData.name}" has been created successfully.`,
@@ -935,6 +951,7 @@ export default function FormsPage() {
           </div>
 
           <FormBuilder
+            key={editingForm?.id || 'new'} // Force re-render when switching forms
             form={editingForm || undefined}
             onSave={handleSaveForm}
             onCancel={() => {
@@ -1013,10 +1030,40 @@ export default function FormsPage() {
         {/* Forms List */}
         <Card>
           <CardHeader>
-            <CardTitle>Your Forms</CardTitle>
+            <CardTitle>All Forms</CardTitle>
             <CardDescription>Manage your lead generation forms and track their performance</CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Pagination Info and Controls */}
+            {totalForms > 20 && (
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {Math.min((currentPage - 1) * 20 + 1, totalForms)} to {Math.min(currentPage * 20, totalForms)} of {totalForms} forms
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {Math.ceil(totalForms / 20)}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage >= Math.ceil(totalForms / 20)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="text-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
@@ -1055,11 +1102,11 @@ export default function FormsPage() {
                             >
                               {form.status}
                             </Badge>
-                            {form.isMultiStep && <Badge variant="outline">{form.steps.length} steps</Badge>}
+                            {form.isMultiStep && <Badge variant="outline">{form.stepCount} steps</Badge>}
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">{form.description}</p>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span>{form.submissions?.length || 0} submissions</span>
+                            <span>{form.submissionCount || 0} submissions</span>
                             <span>Status: {form.status}</span>
                             <span>Created {new Date(form.createdAt).toLocaleDateString()}</span>
                           </div>
@@ -1085,10 +1132,10 @@ export default function FormsPage() {
                               <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDuplicateForm(form)}>
+                            {/* <DropdownMenuItem onClick={() => handleDuplicateForm(form)}>
                               <Copy className="h-4 w-4 mr-2" />
                               Duplicate
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> */}
                             <DropdownMenuItem onClick={() => setPreviewForm(form)}>
                               <Eye className="h-4 w-4 mr-2" />
                               Preview

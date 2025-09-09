@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { AdminLayout } from "@/components/admin-layout"
 import { Button } from "@/components/ui/button"
@@ -53,24 +53,57 @@ export default function FormSubmissionsPage() {
 
   const [form, setForm] = useState<Form | null>(null)
   const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [totalSubmissions, setTotalSubmissions] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
   const [stats, setStats] = useState<FormStats | null>(null)
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
 
   const formsService = useFormsService()
   const { toast } = useToast()
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   useEffect(() => {
     loadFormData()
   }, [formId])
 
+  // Load submissions when page or debounced search changes
+  useEffect(() => {
+    loadSubmissions()
+  }, [currentPage, debouncedSearchTerm])
+
+  const loadSubmissions = useCallback(async () => {
+    if (!form) return
+    
+    try {
+      const submissionsResponse = await formsService.getFormSubmissions(formId, {
+        page: currentPage,
+        limit: 20,
+        search: debouncedSearchTerm || undefined
+      })
+      setSubmissions(submissionsResponse.items)
+      setTotalSubmissions(submissionsResponse.total)
+    } catch (error) {
+      console.error('Error loading submissions:', error)
+    }
+  }, [form, formId, currentPage, debouncedSearchTerm, formsService])
+
   const loadFormData = async () => {
     try {
       setLoading(true)
-      const [formData, submissionsData, statsData] = await Promise.all([
+      const [formData, submissionsResponse, statsData] = await Promise.all([
         formsService.getForm(formId),
-        formsService.getFormSubmissions(formId),
+        formsService.getFormSubmissions(formId, { page: 1, limit: 20 }),
         formsService.getFormStats(formId).catch(() => ({
           totalSubmissions: 0,
           conversionRate: 0,
@@ -79,7 +112,11 @@ export default function FormSubmissionsPage() {
       ])
 
       setForm(formData)
-      setSubmissions(submissionsData)
+      setSubmissions(submissionsResponse.items)
+      setTotalSubmissions(submissionsResponse.total)
+      setForm(formData)
+      setSubmissions(submissionsResponse.items)
+      setTotalSubmissions(submissionsResponse.total)
       setStats(statsData)
     } catch (error) {
       console.error('Error loading form data:', error)
@@ -149,16 +186,11 @@ export default function FormSubmissionsPage() {
     }
   }
 
-  const filteredSubmissions = submissions.filter(submission => {
-    if (!searchTerm) return true
-    
-    const searchLower = searchTerm.toLowerCase()
-    return Object.values(submission.data).some(value => 
-      value && value.toString().toLowerCase().includes(searchLower)
-    )
-  })
-
-  const stepCompletionRates = form ? FormsUtils.calculateStepCompletionRates(form, submissions) : []
+  // Handle search with debouncing
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    setCurrentPage(1) // Reset to first page when searching
+  }
 
   if (loading) {
     return (
@@ -187,16 +219,11 @@ export default function FormSubmissionsPage() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Form Submissions">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={() => router.back()}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
             <div>
-              <h2 className="text-2xl font-bold tracking-tight">Form Submissions</h2>
               <p className="text-muted-foreground">{form.name}</p>
             </div>
             <Badge className={
@@ -242,7 +269,7 @@ export default function FormSubmissionsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats?.averageCompletionTime ? `${Math.round(stats.averageCompletionTime / 60)}m` : 'N/A'}
+                {stats?.averageCompletionTime} seconds
               </div>
             </CardContent>
           </Card>
@@ -263,43 +290,67 @@ export default function FormSubmissionsPage() {
         </div>
 
         <Tabs defaultValue="submissions" className="w-full">
-          <TabsList>
-            <TabsTrigger value="submissions">Submissions ({submissions.length})</TabsTrigger>
-            {form.isMultiStep && (
-              <TabsTrigger value="analytics">Step Analytics</TabsTrigger>
-            )}
-          </TabsList>
+
 
           <TabsContent value="submissions" className="space-y-4">
             {/* Search */}
             <div className="flex items-center space-x-2">
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search submissions..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />              <Input
+                placeholder="Search submissions..."
+                value={searchTerm}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+
+          {/* Pagination Info and Controls */}
+          {totalSubmissions > 20 && (
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {Math.min((currentPage - 1) * 20 + 1, totalSubmissions)} to {Math.min(currentPage * 20, totalSubmissions)} of {totalSubmissions} submissions
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage} of {Math.ceil(totalSubmissions / 20)}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage >= Math.ceil(totalSubmissions / 20)}
+                >
+                  Next
+                </Button>
               </div>
             </div>
+          )}
 
-            {/* Submissions Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Submissions</CardTitle>
-                <CardDescription>View and manage form submissions</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {filteredSubmissions.length === 0 ? (
-                  <div className="text-center py-12">
-                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">
-                      {submissions.length === 0 ? "No submissions yet" : "No matching submissions"}
-                    </h3>
-                    <p className="text-muted-foreground">
-                      {submissions.length === 0 
-                        ? "Submissions will appear here when people fill out your form"
+          {/* Submissions Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Submissions</CardTitle>
+              <CardDescription>View and manage form submissions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {submissions.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">
+                    {totalSubmissions === 0 ? "No submissions yet" : "No matching submissions"}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {totalSubmissions === 0 
+                      ? "Submissions will appear here when people fill out your form"
                         : "Try adjusting your search terms"
                       }
                     </p>
@@ -315,7 +366,7 @@ export default function FormSubmissionsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredSubmissions.map((submission) => (
+                      {submissions.map((submission) => (
                         <TableRow key={submission.id}>
                           <TableCell className="font-mono text-sm">
                             {submission.id.substring(0, 8)}...
@@ -376,54 +427,6 @@ export default function FormSubmissionsPage() {
               </CardContent>
             </Card>
           </TabsContent>
-
-          {form.isMultiStep && (
-            <TabsContent value="analytics" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Step Completion Analytics</CardTitle>
-                  <CardDescription>Analyze how users progress through your multi-step form</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {stepCompletionRates.length > 0 ? (
-                    <div className="space-y-4">
-                      {stepCompletionRates.map((step, index) => (
-                        <div key={step.stepId} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-medium">{step.stepTitle}</h4>
-                              <p className="text-sm text-muted-foreground">Step {index + 1}</p>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-bold">{step.completionRate.toFixed(1)}%</div>
-                              {step.dropOffRate > 0 && (
-                                <div className="text-sm text-red-600">
-                                  {step.dropOffRate.toFixed(1)}% drop-off
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-primary h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${step.completionRate}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">
-                        Analytics will appear here when you have submissions
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
         </Tabs>
 
         {/* Submission Detail Dialog */}

@@ -38,14 +38,17 @@ export interface Step {
 
 export interface Form {
   id: string
+  customerId?: number
   name: string
   description?: string
   isMultiStep: boolean
   status: 'active' | 'draft' | 'archived'
   createdAt: string
   updatedAt: string
-  steps: Step[]
-  submissions?: Submission[]
+  steps?: Step[] // Optional for list view, present for detail view
+  stepCount?: string | number // Available in list view
+  submissionCount?: string | number // Available in list view
+  submissions?: Submission[] // Legacy field, may not be present
 }
 
 export interface Submission {

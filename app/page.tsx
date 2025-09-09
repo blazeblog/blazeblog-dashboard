@@ -1,6 +1,6 @@
 import { SignIn } from "@clerk/nextjs"
 import { OnboardingRedirect } from "@/components/onboarding-redirect"
-import { PenTool, BarChart3, Sparkles, Globe, Palette } from "lucide-react"
+import { BarChart3, Sparkles, Globe, Palette } from "lucide-react"
 
 export default function HomePage() {
   return (
@@ -13,7 +13,11 @@ export default function HomePage() {
               <div className="text-center lg:text-left space-y-4 lg:space-y-6">
                 <div className="flex items-center justify-center lg:justify-start space-x-3 lg:space-x-4 mb-4 lg:mb-6">
                   <div className="w-12 h-12 lg:w-14 lg:h-14 bg-primary/10 border-2 border-primary/20 rounded-2xl flex items-center justify-center">
-                    <PenTool className="h-6 w-6 lg:h-7 lg:w-7 text-primary" />
+                    <img 
+                      src="/logo_blaze.ico" 
+                      alt="BlazeBlog Logo" 
+                      className="h-6 w-6 lg:h-7 lg:w-7" 
+                    />
                   </div>
                   <div>
                     <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
