@@ -36,11 +36,17 @@ export interface Step {
   fields: Field[]
 }
 
+export interface FormShowSetting {
+  showAtExitIntent?: boolean
+  showAfter?: number // seconds (5-60)
+}
+
 export interface Form {
   id: string
   customerId?: number
   name: string
   description?: string
+  formShowSetting?: FormShowSetting | null
   isMultiStep: boolean
   status: 'active' | 'draft' | 'archived'
   createdAt: string

@@ -21,6 +21,7 @@ import {
   Eye,
   Copy,
   MoreHorizontal,
+  AlertTriangle,
   Settings,
   BarChart3,
   Users,
@@ -125,9 +126,35 @@ export default function FormsPage() {
     onCancel,
   }: { form?: Form; onSave: (form: Form) => void; onCancel: () => void }) => {
     const [activeStepIndex, setActiveStepIndex] = useState(0)
+    
+    // Ensure we always have steps with fields arrays
+    const normalizeForm = (f: Form): Form => {
+      const steps = (f.steps ?? []).map((s) => ({
+        ...s,
+        fields: s.fields ?? [],
+      }))
+      return {
+        ...f,
+        formShowSetting: f.formShowSetting ?? {},
+        steps: steps.length
+          ? steps
+          : [
+              {
+                id: `step_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+                title: "Step 1",
+                description: "",
+                stepOrder: 0,
+                formId: f.id,
+                fields: [],
+              },
+            ],
+        isMultiStep: steps.length > 1,
+      }
+    }
+
     const [formData, setFormData] = useState<Form>(() => {
       if (form) {
-        return {...form} // Use spread to create a new object
+        return normalizeForm({ ...form }) // Use spread to create a new object
       }
       
       const formId = `form_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
@@ -137,6 +164,7 @@ export default function FormsPage() {
         id: formId,
         name: "",
         description: "",
+        formShowSetting: { showAtExitIntent: false },
         steps: [
           {
             id: stepId,
@@ -157,7 +185,7 @@ export default function FormsPage() {
     // Reset form data when switching between forms
     useEffect(() => {
       if (form && form.id !== formData.id) {
-        setFormData({...form}) // Create a new object to ensure state updates
+        setFormData(normalizeForm({ ...form })) // Ensure steps/fields are present
         setActiveStepIndex(0) // Reset to first step
       }
     }, [form])
@@ -170,13 +198,13 @@ export default function FormsPage() {
           type: "text",
           label: "New Field",
           required: false,
-          fieldOrder: step?.fields.length || 0,
+          fieldOrder: (step?.fields?.length ?? 0),
           stepId: stepId,
         }
 
         return {
           ...prev,
-          steps: prev.steps.map((step) => (step.id === stepId ? { ...step, fields: [...step.fields, newField] } : step)),
+          steps: prev.steps.map((step) => (step.id === stepId ? { ...step, fields: [...(step.fields ?? []), newField] } : step)),
         }
       })
     }, [])
@@ -188,7 +216,7 @@ export default function FormsPage() {
           step.id === stepId
             ? {
                 ...step,
-                fields: step.fields.map((field) => (field.id === fieldId ? { ...field, ...updates } : field)),
+                fields: (step.fields ?? []).map((field) => (field.id === fieldId ? { ...field, ...updates } : field)),
               }
             : step,
         ),
@@ -199,7 +227,7 @@ export default function FormsPage() {
       setFormData((prev) => ({
         ...prev,
         steps: prev.steps.map((step) =>
-          step.id === stepId ? { ...step, fields: step.fields.filter((field) => field.id !== fieldId) } : step,
+          step.id === stepId ? { ...step, fields: (step.fields ?? []).filter((field) => field.id !== fieldId) } : step,
         ),
       }))
     }, [])
@@ -255,46 +283,123 @@ export default function FormsPage() {
               <CardTitle>Form Settings</CardTitle>
               <CardDescription>Configure your lead generation form</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+          <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="form-name">Form Name</Label>
                   <Input
                     id="form-name"
                     value={formData.name}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter form name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="form-status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: "active" | "draft" | "archived") =>
-                      setFormData((prev) => ({ ...prev, status: value }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="archived">Archived</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Enter form name"
+                />
               </div>
               <div className="space-y-2">
-                <MarkdownTextarea
-                  id="form-description"
-                  label="Description"
-                  value={formData.description}
-                  onChange={(value) => setFormData((prev) => ({ ...prev, description: value }))}
-                  placeholder="Describe your form's purpose. Use **markdown** for formatting!"
-                  enablePreview={true}
-                  minHeight={120}
-                />
+                <Label htmlFor="form-status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value: "active" | "draft" | "archived") =>
+                    setFormData((prev) => ({ ...prev, status: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <MarkdownTextarea
+                id="form-description"
+                label="Description"
+                value={formData.description}
+                onChange={(value) => setFormData((prev) => ({ ...prev, description: value }))}
+                placeholder="Describe your form's purpose. Use **markdown** for formatting!"
+                enablePreview={true}
+                minHeight={120}
+              />
+            </div>
+
+            {/* Display Triggers */}
+              <div className="space-y-3 pt-2">
+                <div>
+                  <CardTitle className="text-sm">Display Triggers</CardTitle>
+                  <CardDescription>Control when this form appears to visitors.</CardDescription>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="exit-intent">Show on Exit Intent</Label>
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        id="exit-intent"
+                        checked={!!formData.formShowSetting?.showAtExitIntent}
+                        onCheckedChange={(checked) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            formShowSetting: { ...(prev.formShowSetting ?? {}), showAtExitIntent: checked },
+                          }))
+                        }
+                      />
+                      <span className="text-sm text-muted-foreground">Trigger when cursor moves to close/tab bar</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="show-after">Show After (seconds)</Label>
+                    <Input
+                      id="show-after"
+                      type="number"
+                      min={5}
+                      max={60}
+                      placeholder="e.g. 10"
+                      value={formData.formShowSetting?.showAfter ?? ""}
+                      onChange={(e) => {
+                        const raw = e.target.value
+                        if (raw === "") {
+                          setFormData((prev) => ({
+                            ...prev,
+                            formShowSetting: { ...(prev.formShowSetting ?? {}), showAfter: undefined },
+                          }))
+                          return
+                        }
+                        const num = parseInt(raw, 10)
+                        if (!Number.isNaN(num)) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            formShowSetting: { ...(prev.formShowSetting ?? {}), showAfter: num },
+                          }))
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const val = parseInt(e.target.value, 10)
+                        if (!Number.isNaN(val)) {
+                          const clamped = Math.min(60, Math.max(5, val))
+                          if (clamped !== val) {
+                            // reflect clamp
+                            e.currentTarget.value = String(clamped)
+                          }
+                          setFormData((prev) => ({
+                            ...prev,
+                            formShowSetting: { ...(prev.formShowSetting ?? {}), showAfter: clamped },
+                          }))
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">Allowed range: 5–60 seconds</p>
+                  </div>
+                </div>
+              {(!!formData.formShowSetting?.showAtExitIntent && ((formData.formShowSetting?.showAfter ?? 0) > 0)) && (
+                  <div className="flex items-start gap-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-800">
+                    <AlertTriangle className="h-4 w-4 mt-0.5" />
+                    <p className="text-xs">
+                      Using multiple triggers (exit intent and time delay) can increase impressions but may hurt user experience. Consider choosing one.
+                    </p>
+                  </div>
+                )}
               </div>
           </CardContent>
         </Card>
@@ -394,13 +499,13 @@ export default function FormsPage() {
                       </Button>
                     </div>
 
-                    {formData.steps[activeStepIndex].fields.length === 0 ? (
+                    {(formData.steps[activeStepIndex].fields?.length ?? 0) === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         No fields added yet. Click "Add Field" to get started.
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {formData.steps[activeStepIndex].fields.map((field, _fieldIndex) => (
+                        {(formData.steps[activeStepIndex].fields ?? []).map((field, _fieldIndex) => (
                           <Card key={field.id} className="p-4">
                             <div className="flex items-start gap-4">
                               <GripVertical className="h-5 w-5 text-muted-foreground mt-2" />
@@ -572,8 +677,9 @@ export default function FormsPage() {
     const [currentStep, setCurrentStep] = useState(0)
     const [formValues, setFormValues] = useState<Record<string, any>>({})
 
-    const currentStepData = form.steps[currentStep]
-    const isLastStep = currentStep === form.steps.length - 1
+    const steps = form.steps ?? []
+    const currentStepData = steps[currentStep]
+    const isLastStep = currentStep === steps.length - 1
     const isFirstStep = currentStep === 0
 
     const handleNext = () => {
@@ -735,32 +841,32 @@ export default function FormsPage() {
                   <p className="text-gray-600 dark:text-gray-300">{form.description}</p>
                 )}
               </div>
-              {form.isMultiStep && (
+              {form.isMultiStep && steps.length > 0 && (
                 <div className="flex items-center space-x-3">
                   <Badge variant="secondary" className="px-3 py-1">
-                    Step {currentStep + 1} of {form.steps.length}
+                    Step {currentStep + 1} of {steps.length}
                   </Badge>
                 </div>
               )}
             </div>
             
             {/* Progress Bar for Multi-step */}
-            {form.isMultiStep && (
+            {form.isMultiStep && steps.length > 0 && (
               <div className="mt-6">
                 <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-2">
                   <span>Progress</span>
-                  <span>{Math.round(((currentStep + 1) / form.steps.length) * 100)}% Complete</span>
+                  <span>{Math.round(((currentStep + 1) / steps.length) * 100)}% Complete</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
                   <div
                     className="bg-gradient-to-r from-blue-500 to-purple-600 h-full rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${((currentStep + 1) / form.steps.length) * 100}%` }}
+                    style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
                   />
                 </div>
                 
                 {/* Step Indicators */}
                 <div className="flex justify-between mt-4">
-                  {form.steps.map((step, index) => (
+                  {steps.map((step, index) => (
                     <div key={step.id} className="flex flex-col items-center space-y-2">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
                         index <= currentStep 
@@ -799,7 +905,7 @@ export default function FormsPage() {
 
             {/* Form Fields */}
             <div className="space-y-6">
-              {currentStepData?.fields.map((field) => (
+              {(currentStepData?.fields ?? []).map((field) => (
                 <div key={field.id} className="space-y-3">
                   <Label className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
                     {field.label}
@@ -859,23 +965,37 @@ export default function FormsPage() {
       setSaving(true)
       let savedForm: Form
 
+      // Prepare payload: clamp showAfter into [5, 60] if provided
+      const prepared: Form = {
+        ...formData,
+        formShowSetting: formData.formShowSetting
+          ? {
+              ...formData.formShowSetting,
+              showAfter:
+                typeof formData.formShowSetting.showAfter === 'number'
+                  ? Math.min(60, Math.max(5, formData.formShowSetting.showAfter))
+                  : formData.formShowSetting.showAfter,
+            }
+          : formData.formShowSetting,
+      }
+
       if (editingForm) {
         // Update existing form
-        savedForm = await formsService.updateForm(formData.id, formData)
-        setForms((prev) => prev.map((f) => (f.id === formData.id ? {...savedForm} : f))) // Ensure new object reference
+        savedForm = await formsService.updateForm(prepared.id, prepared)
+        setForms((prev) => prev.map((f) => (f.id === prepared.id ? {...savedForm} : f))) // Ensure new object reference
         toast({
           title: "Success!",
-          description: `Form "${formData.name}" has been updated successfully.`,
+          description: `Form "${prepared.name}" has been updated successfully.`,
           variant: "default",
           duration: 3000
         })
       } else {
         // Create new form
-        savedForm = await formsService.createForm(formData)
+        savedForm = await formsService.createForm(prepared)
         setForms((prev) => [...prev, {...savedForm}]) // Ensure new object reference
         toast({
           title: "Success!",
-          description: `Form "${formData.name}" has been created successfully.`,
+          description: `Form "${prepared.name}" has been created successfully.`,
           variant: "default",
           duration: 3000
         })
@@ -933,6 +1053,36 @@ export default function FormsPage() {
       toast({
         title: "Error",
         description: "Failed to duplicate form. Please try again.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Load the full form by ID before editing/previewing to ensure steps/fields are present
+  const handleOpenEdit = async (formId: string) => {
+    try {
+      const fullForm = await formsService.getForm(formId)
+      setEditingForm(fullForm)
+      setIsCreating(false)
+    } catch (error) {
+      console.error('Error loading form details:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load form details.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleOpenPreview = async (formId: string) => {
+    try {
+      const fullForm = await formsService.getForm(formId)
+      setPreviewForm(fullForm)
+    } catch (error) {
+      console.error('Error loading form preview:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load form preview.",
         variant: "destructive"
       })
     }
@@ -1088,7 +1238,7 @@ export default function FormsPage() {
                   <Card 
                     key={form.id} 
                     className="p-4 cursor-pointer hover:shadow-md transition-shadow duration-200 hover:bg-accent/30"
-                    onClick={() => setEditingForm(form)}
+                    onClick={() => handleOpenEdit(form.id)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4 flex-1">
@@ -1113,7 +1263,7 @@ export default function FormsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button type="button" variant="outline" size="sm" onClick={() => setPreviewForm(form)}>
+                        <Button type="button" variant="outline" size="sm" onClick={() => handleOpenPreview(form.id)}>
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button variant="outline" size="sm" asChild>
@@ -1128,7 +1278,7 @@ export default function FormsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setEditingForm(form)}>
+                            <DropdownMenuItem onClick={() => handleOpenEdit(form.id)}>
                               <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
@@ -1136,7 +1286,7 @@ export default function FormsPage() {
                               <Copy className="h-4 w-4 mr-2" />
                               Duplicate
                             </DropdownMenuItem> */}
-                            <DropdownMenuItem onClick={() => setPreviewForm(form)}>
+                            <DropdownMenuItem onClick={() => handleOpenPreview(form.id)}>
                               <Eye className="h-4 w-4 mr-2" />
                               Preview
                             </DropdownMenuItem>
