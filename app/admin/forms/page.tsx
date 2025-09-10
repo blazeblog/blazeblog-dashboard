@@ -44,8 +44,6 @@ import { useFormsService } from "@/lib/forms-service"
 import { type Form, type Step, type Field, type FieldType } from "@/lib/client-api"
 import { useToast } from "@/hooks/use-toast"
 
-// Use the API types directly - no need for duplicate interfaces
-
 const fieldTypes = [
   { value: "text", label: "Text Input", icon: FormInput },
   { value: "email", label: "Email", icon: Mail },
@@ -79,13 +77,11 @@ export default function FormsPage() {
   const formsService = useFormsService()
   const { toast } = useToast()
 
-  // Load forms and stats on component mount
   useEffect(() => {
     loadForms()
     loadStats()
   }, [])
 
-  // Load forms when page changes
   useEffect(() => {
     loadForms()
   }, [currentPage])
@@ -127,7 +123,6 @@ export default function FormsPage() {
   }: { form?: Form; onSave: (form: Form) => void; onCancel: () => void }) => {
     const [activeStepIndex, setActiveStepIndex] = useState(0)
     
-    // Ensure we always have steps with fields arrays
     const normalizeForm = (f: Form): Form => {
       const steps = (f.steps ?? []).map((s) => ({
         ...s,
@@ -182,11 +177,10 @@ export default function FormsPage() {
       }
     })
 
-    // Reset form data when switching between forms
     useEffect(() => {
       if (form && form.id !== formData.id) {
-        setFormData(normalizeForm({ ...form })) // Ensure steps/fields are present
-        setActiveStepIndex(0) // Reset to first step
+        setFormData(normalizeForm({ ...form })) 
+        setActiveStepIndex(0) 
       }
     }, [form])
 
@@ -277,7 +271,6 @@ export default function FormsPage() {
     return (
       <form onSubmit={(e) => e.preventDefault()}>
         <div className="space-y-6">
-          {/* Form Settings */}
           <Card>
             <CardHeader>
               <CardTitle>Form Settings</CardTitle>
@@ -420,7 +413,6 @@ export default function FormsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {/* Step Navigation */}
               <div className="flex items-center justify-center space-x-4 py-4 border-b">
                 {formData.steps.map((step, index) => (
                   <div key={step.id} className="flex items-center">

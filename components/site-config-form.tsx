@@ -14,6 +14,7 @@ import { Save, Settings, Flag, Upload, X, BarChart, DollarSign, Plus, Trash2, Li
 import { useToast } from "@/hooks/use-toast"
 import { useClientApi } from "@/lib/client-api"
 import { getImageUrl } from "@/lib/image-utils"
+import { MarkdownTextarea } from "@/components/ui/markdown-textarea"
 
 interface FeatureFlags {
   enableTagsPage: boolean
@@ -26,12 +27,20 @@ interface FeatureFlags {
   maintenanceMode: boolean
 }
 
+interface HeroSettings {
+  enabled?: boolean
+  content?: string
+  ctaLabel?: string
+  ctaUrl?: string
+}
+
 interface SiteConfig {
   h1: string
   logoPath: string
   seoTitle: string
   aboutUsContent: string
   homeMetaDescription: string
+  heroSettings?: HeroSettings
 }
 
 interface NavigationLink {
@@ -97,6 +106,7 @@ interface ConfigData {
 
 export function SiteConfigForm() {
   const [urlErrors, setUrlErrors] = useState<{[key: string]: string}>({})
+  const [heroCtaUrlError, setHeroCtaUrlError] = useState<string>("")
 
   const isValidUrl = (url: string): boolean => {
     if (!url.trim()) return false
@@ -143,7 +153,13 @@ export function SiteConfigForm() {
       logoPath: '',
       seoTitle: '',
       aboutUsContent: '',
-      homeMetaDescription: ''
+      homeMetaDescription: '',
+      heroSettings: {
+        enabled: false,
+        content: '',
+        ctaLabel: '',
+        ctaUrl: '',
+      },
     },
     headerNavigationLinks: [],
     footerNavigationLinks: [],
@@ -203,7 +219,13 @@ export function SiteConfigForm() {
         logoPath: '',
         seoTitle: '',
         aboutUsContent: '',
-        homeMetaDescription: ''
+        homeMetaDescription: '',
+        heroSettings: {
+          enabled: false,
+          content: '',
+          ctaLabel: '',
+          ctaUrl: '',
+        },
       }
 
       const defaultAnalytics = {
@@ -228,9 +250,25 @@ export function SiteConfigForm() {
         custom: []
       }
       
+      // Map any legacy top-level hero fields into heroSettings for backward compatibility
+      const legacyHero: HeroSettings = {
+        enabled: (data.siteConfig as any)?.heroEnabled,
+        content: (data.siteConfig as any)?.heroContent,
+        ctaLabel: (data.siteConfig as any)?.heroCtaLabel,
+        ctaUrl: (data.siteConfig as any)?.heroCtaUrl,
+      }
+
       setConfig({
         featureFlags: { ...defaultFeatureFlags, ...data.featureFlags },
-        siteConfig: { ...defaultSiteConfig, ...data.siteConfig },
+        siteConfig: { 
+          ...defaultSiteConfig, 
+          ...data.siteConfig,
+          heroSettings: {
+            ...(defaultSiteConfig as any).heroSettings,
+            ...(legacyHero || {}),
+            ...(data.siteConfig?.heroSettings || {}),
+          },
+        },
         headerNavigationLinks: data.headerNavigationLinks || [],
         footerNavigationLinks: data.footerNavigationLinks || [],
         analytics: { ...defaultAnalytics, ...data.analytics },
@@ -253,6 +291,7 @@ export function SiteConfigForm() {
   const saveConfig = async () => {
     // Validate all URLs before saving
     let hasErrors = false
+    setHeroCtaUrlError("")
     
     // Validate header navigation links
     config.headerNavigationLinks?.forEach((link, index) => {
@@ -279,6 +318,22 @@ export function SiteConfigForm() {
       }
     })
     setSocialUrlErrors(socialErrors)
+    
+    // Validate hero CTA URL if provided
+    if (config.siteConfig.heroSettings?.enabled) {
+      const ctaUrl = (config.siteConfig.heroSettings?.ctaUrl || '').trim()
+      const ctaLabel = (config.siteConfig.heroSettings?.ctaLabel || '').trim()
+      if (ctaUrl) {
+        if (!isValidUrl(ctaUrl)) {
+          setHeroCtaUrlError('Please enter a valid HTTPS URL (e.g., https://example.com)')
+          hasErrors = true
+        }
+      } else if (ctaLabel) {
+        // If label is provided but URL is missing, prompt user
+        setHeroCtaUrlError('Please add a HTTPS URL for the CTA button')
+        hasErrors = true
+      }
+    }
     
     if (hasErrors) {
       toast({
@@ -328,13 +383,26 @@ export function SiteConfigForm() {
     }))
   }
 
-  const updateSiteConfig = (key: keyof SiteConfig, value: string) => {
+  const updateSiteConfig = (key: keyof SiteConfig, value: string | boolean) => {
     setConfig(prev => ({
       ...prev,
       siteConfig: {
         ...prev.siteConfig,
         [key]: value
       }
+    }))
+  }
+
+  const updateHeroSettings = (key: keyof HeroSettings, value: string | boolean) => {
+    setConfig(prev => ({
+      ...prev,
+      siteConfig: {
+        ...prev.siteConfig,
+        heroSettings: {
+          ...(prev.siteConfig.heroSettings || {}),
+          [key]: value as any,
+        },
+      },
     }))
   }
 
@@ -599,6 +667,67 @@ export function SiteConfigForm() {
               <CardDescription>Configure your site's basic information and SEO settings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Hero Segment (Optional) */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="flex items-center gap-2">
+                      Hero Segment (optional)
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </Label>
+                    <p className="text-sm text-muted-foreground">Supports markdown (#md). Renders before the main heading.</p>
+                  </div>
+                  <Switch
+                    checked={!!config.siteConfig.heroSettings?.enabled}
+                    onCheckedChange={(checked) => updateHeroSettings('enabled', checked)}
+                  />
+                </div>
+                {config.siteConfig.heroSettings?.enabled && (
+                  <div className="space-y-3 pl-4 border-l-2 border-muted">
+                    <MarkdownTextarea
+                      id="hero-content"
+                      label="Hero Content"
+                      value={config.siteConfig.heroSettings?.content || ''}
+                      onChange={(value) => updateHeroSettings('content', value)}
+                      placeholder="Add a short intro. Use markdown for headings, emphasis, and links."
+                      enablePreview={true}
+                      minHeight={120}
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="hero-cta-label">CTA Button Label</Label>
+                        <Input
+                          id="hero-cta-label"
+                          value={config.siteConfig.heroSettings?.ctaLabel || ''}
+                          onChange={(e) => updateHeroSettings('ctaLabel', e.target.value)}
+                          placeholder="e.g., Get Started"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="hero-cta-url">CTA Link</Label>
+                        <Input
+                          id="hero-cta-url"
+                          value={config.siteConfig.heroSettings?.ctaUrl || ''}
+                          onChange={(e) => {
+                            const v = e.target.value
+                            updateHeroSettings('ctaUrl', v)
+                            if (v && !isValidUrl(v)) {
+                              setHeroCtaUrlError('Please enter a valid HTTPS URL (e.g., https://example.com)')
+                            } else {
+                              setHeroCtaUrlError('')
+                            }
+                          }}
+                          placeholder="https://example.com/signup"
+                          className={heroCtaUrlError ? 'border-red-500 focus:border-red-500' : ''}
+                        />
+                        {heroCtaUrlError && (
+                          <p className="text-sm text-red-500 mt-1">{heroCtaUrlError}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="h1">Main Heading (H1)</Label>
                 <Input

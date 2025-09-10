@@ -4,7 +4,7 @@ import React, { useState } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, Bold, Italic, Link as LinkIcon, List, Quote, Code, HelpCircle } from "lucide-react"
+import { Eye, EyeOff, Bold, Italic, Link as LinkIcon, List, Quote, Code, HelpCircle, Image as ImageIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -23,6 +23,10 @@ function parseMarkdown(text: string): string {
   if (!text) return ""
   
   return text
+    // Clickable images: [![alt](src "title")] (href)
+    .replace(/\[!\[([^\]]*)\]\(([^)\s]+)(?:\s+\"([^\"]+)\")?\)\]\(([^)]+)\)/g, '<a href="$4" class="inline-block" target="_blank" rel="noopener noreferrer"><img src="$2" alt="$1" title="$3" class="max-w-full h-auto rounded-md border"/></a>')
+    // Images: ![alt](src "title")
+    .replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+\"([^\"]+)\")?\)/g, '<img src="$2" alt="$1" title="$3" class="max-w-full h-auto rounded-md border"/>')
     // Headers
     .replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold mb-2">$1</h3>')
     .replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold mb-3">$1</h2>')
@@ -146,6 +150,23 @@ export function MarkdownTextarea({
                         variant="ghost"
                         size="sm"
                         className="h-7 w-7 p-0"
+                        onClick={() => insertMarkdown("![", "](https://)")}
+                      >
+                        <ImageIcon className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Image (![alt](url))</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
                         onClick={() => insertMarkdown("[", "](url)")}
                       >
                         <LinkIcon className="h-3 w-3" />
@@ -222,7 +243,7 @@ export function MarkdownTextarea({
                       <div className="space-y-1 text-xs">
                         <p>Markdown shortcuts:</p>
                         <p>**bold** *italic* `code`</p>
-                        <p>[link](url) &gt; quote</p>
+                        <p>[link](url) ![alt](img-url)</p>
                         <p>- list item # heading</p>
                       </div>
                     </TooltipContent>
