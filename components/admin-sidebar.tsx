@@ -172,7 +172,7 @@ const navigation: NavigationSection[] = [
         title: "Notion",
         url: "/admin/notion",
         icon: Zap,
-        badge: "Silver+",
+        badge: "Beta",
       },
     ],
   },

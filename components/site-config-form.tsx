@@ -675,7 +675,7 @@ export function SiteConfigForm() {
                       Hero Segment (optional)
                       <Info className="h-4 w-4 text-muted-foreground" />
                     </Label>
-                    <p className="text-sm text-muted-foreground">Supports markdown (#md). Renders before the main heading.</p>
+                    <p className="text-sm text-muted-foreground">Supports markdown (#md). Renders before the main heading (keep it minimal).</p>
                   </div>
                   <Switch
                     checked={!!config.siteConfig.heroSettings?.enabled}

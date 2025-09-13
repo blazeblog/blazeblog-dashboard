@@ -43,6 +43,7 @@ import {
 import { useFormsService } from "@/lib/forms-service"
 import { type Form, type Step, type Field, type FieldType } from "@/lib/client-api"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from 'next/navigation'
 
 const fieldTypes = [
   { value: "text", label: "Text Input", icon: FormInput },
@@ -57,7 +58,7 @@ const fieldTypes = [
   { value: "rating", label: "Rating", icon: Star },
 ] as const
 
-export default function FormsPage() {
+export default function FormsPage({ initialEditId }: { initialEditId?: string } = {}) {
   usePageTitle("Forms - BlazeBlog Admin")
   const [forms, setForms] = useState<Form[]>([])
   const [totalForms, setTotalForms] = useState(0)
@@ -76,6 +77,35 @@ export default function FormsPage() {
 
   const formsService = useFormsService()
   const { toast } = useToast()
+  const router = useRouter()
+
+  // If this page was mounted with an initialEditId (via /admin/forms/[formId]), load that form for editing
+  useEffect(() => {
+    if (!initialEditId) return
+    let mounted = true
+    ;(async () => {
+      try {
+        setLoading(true)
+        const fullForm = await formsService.getForm(initialEditId)
+        if (!mounted) return
+        setEditingForm(fullForm)
+        setIsCreating(false)
+      } catch (error) {
+        console.error('Error loading form details:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load form details.",
+          variant: "destructive"
+        })
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    })()
+
+    return () => {
+      mounted = false
+    }
+  }, [initialEditId])
 
   useEffect(() => {
     loadForms()
@@ -660,6 +690,30 @@ export default function FormsPage() {
             </Button>
           </div>
         </div>
+
+        {/* Preview Dialog (also available while editing/creating) */}
+        <Dialog open={!!previewForm} onOpenChange={() => setPreviewForm(null)}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Form Preview
+              </DialogTitle>
+              <DialogDescription className="space-y-2">
+                <p>This is how your form will appear to visitors on your website.</p>
+                <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-md border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center justify-center w-5 h-5 bg-blue-100 dark:bg-blue-900 rounded-full">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                  </div>
+                  <span className="text-sm text-blue-800 dark:text-blue-200">
+                    <strong>Note:</strong> Correct themes and styling will be applied when displayed on your actual website.
+                  </span>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            {previewForm && <FormPreview form={previewForm} />}
+          </DialogContent>
+        </Dialog>
         </div>
       </form>
     )
@@ -996,6 +1050,8 @@ export default function FormsPage() {
       setIsCreating(false)
       setEditingForm(null)
       loadStats() // Refresh stats
+      // Ensure URL returns to the canonical list after save
+      router.push('/admin/forms')
     } catch (error) {
       console.error('Error saving form:', error)
       toast({
@@ -1052,18 +1108,8 @@ export default function FormsPage() {
 
   // Load the full form by ID before editing/previewing to ensure steps/fields are present
   const handleOpenEdit = async (formId: string) => {
-    try {
-      const fullForm = await formsService.getForm(formId)
-      setEditingForm(fullForm)
-      setIsCreating(false)
-    } catch (error) {
-      console.error('Error loading form details:', error)
-      toast({
-        title: "Error",
-        description: "Failed to load form details.",
-        variant: "destructive"
-      })
-    }
+    // Push to the /admin/forms/:id route; that route will mount this page with initialEditId
+    router.push(`/admin/forms/${formId}`)
   }
 
   const handleOpenPreview = async (formId: string) => {
@@ -1085,22 +1131,55 @@ export default function FormsPage() {
       <AdminLayout title={editingForm ? "Edit Form" : "Create Form"}>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground">
-                {editingForm ? "Modify your existing form" : "Build a custom lead generation form"}
-              </p>
+            <div className="flex items-center gap-4">
+              <Button type="button" variant="ghost" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <div>
+                <p className="text-muted-foreground">
+                  {editingForm ? "Modify your existing form" : "Build a custom lead generation form"}
+                </p>
+              </div>
             </div>
           </div>
 
           <FormBuilder
-            key={editingForm?.id || 'new'} // Force re-render when switching forms
+            key={editingForm?.id || 'new'} 
             form={editingForm || undefined}
             onSave={handleSaveForm}
             onCancel={() => {
+              // Clear editing state and navigate back to the canonical list URL
               setIsCreating(false)
               setEditingForm(null)
+              router.push('/admin/forms')
             }}
           />
+
+          {/* Preview Dialog (available while creating/editing) */}
+          <Dialog open={!!previewForm} onOpenChange={() => setPreviewForm(null)}>
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5" />
+                  Form Preview
+                </DialogTitle>
+                <DialogDescription className="space-y-2">
+                  <p>This is how your form will appear to visitors on your website.</p>
+                  <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-md border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-center w-5 h-5 bg-blue-100 dark:bg-blue-900 rounded-full">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    </div>
+                    <span className="text-sm text-blue-800 dark:text-blue-200">
+                      <strong>Note:</strong> Correct themes and styling will be applied when displayed on your actual website.
+                    </span>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+              {previewForm && <FormPreview form={previewForm} />}
+            </DialogContent>
+          </Dialog>
+
         </div>
       </AdminLayout>
     )
@@ -1180,7 +1259,7 @@ export default function FormsPage() {
             {totalForms > 20 && (
               <div className="flex items-center justify-between mb-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {Math.min((currentPage - 1) * 20 + 1, totalForms)} to {Math.min(currentPage * 20, totalForms)} of {totalForms} forms
+                  Showing {Math.min((currentPage - 1) * 20 + 1, totalForms)} to {Math.min(currentPage * 20, totalForms)} forms
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
